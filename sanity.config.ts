@@ -25,6 +25,7 @@ export default defineConfig({
             // Regular document types
             S.documentTypeListItem('page').title('Pages'),
             S.documentTypeListItem('staff').title('Staff & Leadership'),
+            S.documentTypeListItem('staffOrder').title('Staff Display Order'),
             S.documentTypeListItem('announcement').title('Announcements'),
             // Group navigation items
             S.listItem()
