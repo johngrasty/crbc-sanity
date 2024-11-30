@@ -3,35 +3,18 @@ import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {media} from 'sanity-plugin-media'
 import {schemaTypes} from './schemaTypes'
+import {deskStructure} from './structure/deskStructure'
 
 export default defineConfig({
   name: 'default',
   title: 'CRBC',
 
-  projectId: '3jz4fi70',
-  dataset: 'production',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID!,
+  dataset: process.env.SANITY_STUDIO_DATASET!,
 
   plugins: [
     structureTool({
-      structure: (S) =>
-        S.list()
-          .title('Content')
-          .items([
-            // Singleton for church settings
-            S.listItem()
-              .title('Church Settings')
-              .id('settings')
-              .child(S.document().schemaType('settings').documentId('settings')),
-            // Regular document types
-            S.documentTypeListItem('page').title('Pages'),
-            S.documentTypeListItem('staff').title('Staff & Leadership'),
-            S.documentTypeListItem('staffOrder').title('Staff Display Order'),
-            S.documentTypeListItem('announcement').title('Announcements'),
-            // Group navigation items
-            S.listItem()
-              .title('Navigation Menus')
-              .child(S.documentTypeList('navigation').title('Navigation Menus')),
-          ])
+      structure: deskStructure
     }),
     visionTool(),
     media()

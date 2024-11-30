@@ -7,7 +7,7 @@ export default defineType({
 	fields: [
 		defineField({
 			name: 'category',
-			title: 'Staff Category',
+			title: 'Category',
 			type: 'string',
 			options: {
 				list: [
@@ -23,16 +23,7 @@ export default defineType({
 			name: 'staff',
 			title: 'Staff Members',
 			type: 'array',
-			of: [{ 
-				type: 'reference',
-				to: [{ type: 'staff' }],
-				options: {
-					filter: ({ document }) => ({
-						filter: 'category == $category',
-						params: { category: document?.category }
-					})
-				}
-			}],
+			of: [{ type: 'reference', to: [{ type: 'staff' }] }],
 			validation: (Rule) => Rule.required()
 		})
 	],
@@ -43,13 +34,13 @@ export default defineType({
 		},
 		prepare({ category }) {
 			const titles: Record<string, string> = {
-				'pastoral': 'Pastoral Staff Display Order',
-				'ministry': 'Ministry Staff Display Order',
-				'support': 'Support Staff Display Order',
-				'deacons': 'Deacons Display Order'
+				pastoral: 'Pastoral Staff Display Order',
+				ministry: 'Ministry Staff Display Order',
+				support: 'Support Staff Display Order',
+				deacons: 'Deacons Display Order'
 			};
 			return {
-				title: titles[category] || 'Staff Display Order'
+				title: titles[category] || category
 			};
 		}
 	}

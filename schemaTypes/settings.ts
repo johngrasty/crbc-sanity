@@ -22,10 +22,33 @@ export default defineType({
 			type: 'object',
 			fields: [
 				{
-					name: 'address',
-					title: 'Address',
+					name: 'streetAddress',
+					title: 'Street Address',
 					type: 'text',
-					rows: 3
+					rows: 2,
+					description: 'Street number and name'
+				},
+				{
+					name: 'city',
+					title: 'City',
+					type: 'string'
+				},
+				{
+					name: 'state',
+					title: 'State',
+					type: 'string',
+					options: {
+						list: [
+							{ title: 'North Carolina', value: 'NC' }
+						]
+					},
+					initialValue: 'NC'
+				},
+				{
+					name: 'zipCode',
+					title: 'ZIP Code',
+					type: 'string',
+					validation: (Rule) => Rule.regex(/^\d{5}(-\d{4})?$/).error('Please enter a valid ZIP code')
 				},
 				{
 					name: 'phone',
