@@ -68,49 +68,7 @@ export default defineType({
 		defineField({
 			name: 'content',
 			title: 'Content',
-			type: 'array',
-			of: [
-				{
-					type: 'block',
-					styles: [
-						{ title: 'Normal', value: 'normal' },
-						{ title: 'Heading 2', value: 'h2' },
-						{ title: 'Heading 3', value: 'h3' },
-						{ title: 'Quote', value: 'blockquote' }
-					],
-					marks: {
-						decorators: [
-							{ title: 'Strong', value: 'strong' },
-							{ title: 'Emphasis', value: 'em' },
-							{ title: 'Underline', value: 'underline' }
-						]
-					}
-				},
-				{
-					type: 'image',
-					options: {
-						hotspot: true
-					},
-					fields: [
-						{
-							name: 'caption',
-							type: 'string',
-							title: 'Caption',
-							options: {
-								isHighlighted: true
-							}
-						},
-						{
-							name: 'alt',
-							type: 'string',
-							title: 'Alt Text',
-							options: {
-								isHighlighted: true
-							}
-						}
-					]
-				}
-			]
+			type: 'richText'
 		}),
 		defineField({
 			name: 'tags',
@@ -155,14 +113,14 @@ export default defineType({
 			media: 'mainImage',
 			category: 'category'
 		},
-		prepare({ title, author, media, category }) {
+		prepare({ title, author, media, category }: { title: string; author: string; media: any; category: 'news' | 'devotional' | 'ministry' | 'missions' | 'general' }) {
 			const categoryLabels = {
 				news: 'Church News',
 				devotional: 'Devotional',
 				ministry: 'Ministry Spotlight',
 				missions: 'Missions Update',
 				general: 'General'
-			};
+			} as const;
 			return {
 				title,
 				subtitle: `${categoryLabels[category] || category}${author ? ` by ${author}` : ''}`,

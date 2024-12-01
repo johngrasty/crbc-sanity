@@ -10,6 +10,7 @@ import settings from './settings';
 import mainMenu from './menus/mainMenu';
 import footerMenu from './menus/footerMenu';
 import article from './article';
+import richText from './objects/richText';
 
 export const schemaTypes = [
 	// Documents
@@ -25,5 +26,7 @@ export const schemaTypes = [
 	hero,
 	textWithImage,
 	gallery,
-	callToAction
+	callToAction,
+	// Objects (Fields)
+	richText
 ];

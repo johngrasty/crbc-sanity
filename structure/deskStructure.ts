@@ -36,6 +36,10 @@ export const deskStructure = (S: StructureBuilder) =>
         .title('Announcements')
         .child(S.documentTypeList('announcement')),
 
+      S.listItem()
+        .title('Articles')
+        .child(S.documentTypeList('article')),
+
       // Group navigation items
       S.listItem()
         .title('Navigation')
