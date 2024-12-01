@@ -38,6 +38,25 @@ export const deskStructure = (S: StructureBuilder) =>
 
       // Group navigation items
       S.listItem()
-        .title('Navigation Menus')
-        .child(S.documentTypeList('navigation').title('Navigation Menus')),
+        .title('Navigation')
+        .child(
+          S.list()
+            .title('Navigation')
+            .items([
+              S.listItem()
+                .title('Main Menu')
+                .child(
+                  S.document()
+                    .schemaType('mainMenu')
+                    .documentId('mainMenu')
+                ),
+              S.listItem()
+                .title('Footer Menu')
+                .child(
+                  S.document()
+                    .schemaType('footerMenu')
+                    .documentId('footerMenu')
+                ),
+            ])
+        ),
     ]); 

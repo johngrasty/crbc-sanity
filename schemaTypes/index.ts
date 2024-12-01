@@ -6,8 +6,9 @@ import callToAction from './sections/callToAction';
 import staff from './staff';
 import staffOrder from './staffOrder';
 import announcement from './announcement';
-import navigation from './navigation';
 import settings from './settings';
+import mainMenu from './menus/mainMenu';
+import footerMenu from './menus/footerMenu';
 
 export const schemaTypes = [
 	// Documents
@@ -15,8 +16,9 @@ export const schemaTypes = [
 	staff,
 	staffOrder,
 	announcement,
-	navigation,
 	settings,
+	mainMenu,
+	footerMenu,
 	// Objects (Sections)
 	hero,
 	textWithImage,
