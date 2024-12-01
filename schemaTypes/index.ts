@@ -9,6 +9,7 @@ import announcement from './announcement';
 import settings from './settings';
 import mainMenu from './menus/mainMenu';
 import footerMenu from './menus/footerMenu';
+import article from './article';
 
 export const schemaTypes = [
 	// Documents
@@ -19,6 +20,7 @@ export const schemaTypes = [
 	settings,
 	mainMenu,
 	footerMenu,
+	article,
 	// Objects (Sections)
 	hero,
 	textWithImage,
