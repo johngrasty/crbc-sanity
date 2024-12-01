@@ -1,9 +1,24 @@
 import {defineCliConfig} from 'sanity/cli'
+import {config} from 'dotenv'
+
+// Load environment variables
+config()
+
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID
+const dataset = process.env.SANITY_STUDIO_DATASET
+
+if (!projectId) {
+  throw new Error('Missing required environment variable: SANITY_STUDIO_PROJECT_ID')
+}
+
+if (!dataset) {
+  throw new Error('Missing required environment variable: SANITY_STUDIO_DATASET')
+}
 
 export default defineCliConfig({
   api: {
-    projectId: '3jz4fi70',
-    dataset: 'production'
+    projectId,
+    dataset
   },
   /**
    * Enable auto-updates for studios.
