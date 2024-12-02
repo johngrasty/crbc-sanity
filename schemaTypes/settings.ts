@@ -58,7 +58,16 @@ export default defineType({
 				{
 					name: 'email',
 					title: 'Email',
-					type: 'string'
+					type: 'string',
+					description: 'Email address for general inquiries',
+					validation: (Rule) => Rule.email().error('Please enter a valid email address')
+				},
+				{
+					name: 'supportEmail',
+					title: 'Support Email',
+					type: 'string',
+					description: 'Email address for support inquiries (used on error pages)',
+					validation: (Rule) => Rule.email().error('Please enter a valid email address')
 				}
 			]
 		}),

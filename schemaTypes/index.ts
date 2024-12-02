@@ -11,6 +11,7 @@ import mainMenu from './menus/mainMenu';
 import footerMenu from './menus/footerMenu';
 import article from './article';
 import richText from './objects/richText';
+import resource from './resource';
 
 export const schemaTypes = [
 	// Documents
@@ -22,6 +23,7 @@ export const schemaTypes = [
 	mainMenu,
 	footerMenu,
 	article,
+	resource,
 	// Objects (Sections)
 	hero,
 	textWithImage,
