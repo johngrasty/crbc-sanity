@@ -1,4 +1,5 @@
 import { StructureBuilder } from 'sanity/structure';
+import { BellRing } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
@@ -31,14 +32,28 @@ export const deskStructure = (S: StructureBuilder) =>
             ])
         ),
 
-      // Other document types
+      // Announcements group
       S.listItem()
         .title('Announcements')
-        .child(S.documentTypeList('announcement')),
+        .icon(BellRing)
+        .child(
+          S.list()
+            .title('Announcements')
+            .items([
+              S.documentTypeListItem('announcement')
+                .title('Church Announcements'),
+              S.documentTypeListItem('siteAlert')
+                .title('Site Alerts')
+            ])
+        ),
 
       S.listItem()
         .title('Articles')
         .child(S.documentTypeList('article')),
+
+      S.listItem()
+        .title('Resources')
+        .child(S.documentTypeList('resource')),
 
       // Group navigation items
       S.listItem()
@@ -63,4 +78,4 @@ export const deskStructure = (S: StructureBuilder) =>
                 ),
             ])
         ),
-    ]); 
+    ]);

@@ -12,6 +12,7 @@ import footerMenu from './menus/footerMenu';
 import article from './article';
 import richText from './objects/richText';
 import resource from './resource';
+import siteAlert from './alert';
 
 export const schemaTypes = [
 	// Documents
@@ -19,6 +20,7 @@ export const schemaTypes = [
 	staff,
 	staffOrder,
 	announcement,
+	siteAlert,
 	settings,
 	mainMenu,
 	footerMenu,
