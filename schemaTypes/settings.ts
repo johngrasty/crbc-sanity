@@ -146,44 +146,6 @@ export default defineType({
 			]
 		}),
 		defineField({
-			name: 'alert',
-			title: 'Site Alert',
-			type: 'object',
-			description: 'Display an alert banner at the top of the site',
-			fields: [
-				{
-					name: 'enabled',
-					title: 'Enable Alert',
-					type: 'boolean',
-					initialValue: false
-				},
-				{
-					name: 'message',
-					title: 'Alert Message',
-					type: 'text',
-					rows: 2
-				},
-				{
-					name: 'type',
-					title: 'Alert Type',
-					type: 'string',
-					options: {
-						list: [
-							{ title: 'Info', value: 'info' },
-							{ title: 'Warning', value: 'warning' },
-							{ title: 'Error', value: 'error' }
-						]
-					}
-				},
-				{
-					name: 'link',
-					title: 'Alert Link',
-					type: 'string',
-					description: 'Optional link for more information'
-				}
-			]
-		}),
-		defineField({
 			name: 'seo',
 			title: 'SEO Settings',
 			type: 'object',
