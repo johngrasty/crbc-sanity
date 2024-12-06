@@ -12,13 +12,25 @@ import {
   Menu,
   MenuSquare,
   Church,
-  AlertCircle
+  AlertCircle,
+  Home
 } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
     .title('Content')
     .items([
+      // Home Page singleton
+      S.listItem()
+        .title('Home Page')
+        .id('homePage')
+        .icon(Home)
+        .child(
+          S.document()
+            .schemaType('homePage')
+            .documentId('homePage')
+        ),
+
       // Singleton for church settings
       S.listItem()
         .title('Church Settings')
@@ -30,7 +42,14 @@ export const deskStructure = (S: StructureBuilder) =>
       S.listItem()
         .title('Pages')
         .icon(FileText)
-        .child(S.documentTypeList('page')),
+        .child(
+          S.list()
+            .title('Pages')
+            .items([
+              S.documentTypeListItem('page')
+                .title('Content Pages')
+            ])
+        ),
 
       // Staff & Leadership folder
       S.listItem()
