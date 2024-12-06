@@ -13,15 +13,10 @@ import article from './article';
 import richText from './objects/richText';
 import resource from './resource';
 import siteAlert from './alert';
-import homePage from './pages/home';
-import featuredAnnouncements from './sections/featuredAnnouncements';
-import welcomeMessage from './sections/welcomeMessage';
-import serviceInfo from './sections/serviceInfo';
 
 export const schemaTypes = [
 	// Documents
 	page,
-	homePage,
 	staff,
 	staffOrder,
 	announcement,
@@ -36,9 +31,6 @@ export const schemaTypes = [
 	textWithImage,
 	gallery,
 	callToAction,
-	featuredAnnouncements,
-	welcomeMessage,
-	serviceInfo,
 	// Objects (Fields)
 	richText
 ];
