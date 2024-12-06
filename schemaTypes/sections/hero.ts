@@ -8,13 +8,15 @@ export default defineType({
 		defineField({
 			name: 'heading',
 			title: 'Heading',
-			type: 'string'
+			type: 'string',
+			validation: Rule => Rule.required()
 		}),
 		defineField({
 			name: 'tagline',
 			title: 'Tagline',
 			type: 'text',
-			rows: 2
+			rows: 2,
+			validation: Rule => Rule.required()
 		}),
 		defineField({
 			name: 'backgroundImage',
@@ -22,22 +24,59 @@ export default defineType({
 			type: 'image',
 			options: {
 				hotspot: true
-			}
+			},
+			validation: Rule => Rule.required()
 		}),
 		defineField({
-			name: 'cta',
-			title: 'Call to Action',
+			name: 'gradientFrom',
+			title: 'Gradient Start Color',
+			type: 'string',
+			description: 'Color in hex format (e.g., #ffffff)',
+			initialValue: '#ffffff'
+		}),
+		defineField({
+			name: 'gradientTo',
+			title: 'Gradient End Color',
+			type: 'string',
+			description: 'Color in hex format (e.g., #f3f4f6)',
+			initialValue: '#f3f4f6'
+		}),
+		defineField({
+			name: 'primaryCTA',
+			title: 'Primary Call to Action',
+			type: 'object',
+			validation: Rule => Rule.required(),
+			fields: [
+				{
+					name: 'text',
+					title: 'Button Text',
+					type: 'string',
+					validation: Rule => Rule.required()
+				},
+				{
+					name: 'link',
+					title: 'Button Link',
+					type: 'string',
+					validation: Rule => Rule.required()
+				}
+			]
+		}),
+		defineField({
+			name: 'secondaryCTA',
+			title: 'Secondary Call to Action',
 			type: 'object',
 			fields: [
 				{
 					name: 'text',
-					title: 'Text',
-					type: 'string'
+					title: 'Button Text',
+					type: 'string',
+					validation: Rule => Rule.required()
 				},
 				{
 					name: 'link',
-					title: 'Link',
-					type: 'string'
+					title: 'Button Link',
+					type: 'string',
+					validation: Rule => Rule.required()
 				}
 			]
 		})

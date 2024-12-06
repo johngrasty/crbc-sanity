@@ -13,9 +13,11 @@ import article from './article';
 import richText from './objects/richText';
 import resource from './resource';
 import siteAlert from './alert';
+import homePage from './pages/home';
 
 export const schemaTypes = [
 	// Documents
+	homePage,
 	page,
 	staff,
 	staffOrder,
