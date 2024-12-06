@@ -24,8 +24,7 @@ export default defineType({
 			type: 'image',
 			options: {
 				hotspot: true
-			},
-			validation: Rule => Rule.required()
+			}
 		}),
 		defineField({
 			name: 'gradientFrom',

@@ -13,7 +13,8 @@ import {
   MenuSquare,
   Church,
   AlertCircle,
-  Home
+  Home,
+  Palette
 } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
@@ -26,6 +27,13 @@ export const deskStructure = (S: StructureBuilder) =>
         .id('settings')
         .icon(Settings)
         .child(S.document().schemaType('settings').documentId('settings')),
+
+      // Singleton for design tokens
+      S.listItem()
+        .title('Design Tokens')
+        .id('designTokens')
+        .icon(Palette)
+        .child(S.document().schemaType('designTokens').documentId('designTokens')),
 
       // Singleton for home page
       S.listItem()

@@ -14,6 +14,7 @@ import richText from './objects/richText';
 import resource from './resource';
 import siteAlert from './alert';
 import homePage from './pages/home';
+import designTokens from './designTokens';
 
 export const schemaTypes = [
 	// Documents
@@ -24,6 +25,7 @@ export const schemaTypes = [
 	announcement,
 	siteAlert,
 	settings,
+	designTokens,
 	mainMenu,
 	footerMenu,
 	article,
