@@ -27,20 +27,6 @@ export default defineType({
 			}
 		}),
 		defineField({
-			name: 'gradientFrom',
-			title: 'Gradient Start Color',
-			type: 'string',
-			description: 'Color in hex format (e.g., #ffffff)',
-			initialValue: '#ffffff'
-		}),
-		defineField({
-			name: 'gradientTo',
-			title: 'Gradient End Color',
-			type: 'string',
-			description: 'Color in hex format (e.g., #f3f4f6)',
-			initialValue: '#f3f4f6'
-		}),
-		defineField({
 			name: 'primaryCTA',
 			title: 'Primary Call to Action',
 			type: 'object',
