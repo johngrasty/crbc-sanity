@@ -12,6 +12,10 @@ export default defineType({
       title: 'Hero Section',
     },
     {
+      name: 'partners',
+      title: 'Ministries & Partners',
+    },
+    {
       name: 'seo',
       title: 'SEO & Metadata',
     }
@@ -24,6 +28,14 @@ export default defineType({
       type: 'hero',
       group: 'hero',
       validation: Rule => Rule.required()
+    }),
+
+    // Logo Cloud Section
+    defineField({
+      name: 'logoCloud',
+      title: 'Ministries & Partners Logo Cloud',
+      type: 'logoCloud',
+      group: 'partners'
     }),
 
     // SEO

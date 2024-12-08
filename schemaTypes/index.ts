@@ -15,6 +15,7 @@ import resource from './resource';
 import siteAlert from './alert';
 import homePage from './pages/home';
 import designTokens from './designTokens';
+import logoCloud from './sections/logo-cloud';
 
 export const schemaTypes = [
 	// Documents
@@ -35,6 +36,7 @@ export const schemaTypes = [
 	textWithImage,
 	gallery,
 	callToAction,
+	logoCloud,
 	// Objects (Fields)
 	richText
 ];
