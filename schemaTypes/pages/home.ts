@@ -12,6 +12,10 @@ export default defineType({
       title: 'Hero Section',
     },
     {
+      name: 'bento',
+      title: 'Bento Section',
+    },
+    {
       name: 'partners',
       title: 'Ministries & Partners',
     },
@@ -28,6 +32,34 @@ export default defineType({
       type: 'hero',
       group: 'hero',
       validation: Rule => Rule.required()
+    }),
+
+    // Bento Section
+    defineField({
+      name: 'bentoSection',
+      title: 'Bento Section',
+      type: 'object',
+      group: 'bento',
+      fields: [
+        {
+          name: 'heading',
+          title: 'Section Heading',
+          type: 'string',
+          validation: Rule => Rule.required()
+        },
+        {
+          name: 'subheading',
+          title: 'Section Subheading',
+          type: 'string'
+        },
+        {
+          name: 'cards',
+          title: 'Bento Cards',
+          type: 'array',
+          of: [{ type: 'bentoCard' }],
+          validation: Rule => Rule.min(1).max(6)
+        }
+      ]
     }),
 
     // Logo Cloud Section

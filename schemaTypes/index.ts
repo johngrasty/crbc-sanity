@@ -11,6 +11,7 @@ import mainMenu from './menus/mainMenu';
 import footerMenu from './menus/footerMenu';
 import article from './article';
 import richText from './objects/richText';
+import bentoCard from './objects/bentoCard';
 import resource from './resource';
 import siteAlert from './alert';
 import homePage from './pages/home';
@@ -38,5 +39,6 @@ export const schemaTypes = [
 	callToAction,
 	logoCloud,
 	// Objects (Fields)
-	richText
+	richText,
+	bentoCard
 ];
