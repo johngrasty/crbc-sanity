@@ -23,6 +23,13 @@ export default defineType({
       rows: 3
     }),
     defineField({
+      name: 'showLocationInfo',
+      title: 'Show Location Info',
+      type: 'boolean',
+      description: 'Display contact information from settings (phone, address) in this card',
+      initialValue: false
+    }),
+    defineField({
       name: 'image',
       title: 'Background Image',
       type: 'image',
@@ -73,48 +80,11 @@ export default defineType({
       ]
     }),
     defineField({
-      name: 'serviceTimes',
-      title: 'Service Times',
-      type: 'array',
-      description: 'Add service times to make this a ServiceTimesCard',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            {
-              name: 'day',
-              title: 'Day',
-              type: 'string',
-              validation: Rule => Rule.required()
-            },
-            {
-              name: 'time',
-              title: 'Time',
-              type: 'string',
-              validation: Rule => Rule.required()
-            },
-            {
-              name: 'description',
-              title: 'Description',
-              type: 'string',
-              validation: Rule => Rule.required()
-            }
-          ],
-          preview: {
-            select: {
-              day: 'day',
-              time: 'time',
-              description: 'description'
-            },
-            prepare({ day, time, description }) {
-              return {
-                title: `${day} ${time}`,
-                subtitle: description
-              };
-            }
-          }
-        }
-      ]
+      name: 'showServiceTimes',
+      title: 'Show Service Times',
+      type: 'boolean',
+      description: 'Display service times from settings in this card (makes it a ServiceTimesCard)',
+      initialValue: false
     }),
     defineField({
       name: 'componentType',
@@ -167,13 +137,13 @@ export default defineType({
       title: 'title',
       eyebrow: 'eyebrow',
       media: 'image',
-      hasServiceTimes: 'serviceTimes',
+      showServiceTimes: 'showServiceTimes',
       componentType: 'componentType'
     },
-    prepare({ title, eyebrow, media, hasServiceTimes, componentType }) {
+    prepare({ title, eyebrow, media, showServiceTimes, componentType }) {
       let subtitle = eyebrow || '';
       
-      if (hasServiceTimes && hasServiceTimes.length > 0) {
+      if (showServiceTimes) {
         subtitle += ' • Service Times Card';
       }
       
