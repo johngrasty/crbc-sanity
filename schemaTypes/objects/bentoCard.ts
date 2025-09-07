@@ -53,6 +53,13 @@ export default defineType({
           type: 'string'
         },
         {
+          name: 'useDirectionsLink',
+          title: 'Use Directions Link',
+          type: 'boolean',
+          description: 'Generate directions link using address from settings',
+          initialValue: false
+        },
+        {
           name: 'variant',
           title: 'Button Style',
           type: 'string',
@@ -138,13 +145,18 @@ export default defineType({
       eyebrow: 'eyebrow',
       media: 'image',
       showServiceTimes: 'showServiceTimes',
+      showLocationInfo: 'showLocationInfo',
       componentType: 'componentType'
     },
-    prepare({ title, eyebrow, media, showServiceTimes, componentType }) {
+    prepare({ title, eyebrow, media, showServiceTimes, componentType, showLocationInfo }) {
       let subtitle = eyebrow || '';
       
       if (showServiceTimes) {
         subtitle += ' • Service Times Card';
+      }
+      
+      if (showLocationInfo) {
+        subtitle += ' • Location Card';
       }
       
       if (componentType && componentType !== '') {
