@@ -18,10 +18,6 @@ export default defineType({
     {
       name: 'partners',
       title: 'Ministries & Partners',
-    },
-    {
-      name: 'seo',
-      title: 'SEO & Metadata',
     }
   ],
   fields: [
@@ -68,35 +64,6 @@ export default defineType({
       title: 'Ministries & Partners Logo Cloud',
       type: 'logoCloud',
       group: 'partners'
-    }),
-
-    // SEO
-    defineField({
-      name: 'seo',
-      title: 'SEO Settings',
-      type: 'object',
-      group: 'seo',
-      fields: [
-        {
-          name: 'title',
-          title: 'Title',
-          type: 'string',
-          validation: Rule => Rule.required()
-        },
-        {
-          name: 'description',
-          title: 'Description',
-          type: 'text',
-          rows: 2,
-          validation: Rule => Rule.required()
-        },
-        {
-          name: 'image',
-          title: 'Social Image',
-          type: 'image',
-          description: 'Used when sharing on social media'
-        }
-      ]
     })
   ],
   preview: {
