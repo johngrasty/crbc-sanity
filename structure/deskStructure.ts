@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Home,
   Palette,
-  Info
+  Info,
+  Phone
 } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
@@ -49,6 +50,13 @@ export const deskStructure = (S: StructureBuilder) =>
         .id('aboutPage')
         .icon(Info)
         .child(S.document().schemaType('aboutPage').documentId('aboutPage')),
+
+      // Singleton for connect page
+      S.listItem()
+        .title('Connect Page')
+        .id('connectPage')
+        .icon(Phone)
+        .child(S.document().schemaType('connectPage').documentId('connectPage')),
 
       // Regular document types
       S.listItem()
