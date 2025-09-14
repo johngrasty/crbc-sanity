@@ -49,10 +49,18 @@ export default defineType({
 			}
 		}),
 		defineField({
+			name: 'shortBio',
+			title: 'Short Bio',
+			type: 'text',
+			description: 'Brief 2-3 line biography for team listings',
+			rows: 3
+		}),
+		defineField({
 			name: 'bio',
-			title: 'Biography',
+			title: 'Full Biography',
 			type: 'array',
-			of: [{ type: 'block' }]
+			of: [{ type: 'block' }],
+			description: 'Detailed biography for individual staff pages'
 		}),
 		defineField({
 			name: 'email',
