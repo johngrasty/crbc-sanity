@@ -83,6 +83,13 @@ export default defineType({
             ]
           },
           initialValue: '_self'
+        },
+        {
+          name: 'usePcoModal',
+          title: 'Open in Planning Center Modal',
+          type: 'boolean',
+          description: 'Open this link in a Planning Center modal instead of navigating away',
+          initialValue: false
         }
       ]
     }),
