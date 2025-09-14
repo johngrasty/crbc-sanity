@@ -12,15 +12,18 @@ import footerMenu from './menus/footerMenu';
 import article from './article';
 import richText from './objects/richText';
 import bentoCard from './objects/bentoCard';
+import statistic from './objects/statistic';
 import resource from './resource';
 import siteAlert from './alert';
 import homePage from './pages/home';
+import aboutPage from './pages/about';
 import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
 
 export const schemaTypes = [
 	// Documents
 	homePage,
+	aboutPage,
 	page,
 	staff,
 	staffOrder,
@@ -40,5 +43,6 @@ export const schemaTypes = [
 	logoCloud,
 	// Objects (Fields)
 	richText,
-	bentoCard
+	bentoCard,
+	statistic
 ];
