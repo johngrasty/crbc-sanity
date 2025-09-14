@@ -6,45 +6,77 @@ export default defineType({
 	type: 'document',
 	fields: [
 		defineField({
-			name: 'items',
-			title: 'Menu Items',
+			name: 'categories',
+			title: 'Navigation Categories',
 			type: 'array',
 			of: [
 				{
 					type: 'object',
-					title: 'Menu Item',
+					title: 'Navigation Category',
 					fields: [
 						{
-							name: 'text',
-							title: 'Text',
+							name: 'title',
+							title: 'Category Title',
 							type: 'string',
 							validation: (Rule) => Rule.required()
 						},
 						{
-							name: 'link',
-							title: 'Link',
-							type: 'string',
-							description: 'Use relative paths (e.g., "/about") for internal links or full URLs for external links',
-							validation: (Rule) => Rule.required()
-						},
-						{
-							name: 'isExternal',
-							title: 'Is External Link',
-							type: 'boolean',
-							description: 'Open link in new tab?',
-							initialValue: false
+							name: 'items',
+							title: 'Category Items',
+							type: 'array',
+							of: [
+								{
+									type: 'object',
+									title: 'Menu Item',
+									fields: [
+										{
+											name: 'text',
+											title: 'Text',
+											type: 'string',
+											validation: (Rule) => Rule.required()
+										},
+										{
+											name: 'link',
+											title: 'Link',
+											type: 'string',
+											description: 'Use relative paths (e.g., "/about") for internal links or full URLs for external links',
+											validation: (Rule) => Rule.required()
+										},
+										{
+											name: 'isExternal',
+											title: 'Is External Link',
+											type: 'boolean',
+											description: 'Open link in new tab?',
+											initialValue: false
+										}
+									],
+									preview: {
+										select: {
+											title: 'text',
+											subtitle: 'link',
+											isExternal: 'isExternal'
+										},
+										prepare({ title, subtitle, isExternal }) {
+											return {
+												title,
+												subtitle: `${subtitle}${isExternal ? ' (external)' : ''}`
+											};
+										}
+									}
+								}
+							]
 						}
 					],
 					preview: {
 						select: {
-							title: 'text',
-							subtitle: 'link',
-							isExternal: 'isExternal'
+							title: 'title',
+							items: 'items'
 						},
-						prepare({ title, subtitle, isExternal }) {
+						prepare({ title, items }) {
+							const itemCount = items ? items.length : 0;
 							return {
 								title,
-								subtitle: `${subtitle}${isExternal ? ' (external)' : ''}`
+								subtitle: `${itemCount} item${itemCount !== 1 ? 's' : ''}`
 							};
 						}
 					}

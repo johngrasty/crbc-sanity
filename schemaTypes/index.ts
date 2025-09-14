@@ -20,6 +20,7 @@ import aboutPage from './pages/about';
 import connectPage from './pages/connect';
 import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
+import footerSettings from './singletons/footer';
 
 export const schemaTypes = [
 	// Documents
@@ -33,6 +34,7 @@ export const schemaTypes = [
 	siteAlert,
 	settings,
 	designTokens,
+	footerSettings,
 	mainMenu,
 	footerMenu,
 	article,
