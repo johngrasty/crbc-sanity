@@ -17,6 +17,7 @@ import resource from './resource';
 import siteAlert from './alert';
 import homePage from './pages/home';
 import aboutPage from './pages/about';
+import beliefsPage from './pages/beliefs';
 import connectPage from './pages/connect';
 import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
@@ -26,6 +27,7 @@ export const schemaTypes = [
 	// Documents
 	homePage,
 	aboutPage,
+	beliefsPage,
 	connectPage,
 	page,
 	staff,

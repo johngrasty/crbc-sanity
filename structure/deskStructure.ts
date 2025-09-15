@@ -46,6 +46,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('connectPage')
                 .icon(Phone)
                 .child(S.document().schemaType('connectPage').documentId('connectPage')),
+              S.listItem()
+                .title('Beliefs Page')
+                .id('beliefsPage')
+                .icon(BookOpen)
+                .child(S.document().schemaType('beliefsPage').documentId('beliefsPage')),
               S.divider(),
               S.listItem()
                 .title('Other Pages')
