@@ -16,7 +16,8 @@ import {
   Home,
   Palette,
   Info,
-  Phone
+  Phone,
+  DollarSign
 } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
@@ -51,6 +52,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('beliefsPage')
                 .icon(BookOpen)
                 .child(S.document().schemaType('beliefsPage').documentId('beliefsPage')),
+              S.listItem()
+                .title('Giving Page')
+                .id('givingPage')
+                .icon(DollarSign)
+                .child(S.document().schemaType('givingPage').documentId('givingPage')),
               S.divider(),
               S.listItem()
                 .title('Other Pages')
