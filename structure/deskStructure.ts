@@ -17,7 +17,8 @@ import {
   Palette,
   Info,
   Phone,
-  DollarSign
+  DollarSign,
+  MapPin
 } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
@@ -57,6 +58,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('givingPage')
                 .icon(DollarSign)
                 .child(S.document().schemaType('givingPage').documentId('givingPage')),
+              S.listItem()
+                .title('Visit Page')
+                .id('visitPage')
+                .icon(MapPin)
+                .child(S.document().schemaType('visitPage').documentId('visitPage')),
               S.divider(),
               S.listItem()
                 .title('Other Pages')
