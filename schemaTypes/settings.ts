@@ -105,6 +105,13 @@ export default defineType({
 							title: 'Description',
 							type: 'string',
 							description: 'e.g., "Sunday School", "Morning Worship", etc.'
+						},
+						{
+							name: 'detailedDescription',
+							title: 'Detailed Description',
+							type: 'text',
+							rows: 3,
+							description: 'More detailed description for the visit page explaining what to expect in this service'
 						}
 					],
 					preview: {

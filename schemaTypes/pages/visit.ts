@@ -143,44 +143,12 @@ export default defineType({
               initialValue: 'Service Times'
             }),
             defineField({
-              name: 'services',
-              title: 'Service Times',
-              type: 'array',
-              of: [
-                {
-                  type: 'object',
-                  fields: [
-                    defineField({
-                      name: 'name',
-                      title: 'Service Name',
-                      type: 'string'
-                    }),
-                    defineField({
-                      name: 'time',
-                      title: 'Service Time',
-                      type: 'string'
-                    }),
-                    defineField({
-                      name: 'description',
-                      title: 'Service Description',
-                      type: 'text',
-                      rows: 2
-                    })
-                  ]
-                }
-              ],
-              initialValue: [
-                {
-                  name: 'Sunday Morning Worship',
-                  time: '10:00 AM',
-                  description: 'Our main worship service featuring music, prayer, and biblical teaching for all ages.'
-                },
-                {
-                  name: 'Sunday School',
-                  time: '9:00 AM',
-                  description: 'Bible study classes for all ages, from children to adults.'
-                }
-              ]
+              name: 'note',
+              title: 'Service Times Note',
+              type: 'string',
+              readOnly: true,
+              initialValue: '📍 Service times are automatically pulled from Church Settings → Service Times. Only Sunday services are displayed on the visit page.',
+              description: 'Service times are managed in the global Church Settings and automatically filtered to show Sunday services only.'
             })
           ]
         }),
@@ -260,24 +228,20 @@ export default defineType({
               initialValue: 'Find Us'
             }),
             defineField({
-              name: 'address',
-              title: 'Church Address',
-              type: 'text',
-              rows: 3,
-              initialValue: '123 Church Street\nYour City, State 12345'
+              name: 'addressNote',
+              title: 'Address & Maps Note',
+              type: 'string',
+              readOnly: true,
+              initialValue: '📍 Address and Google Maps link are automatically pulled from Church Settings → Contact Information.',
+              description: 'Address, phone number, and Google Maps directions are managed in the global Church Settings.'
             }),
             defineField({
               name: 'directions',
               title: 'Directions & Parking',
               type: 'text',
               rows: 4,
-              initialValue: 'We\'re located on the corner of Main Street and Church Street, with plenty of free parking available in our lot behind the building. Look for the CRBC sign at the main entrance.'
-            }),
-            defineField({
-              name: 'mapUrl',
-              title: 'Google Maps URL',
-              type: 'url',
-              description: 'Link to Google Maps for directions'
+              initialValue: 'We\'re easy to find with plenty of free parking available. Look for the CRBC sign at the main entrance. Our greeters will be happy to help you find your way around.',
+              description: 'Custom directions and parking information specific to first-time visitors'
             })
           ]
         })
