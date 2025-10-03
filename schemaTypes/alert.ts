@@ -37,11 +37,12 @@ export default defineType({
       group: 'settings',
       options: {
         list: [
-          { title: 'Info', value: 'info' },
-          { title: 'Warning', value: 'warning' },
-          { title: 'Error', value: 'error' }
+          { title: 'Info (Maroon)', value: 'info' },
+          { title: 'Warning (Yellow)', value: 'warning' },
+          { title: 'Alert (Bright Red)', value: 'alert' }
         ]
       },
+      initialValue: 'info',
       validation: (Rule) => Rule.required()
     }),
     defineField({
