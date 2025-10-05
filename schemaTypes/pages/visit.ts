@@ -281,6 +281,13 @@ export default defineType({
               title: 'Contact Link',
               type: 'string',
               initialValue: '/connect'
+            }),
+            defineField({
+              name: 'openInPlanningCenterModal',
+              title: 'Open in Planning Center Modal',
+              type: 'boolean',
+              description: 'If enabled, this link will open in a Planning Center modal instead of navigating to a new page',
+              initialValue: true
             })
           ]
         }),
