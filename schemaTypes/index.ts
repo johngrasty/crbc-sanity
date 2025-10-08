@@ -21,6 +21,7 @@ import beliefsPage from './pages/beliefs';
 import givingPage from './pages/giving';
 import visitPage from './pages/visit';
 import connectPage from './pages/connect';
+import watchPage from './pages/watch';
 import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
 import footerSettings from './singletons/footer';
@@ -33,6 +34,7 @@ export const schemaTypes = [
 	givingPage,
 	visitPage,
 	connectPage,
+	watchPage,
 	page,
 	staff,
 	staffOrder,

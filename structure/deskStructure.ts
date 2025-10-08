@@ -63,6 +63,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('visitPage')
                 .icon(MapPin)
                 .child(S.document().schemaType('visitPage').documentId('visitPage')),
+              S.listItem()
+                .title('Watch Page')
+                .id('watchPage')
+                .icon(FileText)
+                .child(S.document().schemaType('watchPage').documentId('watchPage')),
               S.divider(),
               S.listItem()
                 .title('Other Pages')
