@@ -256,6 +256,84 @@ export default defineType({
         })
       ]
     }),
+    defineField({
+      name: 'cta',
+      title: 'Call to Action Section',
+      type: 'object',
+      description: 'Bottom page CTA with gradient background',
+      fields: [
+        defineField({
+          name: 'title',
+          title: 'CTA Title',
+          type: 'string',
+          initialValue: 'Ready to take the next step?',
+          description: 'Main heading for the call-to-action section'
+        }),
+        defineField({
+          name: 'description',
+          title: 'CTA Description',
+          type: 'text',
+          rows: 3,
+          initialValue: "Join us in worship and discover more about what we believe. We'd love to answer your questions and help you grow in faith.",
+          description: 'Supporting text for the CTA'
+        }),
+        defineField({
+          name: 'primaryButton',
+          title: 'Primary Button',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'text',
+              title: 'Button Text',
+              type: 'string',
+              initialValue: 'Ask a Question'
+            }),
+            defineField({
+              name: 'href',
+              title: 'Button URL',
+              type: 'string',
+              initialValue: '/visit#contact'
+            })
+          ]
+        }),
+        defineField({
+          name: 'secondaryButton',
+          title: 'Secondary Button',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'text',
+              title: 'Button Text',
+              type: 'string',
+              initialValue: 'Watch Sermons'
+            }),
+            defineField({
+              name: 'href',
+              title: 'Button URL',
+              type: 'string',
+              initialValue: '/watch'
+            })
+          ]
+        }),
+        defineField({
+          name: 'image',
+          title: 'Optional Image',
+          type: 'image',
+          description: 'Optional decorative image for the CTA section',
+          options: {
+            hotspot: true
+          },
+          fields: [
+            defineField({
+              name: 'alt',
+              title: 'Alt Text',
+              type: 'string',
+              initialValue: 'Call to action'
+            })
+          ]
+        })
+      ]
+    }),
   ],
   preview: {
     select: {
