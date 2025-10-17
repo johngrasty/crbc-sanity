@@ -21,8 +21,10 @@ import {
   MapPin,
   Heart,
   UserPlus,
-  Database
+  Database,
+  HelpCircle
 } from 'lucide-react';
+import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
 
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
@@ -171,10 +173,61 @@ export const deskStructure = (S: StructureBuilder) =>
           S.list()
             .title('Announcements')
             .items([
+              // Help Guide
               S.listItem()
-                .title('Church Announcements')
+                .title('📖 Quick Guide')
+                .icon(HelpCircle)
+                .child(
+                  S.component(AnnouncementHelp)
+                    .title('Announcement Management Guide')
+                ),
+              S.divider(),
+              S.listItem()
+                .title('All Announcements')
                 .icon(Church)
-                .child(S.documentTypeList('announcement')),
+                .child(
+                  S.documentTypeList('announcement')
+                    .title('All Announcements')
+                    .defaultOrdering([{ field: 'priority', direction: 'desc' }])
+                ),
+              S.divider(),
+              S.listItem()
+                .title('Active Announcements')
+                .icon(Church)
+                .child(
+                  S.documentTypeList('announcement')
+                    .title('Active Announcements')
+                    .filter('_type == "announcement" && active == true && startDate <= now() && (endDate > now() || !defined(endDate))')
+                    .defaultOrdering([{ field: 'priority', direction: 'desc' }])
+                ),
+              S.listItem()
+                .title('Scheduled Announcements')
+                .icon(Church)
+                .child(
+                  S.documentTypeList('announcement')
+                    .title('Scheduled Announcements')
+                    .filter('_type == "announcement" && active == true && startDate > now()')
+                    .defaultOrdering([{ field: 'startDate', direction: 'asc' }])
+                ),
+              S.listItem()
+                .title('Expired Announcements')
+                .icon(Church)
+                .child(
+                  S.documentTypeList('announcement')
+                    .title('Expired Announcements')
+                    .filter('_type == "announcement" && defined(endDate) && endDate < now()')
+                    .defaultOrdering([{ field: 'endDate', direction: 'desc' }])
+                ),
+              S.listItem()
+                .title('Inactive Announcements')
+                .icon(Church)
+                .child(
+                  S.documentTypeList('announcement')
+                    .title('Inactive Announcements')
+                    .filter('_type == "announcement" && active == false')
+                    .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
+                ),
+              S.divider(),
               S.listItem()
                 .title('Site Alerts')
                 .icon(AlertCircle)

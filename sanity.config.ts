@@ -4,6 +4,7 @@ import {visionTool} from '@sanity/vision'
 import {media} from 'sanity-plugin-media'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
+import {PreviewAction} from './structure/documentActions'
 
 // Validate required environment variables
 const requiredEnvs = {
@@ -47,7 +48,61 @@ export default defineConfig({
       if (context.schemaType === 'settings') {
         return input.filter(({ action }) => action && !['delete', 'duplicate'].includes(action));
       }
+      
+      // Add preview action for previewable types
+      const previewableTypes = ['announcement', 'ministry', 'article', 'page'];
+      if (previewableTypes.includes(context.schemaType)) {
+        return [...input, PreviewAction];
+      }
+      
       return input;
+    },
+    
+    // Preview configuration for announcements
+    productionUrl: async (prev, context) => {
+      const {document} = context;
+      const previewUrl = process.env.SANITY_STUDIO_PREVIEW_URL || 'http://localhost:5173';
+      
+      // Handle announcement previews
+      if (document._type === 'announcement') {
+        const slug = (document.slug as any)?.current;
+        if (slug) {
+          return `${previewUrl}/api/preview?type=announcement&slug=${slug}`;
+        }
+      }
+      
+      // Handle ministry previews
+      if (document._type === 'ministry') {
+        const slug = (document.slug as any)?.current;
+        if (slug) {
+          return `${previewUrl}/ministries/${slug}`;
+        }
+      }
+      
+      // Handle page previews
+      if (document._type === 'page') {
+        const slug = (document.slug as any)?.current;
+        if (slug) {
+          return `${previewUrl}/${slug}`;
+        }
+      }
+      
+      // Default to homepage for singleton pages
+      if (['homePage', 'aboutPage', 'beliefsPage', 'givingPage', 'visitPage', 'connectPage', 'watchPage'].includes(document._type)) {
+        const pageMap: Record<string, string> = {
+          homePage: '',
+          aboutPage: 'about',
+          beliefsPage: 'beliefs',
+          givingPage: 'giving',
+          visitPage: 'visit',
+          connectPage: 'connect',
+          watchPage: 'watch'
+        };
+        const path = pageMap[document._type] || '';
+        return `${previewUrl}/${path}`;
+      }
+      
+      return prev;
     }
   }
 })
