@@ -89,9 +89,10 @@ export default defineType({
 			name: 'ctaLink',
 			title: 'Call to Action Link',
 			type: 'url',
-			description: 'URL for the call-to-action button',
+			description: 'URL for the call-to-action button (can be relative like /calendar or absolute like https://...)',
 			validation: (Rule) => Rule.uri({
-				scheme: ['http', 'https', 'mailto', 'tel']
+				scheme: ['http', 'https', 'mailto', 'tel'],
+				allowRelative: true
 			}),
 			hidden: ({ parent }) => !parent?.ctaText,
 			group: 'content'
