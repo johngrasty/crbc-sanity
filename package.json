@@ -15,13 +15,13 @@
     "sanity"
   ],
   "dependencies": {
-    "@sanity/vision": "^4.10.2",
+    "@sanity/vision": "^4.10.3",
     "dotenv": "^17.2.2",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-is": "^19.1.1",
-    "sanity": "^4.10.2",
+    "sanity": "^4.10.3",
     "sanity-plugin-media": "^4.0.0",
     "styled-components": "^6.1.19"
   },

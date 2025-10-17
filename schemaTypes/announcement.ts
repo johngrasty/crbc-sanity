@@ -20,18 +20,7 @@ export default defineType({
 			},
 			validation: (Rule) => Rule.required()
 		}),
-		defineField({
-			name: 'publishDate',
-			title: 'Publish Date',
-			type: 'datetime',
-			initialValue: () => new Date().toISOString()
-		}),
-		defineField({
-			name: 'expiryDate',
-			title: 'Expiry Date',
-			type: 'datetime',
-			description: 'Optional. When this announcement should stop being displayed'
-		}),
+
 		defineField({
 			name: 'featured',
 			title: 'Featured',
@@ -48,11 +37,12 @@ export default defineType({
 			}
 		}),
 		defineField({
-			name: 'excerpt',
-			title: 'Excerpt',
+			name: 'description',
+			title: 'Description',
 			type: 'text',
 			rows: 3,
-			description: 'Brief summary for previews and social sharing'
+			description: 'Brief description for carousel display and previews',
+			validation: (Rule) => Rule.required()
 		}),
 		defineField({
 			name: 'content',
@@ -69,52 +59,70 @@ export default defineType({
 			]
 		}),
 		defineField({
-			name: 'cta',
-			title: 'Call to Action',
-			type: 'object',
-			fields: [
-				{
-					name: 'text',
-					title: 'Text',
-					type: 'string'
-				},
-				{
-					name: 'link',
-					title: 'Link',
-					type: 'string'
-				},
-				{
-					name: 'style',
-					title: 'Style',
-					type: 'string',
-					options: {
-						list: [
-							{ title: 'Primary', value: 'primary' },
-							{ title: 'Secondary', value: 'secondary' },
-							{ title: 'Outline', value: 'outline' }
-						]
-					}
-				}
-			]
+			name: 'ctaText',
+			title: 'Call to Action Text',
+			type: 'string',
+			description: 'Text for the call-to-action button (optional)'
+		}),
+		defineField({
+			name: 'ctaLink',
+			title: 'Call to Action Link',
+			type: 'url',
+			description: 'URL for the call-to-action button (optional)'
+		}),
+		defineField({
+			name: 'priority',
+			title: 'Priority',
+			type: 'number',
+			description: 'Higher numbers appear first in the carousel',
+			initialValue: 1,
+			validation: (Rule) => Rule.min(1).max(10)
+		}),
+		defineField({
+			name: 'startDate',
+			title: 'Start Date',
+			type: 'datetime',
+			description: 'When this announcement should start being displayed',
+			initialValue: () => new Date().toISOString()
+		}),
+		defineField({
+			name: 'endDate',
+			title: 'End Date',
+			type: 'datetime',
+			description: 'When this announcement should stop being displayed'
+		}),
+		defineField({
+			name: 'active',
+			title: 'Active',
+			type: 'boolean',
+			description: 'Whether this announcement is currently active',
+			initialValue: true
 		})
 	],
 	orderings: [
 		{
-			title: 'Publish Date, New',
-			name: 'publishDateDesc',
-			by: [{ field: 'publishDate', direction: 'desc' }]
+			title: 'Priority, High to Low',
+			name: 'priorityDesc',
+			by: [{ field: 'priority', direction: 'desc' }]
+		},
+		{
+			title: 'Start Date, New',
+			name: 'startDateDesc',
+			by: [{ field: 'startDate', direction: 'desc' }]
 		}
 	],
 	preview: {
 		select: {
 			title: 'title',
-			date: 'publishDate',
+			description: 'description',
+			active: 'active',
+			priority: 'priority',
 			media: 'image'
 		},
-		prepare({ title, date, media }) {
+		prepare({ title, description, active, priority, media }) {
 			return {
 				title,
-				subtitle: date ? new Date(date).toLocaleDateString() : '',
+				subtitle: `${active ? '✅' : '❌'} Priority: ${priority || 1} - ${description || ''}`,
 				media
 			};
 		}

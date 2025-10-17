@@ -18,7 +18,10 @@ import {
   Info,
   Phone,
   DollarSign,
-  MapPin
+  MapPin,
+  Heart,
+  UserPlus,
+  Database
 } from 'lucide-react';
 
 export const deskStructure = (S: StructureBuilder) =>
@@ -78,6 +81,20 @@ export const deskStructure = (S: StructureBuilder) =>
 
       S.divider(),
 
+      // Ministries Section
+      S.listItem()
+        .title('Ministries')
+        .icon(Heart)
+        .child(S.documentTypeList('ministry')),
+
+      // Registration Section
+      S.listItem()
+        .title('Registration Opportunities')
+        .icon(UserPlus)
+        .child(S.documentTypeList('registration')),
+
+      S.divider(),
+
       // Site Settings Section
       S.listItem()
         .title('Site Settings')
@@ -96,6 +113,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('designTokens')
                 .icon(Palette)
                 .child(S.document().schemaType('designTokens').documentId('designTokens')),
+              S.listItem()
+                .title('Planning Center Settings')
+                .id('pcoSettings')
+                .icon(Database)
+                .child(S.document().schemaType('pcoSettings').documentId('pcoSettings')),
             ])
         ),
 

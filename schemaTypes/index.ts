@@ -25,6 +25,9 @@ import watchPage from './pages/watch';
 import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
 import footerSettings from './singletons/footer';
+import ministry from './ministry';
+import registration from './registration';
+import pcoSettings from './pcoSettings';
 
 export const schemaTypes = [
 	// Documents
@@ -47,6 +50,9 @@ export const schemaTypes = [
 	footerMenu,
 	article,
 	resource,
+	ministry,
+	registration,
+	pcoSettings,
 	// Objects (Sections)
 	hero,
 	textWithImage,
