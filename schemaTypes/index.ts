@@ -28,6 +28,7 @@ import footerSettings from './singletons/footer';
 import ministry from './ministry';
 import registration from './registration';
 import pcoSettings from './pcoSettings';
+import featuredEvent from './featuredEvent';
 
 export const schemaTypes = [
 	// Documents
@@ -53,6 +54,7 @@ export const schemaTypes = [
 	ministry,
 	registration,
 	pcoSettings,
+	featuredEvent,
 	// Objects (Sections)
 	hero,
 	textWithImage,
