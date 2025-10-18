@@ -1,11 +1,11 @@
 import { StructureBuilder } from 'sanity/structure';
-import { 
-  BellRing, 
-  Settings, 
-  FileText, 
-  Users, 
-  BookOpen, 
-  Folder, 
+import {
+  BellRing,
+  Settings,
+  FileText,
+  Users,
+  BookOpen,
+  Folder,
   Navigation,
   UserCircle,
   ListOrdered,
@@ -22,7 +22,8 @@ import {
   Heart,
   UserPlus,
   Database,
-  HelpCircle
+  HelpCircle,
+  CalendarDays
 } from 'lucide-react';
 import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
 
@@ -89,11 +90,30 @@ export const deskStructure = (S: StructureBuilder) =>
         .icon(Heart)
         .child(S.documentTypeList('ministry')),
 
-      // Registration Section
+      S.divider(),
+
+      // Events & Registration Section
       S.listItem()
-        .title('Registration Opportunities')
-        .icon(UserPlus)
-        .child(S.documentTypeList('registration')),
+        .title('Events & Registration')
+        .icon(CalendarDays)
+        .child(
+          S.list()
+            .title('Events & Registration')
+            .items([
+              S.listItem()
+                .title('Featured Events')
+                .icon(CalendarDays)
+                .child(
+                  S.documentTypeList('featuredEvent')
+                    .title('Featured Events')
+                    .defaultOrdering([{ field: 'date', direction: 'desc' }])
+                ),
+              S.listItem()
+                .title('Registration Opportunities')
+                .icon(UserPlus)
+                .child(S.documentTypeList('registration')),
+            ])
+        ),
 
       S.divider(),
 

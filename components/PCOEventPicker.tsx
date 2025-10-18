@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react'
 import {Card, Stack, Select, Text, Spinner, Box, Flex, Button} from '@sanity/ui'
 import {set, unset, ObjectInputProps} from 'sanity'
+import {useDocumentPane} from 'sanity/structure'
 
 interface PCOEventData {
   id: string
@@ -26,7 +27,7 @@ interface PCOEventsResponse {
  * staff to select an event, automatically populating related fields.
  */
 export function PCOEventPicker(props: ObjectInputProps) {
-  const {value, onChange} = props
+  const {value, onChange, elementProps} = props
   const [events, setEvents] = useState<PCOEventData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,16 +35,20 @@ export function PCOEventPicker(props: ObjectInputProps) {
     value?.eventId as string | undefined,
   )
 
-  // Fetch PCO events from the frontend API
+  // Fetch PCO events from the frontend API (client-side only)
   useEffect(() => {
+    // Only run in browser to avoid SSR fetch warning
+    if (typeof window === 'undefined') return
+
     async function fetchEvents() {
       try {
         setLoading(true)
         setError(null)
 
         // Get the preview URL from environment
+        // Use 'upcoming' filter to only show events with dates or registration
         const baseUrl = process.env.SANITY_STUDIO_PREVIEW_URL || 'http://localhost:5173'
-        const response = await fetch(`${baseUrl}/api/pco/events?limit=100`)
+        const response = await fetch(`${baseUrl}/api/pco/events?limit=100&filter=upcoming`)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch events: ${response.statusText}`)
@@ -160,16 +165,20 @@ export function PCOEventPicker(props: ObjectInputProps) {
       >
         <option value="">Select a Planning Center event...</option>
         {events.map((event) => {
-          const date = new Date(event.startDate).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })
+          let suffix = ''
+          if (event.startDate) {
+            const date = new Date(event.startDate)
+            suffix = ` - ${date.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}`
+          } else if (event.registrationUrl) {
+            suffix = ' - Has Registration'
+          }
           return (
             <option key={event.id} value={event.id}>
-              {event.title} - {date}
+              {event.title}{suffix}
             </option>
           )
         })}
@@ -201,27 +210,35 @@ export function PCOEventPicker(props: ObjectInputProps) {
             )}
 
             <Flex gap={3} wrap="wrap">
-              <Box>
-                <Text size={1} muted>
-                  Start:{' '}
-                </Text>
-                <Text size={1}>
-                  {new Date(selectedEvent.startDate).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </Box>
+              {selectedEvent.startDate ? (
+                <Box>
+                  <Text size={1} muted>
+                    Event starts:{' '}
+                  </Text>
+                  <Text size={1}>
+                    {new Date(selectedEvent.startDate).toLocaleString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </Box>
+              ) : (
+                <Box>
+                  <Text size={1} muted>
+                    No upcoming date scheduled
+                  </Text>
+                </Box>
+              )}
 
               {selectedEvent.registrationUrl && (
                 <Box>
                   <Text size={1} muted>
-                    Registration:{' '}
+                    ✅ Registration link available
                   </Text>
-                  <Text size={1}>Available</Text>
                 </Box>
               )}
             </Flex>
@@ -237,24 +254,129 @@ export function PCOEventPicker(props: ObjectInputProps) {
       )}
 
       {selectedEvent && (
-        <Button
-          fontSize={2}
-          padding={3}
-          text="Copy PCO Data to Fields"
-          tone="positive"
-          mode="default"
-          onClick={() => {
-            // We'll implement a document action for this
-            // For now, show instructions
-            alert(
-              `Copy these values to the corresponding fields:\n\n` +
-                `Title: ${selectedEvent.title}\n` +
-                `Description: ${selectedEvent.description || 'N/A'}\n` +
-                `Date: ${selectedEvent.startDate}\n` +
-                `Registration URL: ${selectedEvent.registrationUrl || selectedEvent.churchCenterUrl}`,
-            )
-          }}
-        />
+        <Card padding={3} radius={2} tone="positive" border>
+          <Stack space={3}>
+            <Text size={2} weight="bold">
+              📋 Copy these values to the fields above:
+            </Text>
+
+            <Box>
+              <Text size={1} weight="semibold">
+                Title:
+              </Text>
+              <Card padding={2} radius={1} tone="transparent" style={{fontFamily: 'monospace'}}>
+                <Text size={1}>{selectedEvent.title}</Text>
+              </Card>
+            </Box>
+
+            {selectedEvent.description && (
+              <Box>
+                <Text size={1} weight="semibold">
+                  Description:
+                </Text>
+                <Card padding={2} radius={1} tone="transparent" style={{fontFamily: 'monospace'}}>
+                  <Text size={1}>{selectedEvent.description}</Text>
+                </Card>
+              </Box>
+            )}
+
+            {selectedEvent.startDate && (
+              <Box>
+                <Text size={1} weight="semibold">
+                  Event Date (copy this format):
+                </Text>
+                <Card padding={2} radius={1} tone="transparent" style={{fontFamily: 'monospace'}}>
+                  <Text size={1}>
+                    {new Date(selectedEvent.startDate)
+                      .toLocaleString('sv-SE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                      .replace(',', '')}
+                  </Text>
+                </Card>
+              </Box>
+            )}
+
+            <Box>
+              <Text size={1} weight="semibold">
+                Registration URL:
+              </Text>
+              <Card padding={2} radius={1} tone="transparent" style={{fontFamily: 'monospace'}}>
+                <Text size={1}>{selectedEvent.registrationUrl || selectedEvent.churchCenterUrl}</Text>
+              </Card>
+            </Box>
+
+            <Stack space={2}>
+              <Text size={1} weight="semibold" style={{color: '#43A047'}}>
+                💡 How to use: Copy each value and paste into the matching field above
+              </Text>
+              <Flex gap={2}>
+                <Button
+                  fontSize={1}
+                  padding={2}
+                  text="Copy Title"
+                  tone="primary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedEvent.title).then(() => {
+                      alert('✅ Title copied! Paste into Title field')
+                    })
+                  }}
+                />
+                {selectedEvent.description && (
+                  <Button
+                    fontSize={1}
+                    padding={2}
+                    text="Copy Description"
+                    tone="primary"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedEvent.description).then(() => {
+                        alert('✅ Description copied! Paste into Description field')
+                      })
+                    }}
+                  />
+                )}
+                {selectedEvent.startDate && (
+                  <Button
+                    fontSize={1}
+                    padding={2}
+                    text="Copy Date"
+                    tone="primary"
+                    onClick={() => {
+                      const formatted = new Date(selectedEvent.startDate)
+                        .toLocaleString('sv-SE', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                        .replace(',', '')
+                      navigator.clipboard.writeText(formatted).then(() => {
+                        alert('✅ Date copied! Paste into Event Date field')
+                      })
+                    }}
+                  />
+                )}
+                <Button
+                  fontSize={1}
+                  padding={2}
+                  text="Copy URL"
+                  tone="primary"
+                  onClick={() => {
+                    const url = selectedEvent.registrationUrl || selectedEvent.churchCenterUrl
+                    navigator.clipboard.writeText(url).then(() => {
+                      alert('✅ URL copied! Paste into Registration URL field')
+                    })
+                  }}
+                />
+              </Flex>
+            </Stack>
+          </Stack>
+        </Card>
       )}
 
       <Text size={1} muted>

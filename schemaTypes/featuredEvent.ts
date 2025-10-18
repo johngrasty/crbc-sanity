@@ -83,8 +83,7 @@ export default defineType({
       name: 'date',
       title: 'Event Date & Time',
       type: 'datetime',
-      description: 'When the event starts',
-      validation: (Rule) => Rule.required(),
+      description: 'When the event starts (copy from PCO event if available)',
     },
     {
       name: 'endDate',
