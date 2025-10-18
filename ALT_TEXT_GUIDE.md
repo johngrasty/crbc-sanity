@@ -4,6 +4,18 @@
 
 We've enabled **Sanity AI Assist** to automatically generate alt text for images! This helps make our website more accessible for people using screen readers.
 
+## ⚠️ First-Time Setup (Admin Only)
+
+**Before anyone can use AI Assist, an admin must enable it once:**
+
+1. Open Sanity Studio
+2. Open any document
+3. Click the **sparkle (✨) icon** in the toolbar
+4. Click **"Enable Sanity AI Assist"** button
+5. This creates an API token automatically
+
+This only needs to be done once by someone with admin/developer permissions. After that, everyone can use AI Assist!
+
 ## For New Images
 
 When you upload a new image, AI Assist will **automatically generate alt text** for you. You can:
