@@ -26,6 +26,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
+import { SignUpHelp } from '../schemaTypes/components/SignUpHelp';
 
 export const deskStructure = (S: StructureBuilder) =>
   S.list()
@@ -92,26 +93,95 @@ export const deskStructure = (S: StructureBuilder) =>
 
       S.divider(),
 
-      // Events & Registration Section
+      // Sign-Ups Section
       S.listItem()
-        .title('Events & Registration')
-        .icon(CalendarDays)
+        .title('Sign-Ups')
+        .icon(UserPlus)
         .child(
           S.list()
-            .title('Events & Registration')
+            .title('Sign-Ups')
             .items([
               S.listItem()
-                .title('Featured Events')
+                .title('📖 About Sign-Ups')
+                .icon(HelpCircle)
+                .child(
+                  S.component(SignUpHelp)
+                    .title('Custom Sign-Ups Guide')
+                ),
+              S.divider(),
+              S.listItem()
+                .title('All Custom Sign-Ups')
+                .icon(UserPlus)
+                .child(
+                  S.documentTypeList('customSignUp')
+                    .title('All Custom Sign-Ups')
+                    .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'featured', direction: 'desc' }, { field: 'date', direction: 'asc' }])
+                ),
+              S.divider(),
+              S.listItem()
+                .title('By Category')
+                .icon(Folder)
+                .child(
+                  S.list()
+                    .title('Sign-Ups by Category')
+                    .items([
+                      S.listItem()
+                        .title('📅 Events')
+                        .icon(CalendarDays)
+                        .child(
+                          S.documentTypeList('customSignUp')
+                            .title('Event Sign-Ups')
+                            .filter('_type == "customSignUp" && category == "event"')
+                            .defaultOrdering([{ field: 'date', direction: 'asc' }])
+                        ),
+                      S.listItem()
+                        .title('⛪ Ministries')
+                        .icon(Church)
+                        .child(
+                          S.documentTypeList('customSignUp')
+                            .title('Ministry Sign-Ups')
+                            .filter('_type == "customSignUp" && category == "ministry"')
+                            .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'title', direction: 'asc' }])
+                        ),
+                      S.listItem()
+                        .title('🤝 Volunteer Opportunities')
+                        .icon(UserPlus)
+                        .child(
+                          S.documentTypeList('customSignUp')
+                            .title('Volunteer Sign-Ups')
+                            .filter('_type == "customSignUp" && category == "volunteer"')
+                            .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'title', direction: 'asc' }])
+                        ),
+                    ])
+                ),
+              S.divider(),
+              S.listItem()
+                .title('⭐ Featured Sign-Ups')
                 .icon(CalendarDays)
                 .child(
-                  S.documentTypeList('featuredEvent')
-                    .title('Featured Events')
-                    .defaultOrdering([{ field: 'date', direction: 'desc' }])
+                  S.documentTypeList('customSignUp')
+                    .title('Featured Sign-Ups')
+                    .filter('_type == "customSignUp" && featured == true && active == true')
+                    .defaultOrdering([{ field: 'date', direction: 'asc' }])
                 ),
               S.listItem()
-                .title('Registration Opportunities')
+                .title('✅ Active Sign-Ups')
                 .icon(UserPlus)
-                .child(S.documentTypeList('registration')),
+                .child(
+                  S.documentTypeList('customSignUp')
+                    .title('Active Sign-Ups')
+                    .filter('_type == "customSignUp" && active == true')
+                    .defaultOrdering([{ field: 'date', direction: 'asc' }])
+                ),
+              S.listItem()
+                .title('💤 Inactive Sign-Ups')
+                .icon(UserPlus)
+                .child(
+                  S.documentTypeList('customSignUp')
+                    .title('Inactive Sign-Ups')
+                    .filter('_type == "customSignUp" && active == false')
+                    .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
+                ),
             ])
         ),
 
