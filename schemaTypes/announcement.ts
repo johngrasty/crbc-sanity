@@ -56,8 +56,20 @@ export default defineType({
 			type: 'image',
 			description: 'Image displayed in the carousel (recommended: 1200x600px)',
 			options: {
-				hotspot: true
+				hotspot: true,
+				aiAssist: {
+					imageDescriptionField: 'alt'
+				}
 			},
+			fields: [
+				{
+					name: 'alt',
+					type: 'string',
+					title: 'Alternative Text',
+					description: 'Describe the image for screen readers and SEO',
+					validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
+				}
+			],
 			group: 'content'
 		}),
 		defineField({

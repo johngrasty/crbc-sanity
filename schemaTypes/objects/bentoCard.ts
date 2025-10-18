@@ -34,8 +34,20 @@ export default defineType({
       title: 'Background Image',
       type: 'image',
       options: {
-        hotspot: true
-      }
+        hotspot: true,
+        aiAssist: {
+          imageDescriptionField: 'alt'
+        }
+      },
+      fields: [
+        {
+          name: 'alt',
+          type: 'string',
+          title: 'Alternative Text',
+          description: 'Describe the image for screen readers and SEO',
+          validation: (Rule: any) => Rule.required().error('Alt text is required for accessibility')
+        }
+      ]
     }),
     defineField({
       name: 'button',

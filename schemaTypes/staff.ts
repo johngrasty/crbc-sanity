@@ -45,8 +45,20 @@ export default defineType({
 			title: 'Profile Image',
 			type: 'image',
 			options: {
-				hotspot: true
-			}
+				hotspot: true,
+				aiAssist: {
+					imageDescriptionField: 'alt'
+				}
+			},
+			fields: [
+				{
+					name: 'alt',
+					type: 'string',
+					title: 'Alternative Text',
+					description: 'Describe the image for screen readers and SEO (e.g., "Portrait of John Smith")',
+					validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
+				}
+			]
 		}),
 		defineField({
 			name: 'shortBio',

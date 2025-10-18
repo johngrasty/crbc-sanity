@@ -119,14 +119,18 @@ export default defineType({
           title: 'Hero Image',
           type: 'image',
           options: {
-            hotspot: true
+            hotspot: true,
+            aiAssist: {
+              imageDescriptionField: 'alt'
+            }
           },
           fields: [
             defineField({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              initialValue: 'Open Bible with cross in background'
+              initialValue: 'Open Bible with cross in background',
+              validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
             })
           ]
         })
@@ -321,14 +325,18 @@ export default defineType({
           type: 'image',
           description: 'Optional decorative image for the CTA section',
           options: {
-            hotspot: true
+            hotspot: true,
+            aiAssist: {
+              imageDescriptionField: 'alt'
+            }
           },
           fields: [
             defineField({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              initialValue: 'Call to action'
+              initialValue: 'Call to action',
+              validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
             })
           ]
         })
