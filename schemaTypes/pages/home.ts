@@ -12,6 +12,10 @@ export default defineType({
       title: 'Hero Section',
     },
     {
+      name: 'announcements',
+      title: 'Announcements',
+    },
+    {
       name: 'bento',
       title: 'Bento Section',
     },
@@ -28,6 +32,16 @@ export default defineType({
       type: 'hero',
       group: 'hero',
       validation: Rule => Rule.required()
+    }),
+
+    // Announcements Settings
+    defineField({
+      name: 'showAnnouncementText',
+      title: 'Show Text Overlay on Announcements',
+      type: 'boolean',
+      description: 'Display title and description overlay on announcement carousel slides. Usually disabled when reusing slides from church services.',
+      initialValue: false,
+      group: 'announcements'
     }),
 
     // Bento Section
