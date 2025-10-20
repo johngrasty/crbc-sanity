@@ -20,6 +20,7 @@ import aboutPage from './pages/about';
 import beliefsPage from './pages/beliefs';
 import givingPage from './pages/giving';
 import visitPage from './pages/visit';
+import servicesPage from './pages/services';
 import connectPage from './pages/connect';
 import watchPage from './pages/watch';
 import designTokens from './designTokens';
@@ -37,6 +38,7 @@ export const schemaTypes = [
 	beliefsPage,
 	givingPage,
 	visitPage,
+	servicesPage,
 	connectPage,
 	watchPage,
 	page,

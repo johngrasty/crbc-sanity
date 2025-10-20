@@ -55,8 +55,8 @@ export default defineType({
 					name: 'alt',
 					type: 'string',
 					title: 'Alternative Text',
-					description: 'Describe the image for screen readers and SEO (e.g., "Portrait of John Smith")',
-					validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
+					description: 'Describe the person (10-125 characters). Example: "Professional portrait of John Smith". Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+					validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
 				}
 			]
 		}),

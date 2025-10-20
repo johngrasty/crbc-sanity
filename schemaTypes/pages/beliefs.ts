@@ -129,8 +129,8 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              initialValue: 'Open Bible with cross in background',
-              validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
+              description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+              validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
           ]
         })
@@ -335,8 +335,8 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              initialValue: 'Call to action',
-              validation: (Rule) => Rule.required().error('Alt text is required for accessibility')
+              description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+              validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
           ]
         })
