@@ -42,7 +42,28 @@ export default defineType({
 					name: 'badge',
 					title: 'Badge Text',
 					type: 'string',
+					description: 'Small text above the main title',
 					initialValue: 'Join us every week for worship and fellowship.'
+				}),
+				defineField({
+					name: 'badgeLink',
+					title: 'Badge Link',
+					type: 'object',
+					description: 'Optional link that appears after the badge text',
+					fields: [
+						defineField({
+							name: 'text',
+							title: 'Link Text',
+							type: 'string',
+							description: 'Text for the link (e.g., "Watch Online")'
+						}),
+						defineField({
+							name: 'url',
+							title: 'Link URL',
+							type: 'string',
+							description: 'URL for the link (e.g., "/watch")'
+						})
+					]
 				}),
 				defineField({
 					name: 'title',

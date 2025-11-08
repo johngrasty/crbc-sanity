@@ -71,6 +71,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .icon(MapPin)
                 .child(S.document().schemaType('visitPage').documentId('visitPage')),
               S.listItem()
+                .title('Services Page')
+                .id('servicesPage')
+                .icon(Church)
+                .child(S.document().schemaType('servicesPage').documentId('servicesPage')),
+              S.listItem()
                 .title('Watch Page')
                 .id('watchPage')
                 .icon(FileText)
