@@ -80,6 +80,16 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('watchPage')
                 .icon(FileText)
                 .child(S.document().schemaType('watchPage').documentId('watchPage')),
+              S.listItem()
+                .title('Calendar Page')
+                .id('calendarPage')
+                .icon(CalendarDays)
+                .child(S.document().schemaType('calendarPage').documentId('calendarPage')),
+              S.listItem()
+                .title('Life Groups Page')
+                .id('lifeGroupsPage')
+                .icon(Users)
+                .child(S.document().schemaType('lifeGroupsPage').documentId('lifeGroupsPage')),
               S.divider(),
               S.listItem()
                 .title('Other Pages')

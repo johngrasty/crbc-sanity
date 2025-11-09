@@ -23,6 +23,8 @@ import visitPage from './pages/visit';
 import servicesPage from './pages/services';
 import connectPage from './pages/connect';
 import watchPage from './pages/watch';
+import calendarPage from './pages/calendar';
+import lifeGroupsPage from './pages/lifeGroups';
 import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
 import footerSettings from './singletons/footer';
@@ -41,6 +43,8 @@ export const schemaTypes = [
 	servicesPage,
 	connectPage,
 	watchPage,
+	calendarPage,
+	lifeGroupsPage,
 	page,
 	staff,
 	staffOrder,

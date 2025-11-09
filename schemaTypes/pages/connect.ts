@@ -211,6 +211,142 @@ export default defineType({
           description: 'Note about privacy and data usage'
         })
       ]
+    }),
+    defineField({
+      name: 'newsletterCta',
+      title: 'Newsletter CTA',
+      type: 'object',
+      description: 'Call-to-action for newsletter signup (simple CTA style)',
+      fields: [
+        defineField({
+          name: 'heading',
+          title: 'Heading',
+          type: 'string',
+          initialValue: 'Want to sign up for our email newsletter?'
+        }),
+        defineField({
+          name: 'subheading',
+          title: 'Subheading',
+          type: 'string',
+          initialValue: 'Or see the newsletter archive?'
+        }),
+        defineField({
+          name: 'primaryButton',
+          title: 'Primary Button',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'text',
+              title: 'Button Text',
+              type: 'string',
+              initialValue: 'Sign up'
+            }),
+            defineField({
+              name: 'href',
+              title: 'Button URL',
+              type: 'string',
+              initialValue: 'http://eepurl.com/i1IYM-/'
+            })
+          ]
+        }),
+        defineField({
+          name: 'secondaryButton',
+          title: 'Secondary Link',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'text',
+              title: 'Link Text',
+              type: 'string',
+              initialValue: 'Archive'
+            }),
+            defineField({
+              name: 'href',
+              title: 'Link URL',
+              type: 'string',
+              initialValue: '/newsletter'
+            })
+          ]
+        }),
+        defineField({
+          name: 'backgroundColor',
+          title: 'Background Color',
+          type: 'string',
+          options: {
+            list: [
+              { title: 'Light Blue', value: 'bg-blue-50' },
+              { title: 'Light Green', value: 'bg-green-50' },
+              { title: 'Light Purple', value: 'bg-purple-50' },
+              { title: 'Light Gray', value: 'bg-gray-50' },
+              { title: 'Brand Light', value: 'bg-brand-50' }
+            ]
+          },
+          initialValue: 'bg-blue-50'
+        })
+      ]
+    }),
+    defineField({
+      name: 'smsCta',
+      title: 'SMS CTA',
+      type: 'object',
+      description: 'Call-to-action for SMS signup (two-column photo style)',
+      fields: [
+        defineField({
+          name: 'heading',
+          title: 'Heading',
+          type: 'string',
+          initialValue: 'Prefer to get text message alerts instead?'
+        }),
+        defineField({
+          name: 'description',
+          title: 'Description',
+          type: 'text',
+          rows: 3,
+          initialValue: "Or maybe you want both? It's as simple as texting the word text to (828) 944-4047."
+        }),
+        defineField({
+          name: 'features',
+          title: 'Features',
+          type: 'array',
+          of: [{ type: 'string' }],
+          initialValue: [
+            'Get weekly announcements',
+            'Receive direct links to sign up for events',
+            'Hear about weather schedule changes',
+            'Be the first to hear about special events',
+            'Volunteer & service opportunities',
+            'Encouragement & inspiration midweek'
+          ]
+        }),
+        defineField({
+          name: 'linkText',
+          title: 'Link Text',
+          type: 'string',
+          initialValue: 'Click here to sign up.'
+        }),
+        defineField({
+          name: 'linkHref',
+          title: 'Link URL',
+          type: 'string',
+          initialValue: 'sms://+18289444047;?&body=text'
+        }),
+        defineField({
+          name: 'image',
+          title: 'Image',
+          type: 'image',
+          options: {
+            hotspot: true
+          },
+          fields: [
+            defineField({
+              name: 'alt',
+              title: 'Alt Text',
+              type: 'string',
+              validation: (Rule) => Rule.required()
+            })
+          ]
+        })
+      ]
     })
   ],
   preview: {

@@ -49,125 +49,18 @@ export default defineType({
 				'Stay connected with all the events and activities happening at Calvary Road Baptist Church.'
 		}),
 		defineField({
-			name: 'cta',
-			title: 'Registration CTA',
-			type: 'object',
-			description: 'Call-to-action section that appears below featured events',
-			fields: [
-				defineField({
-					name: 'heading',
-					title: 'CTA Heading',
-					type: 'string',
-					initialValue: 'Want to register for an event?'
-				}),
-				defineField({
-					name: 'subheading',
-					title: 'CTA Subheading',
-					type: 'string',
-					initialValue: 'Click any event above to sign up.'
-				}),
-				defineField({
-					name: 'primaryButton',
-					title: 'Primary Button',
-					type: 'object',
-					fields: [
-						defineField({
-							name: 'text',
-							title: 'Button Text',
-							type: 'string',
-							initialValue: 'View All Sign-Ups'
-						}),
-						defineField({
-							name: 'href',
-							title: 'Button URL',
-							type: 'string',
-							initialValue: '/sign-ups'
-						})
-					]
-				}),
-				defineField({
-					name: 'secondaryButton',
-					title: 'Secondary Link',
-					type: 'object',
-					fields: [
-						defineField({
-							name: 'text',
-							title: 'Link Text',
-							type: 'string',
-							initialValue: 'Contact Us'
-						}),
-						defineField({
-							name: 'href',
-							title: 'Link URL',
-							type: 'string',
-							initialValue: '/connect'
-						})
-					]
-				})
-			]
+			name: 'showNewsletterCta',
+			title: 'Show Newsletter CTA',
+			type: 'boolean',
+			description: 'Display the newsletter signup CTA from the Connect page',
+			initialValue: false
 		}),
 		defineField({
-			name: 'photoCta',
-			title: 'Two-Column Photo CTA',
-			type: 'object',
-			description: 'Call-to-action section with photo and feature list',
-			fields: [
-				defineField({
-					name: 'heading',
-					title: 'Heading',
-					type: 'string',
-					initialValue: 'Get Involved in Ministry'
-				}),
-				defineField({
-					name: 'description',
-					title: 'Description',
-					type: 'text',
-					rows: 3,
-					initialValue: 'Discover opportunities to serve and grow in your faith through our various ministries and programs.'
-				}),
-				defineField({
-					name: 'features',
-					title: 'Features',
-					type: 'array',
-					of: [{ type: 'string' }],
-					initialValue: [
-						'Weekly Bible studies',
-						'Community outreach programs',
-						'Youth and children\'s ministries',
-						'Worship team opportunities',
-						'Prayer groups',
-						'Service projects'
-					]
-				}),
-				defineField({
-					name: 'linkText',
-					title: 'Link Text',
-					type: 'string',
-					initialValue: 'Explore ministries'
-				}),
-				defineField({
-					name: 'linkHref',
-					title: 'Link URL',
-					type: 'string',
-					initialValue: '/ministries'
-				}),
-				defineField({
-					name: 'image',
-					title: 'Image',
-					type: 'image',
-					options: {
-						hotspot: true
-					},
-					fields: [
-						defineField({
-							name: 'alt',
-							title: 'Alt Text',
-							type: 'string',
-							validation: (Rule) => Rule.required()
-						})
-					]
-				})
-			]
+			name: 'showSmsCta',
+			title: 'Show SMS CTA',
+			type: 'boolean',
+			description: 'Display the SMS signup CTA from the Connect page',
+			initialValue: false
 		})
 	],
 	preview: {
