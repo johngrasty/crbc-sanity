@@ -97,19 +97,24 @@ export default defineType({
             {
               type: 'image',
               options: {
-                hotspot: true
+                hotspot: true,
+                aiAssist: {
+                  imageDescriptionField: 'alt'
+                }
               },
               fields: [
                 defineField({
                   name: 'alt',
                   title: 'Alt Text',
-                  type: 'string'
+                  type: 'string',
+                  description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+                  validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
                 })
               ]
             }
           ],
-          validation: (Rule) => Rule.max(6),
-          description: 'Upload 3-6 images that will be displayed in the hero section grid'
+          validation: (Rule) => Rule.length(5).error('Please upload exactly 5 images for the hero section grid'),
+          description: 'Upload exactly 5 images that will be displayed in the hero section grid. The layout is optimized for 5 images.'
         })
       ]
     }),
