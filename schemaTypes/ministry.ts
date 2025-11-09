@@ -119,6 +119,12 @@ export default defineType({
 			description: 'Photo gallery for this ministry'
 		}),
 		defineField({
+			name: 'pcoTag',
+			title: 'Planning Center Tag',
+			type: 'string',
+			description: 'Tag name from the "Ministry" tag group in Planning Center Calendar (e.g., "Men\'s Ministry", "Youth", "Women\'s Ministry"). Events with this tag will appear on the ministry page.'
+		}),
+		defineField({
 			name: 'featured',
 			title: 'Featured',
 			type: 'boolean',

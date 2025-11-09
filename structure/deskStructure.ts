@@ -90,6 +90,11 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('lifeGroupsPage')
                 .icon(Users)
                 .child(S.document().schemaType('lifeGroupsPage').documentId('lifeGroupsPage')),
+              S.listItem()
+                .title('Community Groups Page')
+                .id('communityGroupsPage')
+                .icon(Users)
+                .child(S.document().schemaType('communityGroupsPage').documentId('communityGroupsPage')),
               S.divider(),
               S.listItem()
                 .title('Other Pages')

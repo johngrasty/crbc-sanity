@@ -1,8 +1,8 @@
 import { defineType, defineField } from 'sanity';
 
 export default defineType({
-  name: 'lifeGroupsPage',
-  title: 'Life Groups Page',
+  name: 'communityGroupsPage',
+  title: 'Community Groups Page',
   type: 'document',
   fields: [
     defineField({
@@ -10,14 +10,14 @@ export default defineType({
       title: 'Page Title',
       type: 'string',
       validation: (Rule) => Rule.required(),
-      initialValue: 'Life Groups',
+      initialValue: 'Community Groups',
     }),
     defineField({
       name: 'heading',
       title: 'Hero Heading',
       type: 'string',
       validation: (Rule) => Rule.required(),
-      initialValue: 'Life Groups',
+      initialValue: 'Community Groups',
     }),
     defineField({
       name: 'lead',
@@ -26,7 +26,7 @@ export default defineType({
       rows: 3,
       validation: (Rule) => Rule.required(),
       initialValue:
-        'Connect with others and grow in your faith through our Sunday School classes. Find a group that fits your stage of life and interests.',
+        'Connect with others and grow in your faith through our Community Groups. Find a group that fits your stage of life and interests.',
     }),
     defineField({
       name: 'seo',
@@ -52,7 +52,7 @@ export default defineType({
   preview: {
     prepare() {
       return {
-        title: 'Life Groups Page',
+        title: 'Community Groups Page',
       };
     },
   },
