@@ -24,6 +24,9 @@ Object.entries(requiredEnvs).forEach(([key, value]) => {
 const projectId = requiredEnvs.projectId as string;
 const dataset = requiredEnvs.dataset as string;
 
+// Document types that must only ever have a single instance
+const SINGLETON_TYPES = new Set(['settings', 'designTokens', 'homePage', 'aboutPage']);
+
 export default defineConfig({
   name: 'default',
   title: 'CRBC',
@@ -45,20 +48,27 @@ export default defineConfig({
   },
 
   document: {
-    // For church settings - only allow one instance
+    // Singleton documents: one instance only, managed through the desk
+    // structure. Replaces the removed __experimental_actions schema API.
     actions: (input, context) => {
-      if (context.schemaType === 'settings') {
-        return input.filter(({ action }) => action && !['delete', 'duplicate'].includes(action));
+      if (SINGLETON_TYPES.has(context.schemaType)) {
+        return input.filter(
+          ({ action }) => action && !['delete', 'duplicate', 'unpublish'].includes(action)
+        );
       }
-      
+
       // Add preview action for previewable types
       const previewableTypes = ['announcement', 'ministry', 'article', 'page'];
       if (previewableTypes.includes(context.schemaType)) {
         return [...input, PreviewAction];
       }
-      
+
       return input;
     },
+
+    // Keep singletons out of the global "create new document" menu
+    newDocumentOptions: (prev) =>
+      prev.filter((template) => !SINGLETON_TYPES.has(template.templateId)),
     
     // Preview configuration for announcements
     productionUrl: async (prev, context) => {

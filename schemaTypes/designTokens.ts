@@ -4,8 +4,8 @@ export default defineType({
 	name: 'designTokens',
 	title: 'Design Tokens',
 	type: 'document',
-	// Prevent creating multiple instances
-	__experimental_actions: ['update', 'publish'],
+	// Singleton: creation/deletion is blocked via document.actions and
+	// newDocumentOptions in sanity.config.ts
 	groups: [
 		{
 			name: 'colors',

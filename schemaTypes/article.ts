@@ -125,14 +125,14 @@ export default defineType({
 			media: 'mainImage',
 			category: 'category'
 		},
-		prepare({ title, author, media, category }: { title: string; author: string; media: any; category: 'news' | 'devotional' | 'ministry' | 'missions' | 'general' }) {
-			const categoryLabels = {
+		prepare({ title, author, media, category }) {
+			const categoryLabels: Record<string, string> = {
 				news: 'Church News',
 				devotional: 'Devotional',
 				ministry: 'Ministry Spotlight',
 				missions: 'Missions Update',
 				general: 'General'
-			} as const;
+			};
 			return {
 				title,
 				subtitle: `${categoryLabels[category] || category}${author ? ` by ${author}` : ''}`,

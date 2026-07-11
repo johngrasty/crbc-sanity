@@ -4,8 +4,8 @@ export default defineType({
   name: 'aboutPage',
   title: 'About Page',
   type: 'document',
-  // @ts-expect-error - Sanity's experimental actions are not yet typed
-  __experimental_actions: ['update', 'publish'],
+  // Singleton: creation/deletion is blocked via document.actions and
+  // newDocumentOptions in sanity.config.ts
   groups: [
     {
       name: 'hero',
