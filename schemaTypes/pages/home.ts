@@ -4,8 +4,6 @@ export default defineType({
   name: 'homePage',
   title: 'Home Page',
   type: 'document',
-  // @ts-expect-error - Sanity's experimental actions are not yet typed
-  __experimental_actions: ['update', 'publish'],
   groups: [
     {
       name: 'hero',
@@ -87,4 +85,4 @@ export default defineType({
       };
     }
   }
-}); 
+});

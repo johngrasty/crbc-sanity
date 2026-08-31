@@ -6,6 +6,7 @@ import {assist} from '@sanity/assist'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
 import {PreviewAction} from './structure/documentActions'
+import {SINGLETON_TYPES} from './structure/singletons'
 
 // Validate required environment variables
 const requiredEnvs = {
@@ -45,19 +46,30 @@ export default defineConfig({
   },
 
   document: {
-    // For church settings - only allow one instance
     actions: (input, context) => {
-      if (context.schemaType === 'settings') {
-        return input.filter(({ action }) => action && !['delete', 'duplicate'].includes(action));
+      let actions = input;
+
+      if (SINGLETON_TYPES.has(context.schemaType)) {
+        actions = actions.filter(
+          ({action}) => !action || !['delete', 'duplicate', 'unpublish'].includes(action)
+        );
       }
       
       // Add preview action for previewable types
       const previewableTypes = ['announcement', 'ministry', 'article', 'page'];
       if (previewableTypes.includes(context.schemaType)) {
-        return [...input, PreviewAction];
+        return [...actions, PreviewAction];
       }
       
-      return input;
+      return actions;
+    },
+
+    // Singleton documents are opened through fixed-id Structure panes. Keep
+    // them out of Sanity's global Create menu so duplicate ids cannot be made.
+    newDocumentOptions: (input, context) => {
+      if (context.creationContext.type !== 'global') return input;
+
+      return input.filter(({templateId}) => !SINGLETON_TYPES.has(templateId));
     },
     
     // Preview configuration for announcements

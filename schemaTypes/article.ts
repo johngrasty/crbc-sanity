@@ -94,28 +94,7 @@ export default defineType({
 		defineField({
 			name: 'seo',
 			title: 'SEO Settings',
-			type: 'object',
-			fields: [
-				{
-					name: 'metaTitle',
-					title: 'Meta Title',
-					type: 'string',
-					description: 'Override the default meta title'
-				},
-				{
-					name: 'metaDescription',
-					title: 'Meta Description',
-					type: 'text',
-					rows: 3,
-					description: 'Override the default meta description'
-				},
-				{
-					name: 'shareImage',
-					title: 'Share Image',
-					type: 'image',
-					description: 'Image used for social media sharing'
-				}
-			]
+			type: 'seo'
 		})
 	],
 	preview: {
@@ -152,4 +131,4 @@ export default defineType({
 			by: [{ field: 'publishedAt', direction: 'asc' }]
 		}
 	]
-}); 
+});

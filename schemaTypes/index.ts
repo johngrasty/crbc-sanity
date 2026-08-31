@@ -1,8 +1,5 @@
 import page from './page';
 import hero from './sections/hero';
-import textWithImage from './sections/textWithImage';
-import gallery from './sections/gallery';
-import callToAction from './sections/callToAction';
 import staff from './staff';
 import staffOrder from './staffOrder';
 import announcement from './announcement';
@@ -11,6 +8,7 @@ import mainMenu from './menus/mainMenu';
 import footerMenu from './menus/footerMenu';
 import article from './article';
 import richText from './objects/richText';
+import seo from './objects/seo';
 import bentoCard from './objects/bentoCard';
 import statistic from './objects/statistic';
 import resource from './resource';
@@ -30,8 +28,6 @@ import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
 import footerSettings from './singletons/footer';
 import ministry from './ministry';
-import registration from './registration';
-import pcoSettings from './pcoSettings';
 import customSignUp from './customSignUp';
 
 export const schemaTypes = [
@@ -60,17 +56,13 @@ export const schemaTypes = [
 	article,
 	resource,
 	ministry,
-	registration,
-	pcoSettings,
 	customSignUp,
 	// Objects (Sections)
 	hero,
-	textWithImage,
-	gallery,
-	callToAction,
 	logoCloud,
 	// Objects (Fields)
 	richText,
+	seo,
 	bentoCard,
 	statistic
 ];

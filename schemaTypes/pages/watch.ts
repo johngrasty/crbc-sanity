@@ -92,9 +92,9 @@ export default defineType({
 				},
 				{
 					name: 'showWhenOffline',
-					title: 'Show Section When Offline',
+					title: 'Show Live Stream Section',
 					type: 'boolean',
-					description: 'Show this section even when not streaming live',
+					description: 'Turn this off when the live stream section should be hidden from the site',
 					initialValue: true
 				}
 			]

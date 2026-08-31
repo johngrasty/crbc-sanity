@@ -4,8 +4,6 @@ export default defineType({
 	name: 'designTokens',
 	title: 'Design Tokens',
 	type: 'document',
-	// Prevent creating multiple instances
-	__experimental_actions: ['update', 'publish'],
 	groups: [
 		{
 			name: 'colors',

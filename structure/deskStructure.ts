@@ -21,7 +21,6 @@ import {
   MapPin,
   Heart,
   UserPlus,
-  Database,
   HelpCircle,
   CalendarDays
 } from 'lucide-react';
@@ -225,11 +224,6 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('designTokens')
                 .icon(Palette)
                 .child(S.document().schemaType('designTokens').documentId('designTokens')),
-              S.listItem()
-                .title('Planning Center Settings')
-                .id('pcoSettings')
-                .icon(Database)
-                .child(S.document().schemaType('pcoSettings').documentId('pcoSettings')),
             ])
         ),
 
@@ -339,9 +333,10 @@ export const deskStructure = (S: StructureBuilder) =>
                 ),
               S.divider(),
               S.listItem()
-                .title('Site Alerts')
+                .title('Site Alert')
+                .id('siteAlert')
                 .icon(AlertCircle)
-                .child(S.documentTypeList('siteAlert')),
+                .child(S.document().schemaType('siteAlert').documentId('siteAlert')),
             ])
         ),
 
