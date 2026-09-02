@@ -23,7 +23,8 @@ import {
   UserPlus,
   Database,
   HelpCircle,
-  CalendarDays
+  CalendarDays,
+  Briefcase
 } from 'lucide-react';
 import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
 import { SignUpHelp } from '../schemaTypes/components/SignUpHelp';
@@ -200,6 +201,45 @@ export const deskStructure = (S: StructureBuilder) =>
                   S.documentTypeList('customSignUp')
                     .title('Inactive Sign-Ups')
                     .filter('_type == "customSignUp" && active == false')
+                    .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
+                ),
+            ])
+        ),
+
+      S.divider(),
+
+      // Job Openings Section
+      S.listItem()
+        .title('Job Openings')
+        .icon(Briefcase)
+        .child(
+          S.list()
+            .title('Job Openings')
+            .items([
+              S.listItem()
+                .title('All Job Openings')
+                .icon(Briefcase)
+                .child(
+                  S.documentTypeList('jobOpening')
+                    .title('All Job Openings')
+                    .defaultOrdering([{ field: 'displayOrder', direction: 'asc' }])
+                ),
+              S.listItem()
+                .title('Active and Scheduled')
+                .icon(Briefcase)
+                .child(
+                  S.documentTypeList('jobOpening')
+                    .title('Active and Scheduled Job Openings')
+                    .filter('_type == "jobOpening" && active == true && (!defined(closeDate) || closeDate >= now())')
+                    .defaultOrdering([{ field: 'displayOrder', direction: 'asc' }])
+                ),
+              S.listItem()
+                .title('Hidden and Closed')
+                .icon(Briefcase)
+                .child(
+                  S.documentTypeList('jobOpening')
+                    .title('Hidden and Closed Job Openings')
+                    .filter('_type == "jobOpening" && (active != true || (defined(closeDate) && closeDate < now()))')
                     .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
                 ),
             ])

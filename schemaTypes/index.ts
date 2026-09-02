@@ -33,6 +33,7 @@ import ministry from './ministry';
 import registration from './registration';
 import pcoSettings from './pcoSettings';
 import customSignUp from './customSignUp';
+import jobOpening from './jobOpening';
 
 export const schemaTypes = [
 	// Documents
@@ -63,6 +64,7 @@ export const schemaTypes = [
 	registration,
 	pcoSettings,
 	customSignUp,
+	jobOpening,
 	// Objects (Sections)
 	hero,
 	textWithImage,

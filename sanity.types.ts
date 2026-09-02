@@ -12,60 +12,172 @@
  * ---------------------------------------------------------------------------------
  */
 
+export declare const internalGroqTypeReferenceTo: unique symbol
+
 // Source: schema.json
-export type SanityImagePaletteSwatch = {
-  _type: 'sanity.imagePaletteSwatch'
-  background?: string
-  foreground?: string
-  population?: number
-  title?: string
+export type Overlay = {
+  opacity: number
+  blendMode: 'multiply' | 'overlay' | 'darken' | 'color'
 }
 
-export type SanityImagePalette = {
-  _type: 'sanity.imagePalette'
-  darkMuted?: SanityImagePaletteSwatch
-  lightVibrant?: SanityImagePaletteSwatch
-  darkVibrant?: SanityImagePaletteSwatch
-  vibrant?: SanityImagePaletteSwatch
-  dominant?: SanityImagePaletteSwatch
-  lightMuted?: SanityImagePaletteSwatch
-  muted?: SanityImagePaletteSwatch
+export type PrimaryCTA = {
+  text: string
+  link: string
 }
 
-export type SanityImageDimensions = {
-  _type: 'sanity.imageDimensions'
-  height?: number
-  width?: number
-  aspectRatio?: number
+export type SecondaryCTA = {
+  text: string
+  link: string
 }
 
-export type SanityFileAsset = {
-  _id: string
-  _type: 'sanity.fileAsset'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  originalFilename?: string
-  label?: string
-  title?: string
+export type Button = {
+  text?: string
+  href?: string
+  useDirectionsLink?: boolean
+  variant?: 'primary' | 'outlined' | 'secondary'
+  target?: '_self' | '_blank'
+  usePcoModal?: boolean
+}
+
+export type SanityImageAssetReference = {
+  _ref: string
+  _type: 'reference'
+  _weak?: boolean
+  [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+}
+
+export type Logo = {
+  asset?: SanityImageAssetReference
+  media?: unknown // Unable to locate the referenced type "logo.media" in schema
+  hotspot?: SanityImageHotspot
+  crop?: SanityImageCrop
+  _type: 'image'
+}
+
+export type Statistic = {
+  _type: 'statistic'
+  label: string
+  value: string
+  animatedStart?: number
+  animatedEnd?: number
+  suffix?: string
+  order?: number
+}
+
+export type BentoCard = {
+  _type: 'bentoCard'
+  eyebrow?: string
+  title: string
   description?: string
-  altText?: string
-  sha1hash?: string
-  extension?: string
-  mimeType?: string
-  size?: number
-  assetId?: string
-  uploadId?: string
-  path?: string
-  url?: string
-  source?: SanityAssetSourceData
+  showLocationInfo?: boolean
+  image?: {
+    asset?: SanityImageAssetReference
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt: string
+    _type: 'image'
+  }
+  button?: Button
+  showServiceTimes?: boolean
+  componentType?: '' | 'linkedAvatars' | 'custom'
+  class?: 'lg:col-span-3' | 'lg:col-span-2' | 'lg:col-span-1'
+  dark?: boolean
+  fade?: Array<string>
 }
 
-export type Geopoint = {
-  _type: 'geopoint'
-  lat?: number
-  lng?: number
-  alt?: number
+export type PageReference = {
+  _ref: string
+  _type: 'reference'
+  _weak?: boolean
+  [internalGroqTypeReferenceTo]?: 'page'
+}
+
+export type ArticleReference = {
+  _ref: string
+  _type: 'reference'
+  _weak?: boolean
+  [internalGroqTypeReferenceTo]?: 'article'
+}
+
+export type RichText = Array<
+  | {
+      children?: Array<{
+        marks?: Array<string>
+        text?: string
+        _type: 'span'
+        _key: string
+      }>
+      style?: 'normal' | 'h2' | 'h3' | 'h4' | 'blockquote'
+      listItem?: 'bullet' | 'number'
+      markDefs?: Array<
+        | {
+            href: string
+            isExternal?: boolean
+            _type: 'link'
+            _key: string
+          }
+        | {
+            reference: PageReference | ArticleReference
+            _type: 'internalLink'
+            _key: string
+          }
+      >
+      level?: number
+      _type: 'block'
+      _key: string
+    }
+  | {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      caption?: string
+      _type: 'image'
+      _key: string
+    }
+  | {
+      reference: string
+      translation?: 'ESV' | 'NIV' | 'KJV' | 'NKJV' | 'CSB'
+      text?: string
+      _type: 'scripture'
+      _key: string
+    }
+  | {
+      style?: 'info' | 'warning' | 'success' | 'note'
+      content?: Array<{
+        children?: Array<{
+          marks?: Array<string>
+          text?: string
+          _type: 'span'
+          _key: string
+        }>
+        style?: 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote'
+        listItem?: 'bullet' | 'number'
+        markDefs?: Array<{
+          href?: string
+          _type: 'link'
+          _key: string
+        }>
+        level?: number
+        _type: 'block'
+        _key: string
+      }>
+      _type: 'callout'
+      _key: string
+    }
+>
+
+export type LogoCloud = {
+  _type: 'logoCloud'
+  heading?: string
+  logos?: Array<{
+    name: string
+    logo: Logo
+    url?: string
+    _key: string
+  }>
 }
 
 export type CallToAction = {
@@ -79,12 +191,8 @@ export type CallToAction = {
     _key: string
   }>
   backgroundImage?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
@@ -97,12 +205,8 @@ export type Gallery = {
   heading?: string
   description?: string
   images?: Array<{
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     caption?: string
@@ -135,12 +239,8 @@ export type TextWithImage = {
     _key: string
   }>
   image?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
@@ -150,117 +250,157 @@ export type TextWithImage = {
 
 export type Hero = {
   _type: 'hero'
-  heading?: string
-  tagline?: string
+  heading: string
+  tagline: string
   backgroundImage?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
   }
-  cta?: {
-    text?: string
-    link?: string
-  }
+  overlay?: Overlay
+  primaryCTA: PrimaryCTA
+  secondaryCTA?: SecondaryCTA
 }
 
-export type Settings = {
+export type JobOpening = {
   _id: string
-  _type: 'settings'
+  _type: 'jobOpening'
   _createdAt: string
   _updatedAt: string
   _rev: string
-  name?: string
-  url?: string
-  contact?: {
-    streetAddress?: string
-    city?: string
-    state?: 'NC'
-    zipCode?: string
-    phone?: string
-    email?: string
-  }
-  serviceTimes?: Array<{
-    day?: 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday'
-    time?: string
-    description?: string
-    _key: string
-  }>
-  socialMedia?: {
-    facebook?: string
-    instagram?: string
-    youtube?: string
-  }
-  alert?: {
-    enabled?: boolean
-    message?: string
-    type?: 'info' | 'warning' | 'error'
-    link?: string
-  }
-  seo?: {
-    title?: string
-    description?: string
-    image?: {
-      asset?: {
-        _ref: string
-        _type: 'reference'
-        _weak?: boolean
-        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-      }
-      hotspot?: SanityImageHotspot
-      crop?: SanityImageCrop
-      _type: 'image'
-    }
-  }
+  title: string
+  department: string
+  employmentType: 'fullTime' | 'partTime' | 'contract' | 'internship'
+  location: string
+  schedule?: string
+  summary: string
+  responsibilities?: Array<string>
+  qualifications?: Array<string>
+  applicationInstructions?: string
+  applicationUrl?: string
+  applicationEmail?: string
+  active: boolean
+  openDate?: string
+  closeDate?: string
+  displayOrder: number
 }
 
-export type Navigation = {
+export type CustomSignUp = {
   _id: string
-  _type: 'navigation'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  title?: string
-  items?: Array<{
-    text?: string
-    link?: string
-    children?: Array<{
-      text?: string
-      link?: string
-      _key: string
-    }>
-    _key: string
-  }>
-}
-
-export type Announcement = {
-  _id: string
-  _type: 'announcement'
+  _type: 'customSignUp'
   _createdAt: string
   _updatedAt: string
   _rev: string
   title: string
   slug: Slug
-  publishDate?: string
-  expiryDate?: string
-  featured?: boolean
+  description: string
+  category: 'event' | 'ministry' | 'volunteer'
+  date?: string
   image?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
+    asset?: SanityImageAssetReference
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt: string
+    _type: 'image'
+  }
+  registrationUrl: string
+  active?: boolean
+  featured?: boolean
+}
+
+export type SanityImageCrop = {
+  _type: 'sanity.imageCrop'
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+export type SanityImageHotspot = {
+  _type: 'sanity.imageHotspot'
+  x: number
+  y: number
+  height: number
+  width: number
+}
+
+export type Slug = {
+  _type: 'slug'
+  current: string
+  source?: string
+}
+
+export type PcoSettings = {
+  _id: string
+  _type: 'pcoSettings'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title?: string
+  apiKey: string
+  apiSecret: string
+  organizationId?: string
+  enabledProducts?: Array<
+    'calendar' | 'registrations' | 'check-ins' | 'giving' | 'people' | 'services'
+  >
+  cacheTimeout?: number
+  testMode?: boolean
+  webhookSecret?: string
+}
+
+export type Registration = {
+  _id: string
+  _type: 'registration'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  slug: Slug
+  description?: string
+  category: 'event' | 'ministry' | 'volunteer'
+  integrationMethod: 'embed' | 'link' | 'api'
+  pcoEventId?: string
+  pcoFormUrl?: string
+  pcoEmbedCode?: string
+  deadline?: string
+  featured?: boolean
+  active?: boolean
+  image?: {
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
   }
-  excerpt?: string
+}
+
+export type StaffReference = {
+  _ref: string
+  _type: 'reference'
+  _weak?: boolean
+  [internalGroqTypeReferenceTo]?: 'staff'
+}
+
+export type Ministry = {
+  _id: string
+  _type: 'ministry'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  slug: Slug
+  description?: string
+  heroImage?: {
+    asset?: SanityImageAssetReference
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt: string
+    _type: 'image'
+  }
   content?: Array<
     | {
         children?: Array<{
@@ -281,23 +421,294 @@ export type Announcement = {
         _key: string
       }
     | {
-        asset?: {
-          _ref: string
-          _type: 'reference'
-          _weak?: boolean
-          [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-        }
+        asset?: SanityImageAssetReference
+        media?: unknown
         hotspot?: SanityImageHotspot
         crop?: SanityImageCrop
         _type: 'image'
         _key: string
       }
   >
-  cta?: {
-    text?: string
-    link?: string
-    style?: 'primary' | 'secondary' | 'outline'
+  leadership?: Array<
+    {
+      _key: string
+    } & StaffReference
+  >
+  meetingTimes?: string
+  contactInfo?: {
+    email?: string
+    phone?: string
+    contactPerson?: string
   }
+  gallery?: Array<{
+    asset?: SanityImageAssetReference
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    _type: 'image'
+    _key: string
+  }>
+  pcoTag?: string
+  featured?: boolean
+}
+
+export type SanityFileAssetReference = {
+  _ref: string
+  _type: 'reference'
+  _weak?: boolean
+  [internalGroqTypeReferenceTo]?: 'sanity.fileAsset'
+}
+
+export type Resource = {
+  _id: string
+  _type: 'resource'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  description?: string
+  category: 'forms' | 'bible-study' | 'documents' | 'worship' | 'newsletter'
+  file: {
+    asset?: SanityFileAssetReference
+    media?: unknown
+    _type: 'file'
+  }
+  fileType?: 'pdf' | 'doc' | 'excel' | 'music' | 'other'
+  restricted?: boolean
+  publishedAt?: string
+}
+
+export type Article = {
+  _id: string
+  _type: 'article'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  slug: Slug
+  publishedAt: string
+  category: 'news' | 'devotional' | 'ministry' | 'missions' | 'general'
+  author?: StaffReference
+  mainImage?: {
+    asset?: SanityImageAssetReference
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt: string
+    _type: 'image'
+  }
+  excerpt?: string
+  content?: RichText
+  tags?: Array<string>
+  seo?: {
+    metaTitle?: string
+    metaDescription?: string
+    shareImage?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+    }
+  }
+}
+
+export type FooterMenu = {
+  _id: string
+  _type: 'footerMenu'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  categories?: Array<{
+    title: string
+    items?: Array<{
+      text: string
+      link: string
+      isExternal?: boolean
+      _key: string
+    }>
+    _key: string
+  }>
+  socialLinks?: {
+    showFacebook?: boolean
+    showInstagram?: boolean
+    showYouTube?: boolean
+  }
+}
+
+export type MainMenu = {
+  _id: string
+  _type: 'mainMenu'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  items?: Array<{
+    text: string
+    link: string
+    isExternal?: boolean
+    highlight?: boolean
+    children?: Array<{
+      text: string
+      link: string
+      isExternal?: boolean
+      _key: string
+    }>
+    _key: string
+  }>
+}
+
+export type FooterSettings = {
+  _id: string
+  _type: 'footerSettings'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  callToAction?: {
+    subheading: string
+    title: string
+    description: string
+    button?: {
+      text: string
+      href: string
+      usePcoModal?: boolean
+    }
+  }
+}
+
+export type DesignTokens = {
+  _id: string
+  _type: 'designTokens'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  colors?: {
+    primary?: string
+    secondary?: string
+  }
+  gradients?: {
+    primary?: {
+      from?: string
+      via?: string
+      to?: string
+    }
+    footer?: {
+      from?: string
+      via?: string
+      to?: string
+    }
+  }
+  typography?: {
+    headingFont?: string
+    bodyFont?: string
+  }
+}
+
+export type Settings = {
+  _id: string
+  _type: 'settings'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  name?: string
+  url?: string
+  contact?: {
+    streetAddress?: string
+    city?: string
+    state?: 'NC'
+    zipCode?: string
+    phone?: string
+    email?: string
+    supportEmail?: string
+  }
+  serviceTimes?: Array<{
+    day?: 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday'
+    time?: string
+    description?: string
+    detailedDescription?: string
+    _key: string
+  }>
+  socialMedia?: {
+    facebook?: string
+    instagram?: string
+    youtube?: string
+  }
+  seo?: {
+    title?: string
+    description?: string
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+    }
+  }
+}
+
+export type SiteAlert = {
+  _id: string
+  _type: 'siteAlert'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  enabled?: boolean
+  message: string
+  type: 'info' | 'warning' | 'alert'
+  link?: string
+}
+
+export type Announcement = {
+  _id: string
+  _type: 'announcement'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  slug: Slug
+  description: string
+  image?: {
+    asset?: SanityImageAssetReference
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt: string
+    _type: 'image'
+  }
+  content?: Array<
+    | {
+        children?: Array<{
+          marks?: Array<string>
+          text?: string
+          _type: 'span'
+          _key: string
+        }>
+        style?: 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote'
+        listItem?: 'bullet' | 'number'
+        markDefs?: Array<{
+          href?: string
+          _type: 'link'
+          _key: string
+        }>
+        level?: number
+        _type: 'block'
+        _key: string
+      }
+    | {
+        asset?: SanityImageAssetReference
+        media?: unknown
+        hotspot?: SanityImageHotspot
+        crop?: SanityImageCrop
+        _type: 'image'
+        _key: string
+      }
+  >
+  ctaText?: string
+  ctaLink?: string
+  featured?: boolean
+  priority: number
+  active?: boolean
+  startDate: string
+  endDate?: string
 }
 
 export type StaffOrder = {
@@ -307,13 +718,11 @@ export type StaffOrder = {
   _updatedAt: string
   _rev: string
   category: 'pastoral' | 'ministry' | 'support' | 'deacons'
-  staff: Array<{
-    _ref: string
-    _type: 'reference'
-    _weak?: boolean
-    _key: string
-    [internalGroqTypeReferenceTo]?: 'staff'
-  }>
+  staff: Array<
+    {
+      _key: string
+    } & StaffReference
+  >
 }
 
 export type Staff = {
@@ -327,16 +736,14 @@ export type Staff = {
   role: string
   category: 'pastoral' | 'ministry' | 'support' | 'deacons'
   image?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
+    alt: string
     _type: 'image'
   }
+  shortBio?: string
   bio?: Array<{
     children?: Array<{
       marks?: Array<string>
@@ -368,15 +775,23 @@ export type Page = {
   _updatedAt: string
   _rev: string
   title: string
+  pageType: 'home' | 'about' | 'ministries' | 'events' | 'contact' | 'other'
   slug: Slug
   description?: string
-  image?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+  seo?: {
+    metaTitle?: string
+    metaDescription?: string
+    shareImage?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
     }
+  }
+  image?: {
+    asset?: SanityImageAssetReference
+    media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
@@ -401,12 +816,8 @@ export type Page = {
         _key: string
       }
     | {
-        asset?: {
-          _ref: string
-          _type: 'reference'
-          _weak?: boolean
-          [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-        }
+        asset?: SanityImageAssetReference
+        media?: unknown
         hotspot?: SanityImageHotspot
         crop?: SanityImageCrop
         _type: 'image'
@@ -429,20 +840,815 @@ export type Page = {
   >
 }
 
-export type SanityImageCrop = {
-  _type: 'sanity.imageCrop'
-  top?: number
-  bottom?: number
-  left?: number
-  right?: number
+export type CommunityGroupsPage = {
+  _id: string
+  _type: 'communityGroupsPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  heading: string
+  lead: string
+  seo?: {
+    title?: string
+    description?: string
+  }
 }
 
-export type SanityImageHotspot = {
-  _type: 'sanity.imageHotspot'
-  x?: number
-  y?: number
-  height?: number
-  width?: number
+export type LifeGroupsPage = {
+  _id: string
+  _type: 'lifeGroupsPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  heading: string
+  lead: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+}
+
+export type CalendarPage = {
+  _id: string
+  _type: 'calendarPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+  heading: string
+  lead?: string
+  showNewsletterCta?: boolean
+  showSmsCta?: boolean
+}
+
+export type WatchPage = {
+  _id: string
+  _type: 'watchPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title?: string
+  hero?: {
+    title?: string
+    description?: string
+    backgroundImage?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+    }
+  }
+  liveStream?: {
+    title?: string
+    description?: string
+    subsplashEmbedCode?: string
+    showWhenOffline?: boolean
+  }
+  socialLinks?: {
+    title?: string
+    description?: string
+    youtubeUrl?: string
+    facebookUrl?: string
+  }
+  archive?: {
+    title?: string
+    description?: string
+    subsplashEmbedCode?: string
+  }
+  seo?: {
+    title?: string
+    description?: string
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+    }
+  }
+}
+
+export type ConnectPage = {
+  _id: string
+  _type: 'connectPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title?: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+  hero?: {
+    title?: string
+    description?: string
+    buttons?: {
+      primary?: {
+        text?: string
+        href?: string
+      }
+      secondary?: {
+        text?: string
+        href?: string
+      }
+    }
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+    }
+  }
+  contact?: {
+    title?: string
+    description?: string
+  }
+  connectCards?: {
+    title?: string
+    description?: string
+    cards?: Array<{
+      id?: string
+      title?: string
+      description?: string
+      href?: string
+      iconColor?: 'blue' | 'green' | 'purple' | 'orange'
+      icon?: string
+      _type: 'connectCard'
+      _key: string
+    }>
+    note?: string
+  }
+  newsletterCta?: {
+    heading?: string
+    subheading?: string
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+    backgroundColor?: 'bg-blue-50' | 'bg-green-50' | 'bg-purple-50' | 'bg-gray-50' | 'bg-brand-50'
+  }
+  smsCta?: {
+    heading?: string
+    description?: string
+    features?: Array<string>
+    linkText?: string
+    linkHref?: string
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+    }
+  }
+}
+
+export type ServicesPage = {
+  _id: string
+  _type: 'servicesPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+  hero?: {
+    badge?: string
+    badgeLink?: {
+      text?: string
+      url?: string
+    }
+    title: string
+    description?: string
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+    }
+  }
+  schedule?: {
+    eyebrow?: string
+    title?: string
+  }
+  ministries?: {
+    title?: string
+    description?: string
+    programs?: Array<{
+      title: string
+      description: string
+      link: string
+      linkText?: string
+      icon?: string
+      _key: string
+    }>
+  }
+  cta?: {
+    title?: string
+    description?: string
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+    }
+    benefits?: Array<string>
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+  }
+}
+
+export type VisitPage = {
+  _id: string
+  _type: 'visitPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+  hero?: {
+    title: string
+    description?: string
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+    images?: Array<{
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+      _key: string
+    }>
+  }
+  planVisit?: {
+    title?: string
+    description?: string
+    serviceInfo?: {
+      title?: string
+      note?: string
+    }
+    whatToExpect?: {
+      title?: string
+      items?: Array<{
+        title?: string
+        description?: string
+        icon?: string
+        _key: string
+      }>
+    }
+    location?: {
+      title?: string
+      addressNote?: string
+      directions?: string
+    }
+  }
+  faq?: {
+    title?: string
+    description?: string
+    contactInfo?: {
+      text?: string
+      href?: string
+      openInPlanningCenterModal?: boolean
+    }
+    questions?: Array<{
+      question?: string
+      answer?: string
+      _key: string
+    }>
+  }
+}
+
+export type GivingPage = {
+  _id: string
+  _type: 'givingPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+  hero?: {
+    tagline?: string
+    title: string
+    description?: string
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+  }
+  onlineGiving?: {
+    title?: string
+    description?: string
+    subsplashEmbedCode?: string
+  }
+  givingOptions?: {
+    title?: string
+    description?: string
+    methods?: Array<{
+      title?: string
+      description?: string
+      icon?: string
+      _key: string
+    }>
+  }
+  whyGive?: {
+    title?: string
+    description?: string
+    scriptureVerse?: {
+      text?: string
+      reference?: string
+      version?: string
+    }
+  }
+  faq?: {
+    title?: string
+    questions?: Array<{
+      question?: string
+      answer?: string
+      _key: string
+    }>
+  }
+}
+
+export type BeliefsPage = {
+  _id: string
+  _type: 'beliefsPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  seo?: {
+    title?: string
+    description?: string
+  }
+  hero?: {
+    tagline?: string
+    taglineLink?: {
+      text?: string
+      href?: string
+    }
+    title: string
+    description?: string
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+    }
+  }
+  content?: {
+    subheading?: string
+    title?: string
+    description?: string
+    introText?: string
+    quote?: {
+      text?: string
+      reference?: string
+      version?: string
+    }
+    beliefs?: Array<{
+      title?: string
+      description?: string
+      _key: string
+    }>
+    closingText?: string
+    callToAction?: {
+      title?: string
+      description?: string
+    }
+  }
+  cta?: {
+    title?: string
+    description?: string
+    primaryButton?: {
+      text?: string
+      href?: string
+    }
+    secondaryButton?: {
+      text?: string
+      href?: string
+    }
+    image?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt: string
+      _type: 'image'
+    }
+  }
+}
+
+export type AboutPage = {
+  _id: string
+  _type: 'aboutPage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  hero?: {
+    heading: string
+    lead: string
+    images?: Array<{
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+      _key: string
+    }>
+  }
+  mission?: {
+    heading?: string
+    content: Array<{
+      children?: Array<{
+        marks?: Array<string>
+        text?: string
+        _type: 'span'
+        _key: string
+      }>
+      style?: 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote'
+      listItem?: 'bullet' | 'number'
+      markDefs?: Array<{
+        href?: string
+        _type: 'link'
+        _key: string
+      }>
+      level?: number
+      _type: 'block'
+      _key: string
+    }>
+  }
+  statistics?: {
+    heading?: string
+    stats?: Array<
+      {
+        _key: string
+      } & Statistic
+    >
+  }
+  team?: {
+    heading?: string
+    subheading?: string
+    lead?: string
+    teamImage?: {
+      asset?: SanityImageAssetReference
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+    }
+    description?: Array<{
+      children?: Array<{
+        marks?: Array<string>
+        text?: string
+        _type: 'span'
+        _key: string
+      }>
+      style?: 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote'
+      listItem?: 'bullet' | 'number'
+      markDefs?: Array<{
+        href?: string
+        _type: 'link'
+        _key: string
+      }>
+      level?: number
+      _type: 'block'
+      _key: string
+    }>
+    members?: Array<
+      {
+        _key: string
+      } & StaffReference
+    >
+  }
+  history?: {
+    heading?: string
+    content?: Array<{
+      children?: Array<{
+        marks?: Array<string>
+        text?: string
+        _type: 'span'
+        _key: string
+      }>
+      style?: 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote'
+      listItem?: 'bullet' | 'number'
+      markDefs?: Array<{
+        href?: string
+        _type: 'link'
+        _key: string
+      }>
+      level?: number
+      _type: 'block'
+      _key: string
+    }>
+    foundedYear?: number
+    values?: Array<{
+      title?: string
+      description?: string
+      _key: string
+    }>
+  }
+}
+
+export type HomePage = {
+  _id: string
+  _type: 'homePage'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  hero: Hero
+  showAnnouncementText?: boolean
+  bentoSection?: {
+    heading: string
+    subheading?: string
+    cards?: Array<
+      {
+        _key: string
+      } & BentoCard
+    >
+  }
+  logoCloud?: LogoCloud
+}
+
+export type SanityAssistInstructionTask = {
+  _type: 'sanity.assist.instructionTask'
+  path?: string
+  instructionKey?: string
+  started?: string
+  updated?: string
+  info?: string
+}
+
+export type SanityAssistTaskStatus = {
+  _type: 'sanity.assist.task.status'
+  tasks?: Array<
+    {
+      _key: string
+    } & SanityAssistInstructionTask
+  >
+}
+
+export type SanityAssistSchemaTypeAnnotations = {
+  _type: 'sanity.assist.schemaType.annotations'
+  title?: string
+  fields?: Array<
+    {
+      _key: string
+    } & SanityAssistSchemaTypeField
+  >
+}
+
+export type SanityAssistOutputType = {
+  _type: 'sanity.assist.output.type'
+  type?: string
+}
+
+export type SanityAssistOutputField = {
+  _type: 'sanity.assist.output.field'
+  path?: string
+}
+
+export type AssistInstructionContextReference = {
+  _ref: string
+  _type: 'reference'
+  _weak?: boolean
+  [internalGroqTypeReferenceTo]?: 'assist.instruction.context'
+}
+
+export type SanityAssistInstructionContext = {
+  _type: 'sanity.assist.instruction.context'
+  reference: AssistInstructionContextReference
+}
+
+export type AssistInstructionContext = {
+  _id: string
+  _type: 'assist.instruction.context'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title?: string
+  context?: Array<{
+    children?: Array<{
+      marks?: Array<string>
+      text?: string
+      _type: 'span'
+      _key: string
+    }>
+    style?: 'normal'
+    listItem?: never
+    markDefs?: null
+    level?: number
+    _type: 'block'
+    _key: string
+  }>
+}
+
+export type SanityAssistInstructionUserInput = {
+  _type: 'sanity.assist.instruction.userInput'
+  message: string
+  description?: string
+}
+
+export type SanityAssistInstructionPrompt = Array<{
+  children?: Array<
+    | {
+        marks?: Array<string>
+        text?: string
+        _type: 'span'
+        _key: string
+      }
+    | ({
+        _key: string
+      } & SanityAssistInstructionFieldRef)
+    | ({
+        _key: string
+      } & SanityAssistInstructionContext)
+    | ({
+        _key: string
+      } & SanityAssistInstructionUserInput)
+  >
+  style?: 'normal'
+  listItem?: never
+  markDefs?: null
+  level?: number
+  _type: 'block'
+  _key: string
+}>
+
+export type SanityAssistInstructionFieldRef = {
+  _type: 'sanity.assist.instruction.fieldRef'
+  path?: string
+}
+
+export type SanityAssistInstruction = {
+  _type: 'sanity.assist.instruction'
+  prompt?: SanityAssistInstructionPrompt
+  icon?: string
+  title?: string
+  userId?: string
+  createdById?: string
+  output?: Array<
+    | ({
+        _key: string
+      } & SanityAssistOutputField)
+    | ({
+        _key: string
+      } & SanityAssistOutputType)
+  >
+}
+
+export type SanityAssistSchemaTypeField = {
+  _type: 'sanity.assist.schemaType.field'
+  path?: string
+  instructions?: Array<
+    {
+      _key: string
+    } & SanityAssistInstruction
+  >
+}
+
+export type MediaTag = {
+  _id: string
+  _type: 'media.tag'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  name?: Slug
+}
+
+export type SanityImagePaletteSwatch = {
+  _type: 'sanity.imagePaletteSwatch'
+  background?: string
+  foreground?: string
+  population?: number
+  title?: string
+}
+
+export type SanityImagePalette = {
+  _type: 'sanity.imagePalette'
+  darkMuted?: SanityImagePaletteSwatch
+  lightVibrant?: SanityImagePaletteSwatch
+  darkVibrant?: SanityImagePaletteSwatch
+  vibrant?: SanityImagePaletteSwatch
+  dominant?: SanityImagePaletteSwatch
+  lightMuted?: SanityImagePaletteSwatch
+  muted?: SanityImagePaletteSwatch
+}
+
+export type SanityImageDimensions = {
+  _type: 'sanity.imageDimensions'
+  height: number
+  width: number
+  aspectRatio: number
+}
+
+export type SanityImageMetadata = {
+  _type: 'sanity.imageMetadata'
+  location?: Geopoint
+  dimensions?: SanityImageDimensions
+  palette?: SanityImagePalette
+  lqip?: string
+  blurHash?: string
+  thumbHash?: string
+  hasAlpha?: boolean
+  isOpaque?: boolean
+}
+
+export type SanityFileAsset = {
+  _id: string
+  _type: 'sanity.fileAsset'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  originalFilename?: string
+  label?: string
+  title?: string
+  description?: string
+  altText?: string
+  sha1hash: string
+  extension: string
+  mimeType: string
+  size: number
+  assetId: string
+  uploadId?: string
+  path: string
+  url: string
+  source?: SanityAssetSourceData
+}
+
+export type SanityAssetSourceData = {
+  _type: 'sanity.assetSourceData'
+  name?: string
+  id?: string
+  url?: string
 }
 
 export type SanityImageAsset = {
@@ -456,72 +1662,94 @@ export type SanityImageAsset = {
   title?: string
   description?: string
   altText?: string
-  sha1hash?: string
-  extension?: string
-  mimeType?: string
-  size?: number
-  assetId?: string
+  sha1hash: string
+  extension: string
+  mimeType: string
+  size: number
+  assetId: string
   uploadId?: string
-  path?: string
-  url?: string
+  path: string
+  url: string
   metadata?: SanityImageMetadata
   source?: SanityAssetSourceData
 }
 
-export type SanityAssetSourceData = {
-  _type: 'sanity.assetSourceData'
-  name?: string
-  id?: string
-  url?: string
-}
-
-export type SanityImageMetadata = {
-  _type: 'sanity.imageMetadata'
-  location?: Geopoint
-  dimensions?: SanityImageDimensions
-  palette?: SanityImagePalette
-  lqip?: string
-  blurHash?: string
-  hasAlpha?: boolean
-  isOpaque?: boolean
-}
-
-export type MediaTag = {
-  _id: string
-  _type: 'media.tag'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  name?: Slug
-}
-
-export type Slug = {
-  _type: 'slug'
-  current: string
-  source?: string
+export type Geopoint = {
+  _type: 'geopoint'
+  lat?: number
+  lng?: number
+  alt?: number
 }
 
 export type AllSanitySchemaTypes =
-  | SanityImagePaletteSwatch
-  | SanityImagePalette
-  | SanityImageDimensions
-  | SanityFileAsset
-  | Geopoint
+  | Overlay
+  | PrimaryCTA
+  | SecondaryCTA
+  | Button
+  | SanityImageAssetReference
+  | Logo
+  | Statistic
+  | BentoCard
+  | PageReference
+  | ArticleReference
+  | RichText
+  | LogoCloud
   | CallToAction
   | Gallery
   | TextWithImage
   | Hero
+  | JobOpening
+  | CustomSignUp
+  | SanityImageCrop
+  | SanityImageHotspot
+  | Slug
+  | PcoSettings
+  | Registration
+  | StaffReference
+  | Ministry
+  | SanityFileAssetReference
+  | Resource
+  | Article
+  | FooterMenu
+  | MainMenu
+  | FooterSettings
+  | DesignTokens
   | Settings
-  | Navigation
+  | SiteAlert
   | Announcement
   | StaffOrder
   | Staff
   | Page
-  | SanityImageCrop
-  | SanityImageHotspot
-  | SanityImageAsset
-  | SanityAssetSourceData
-  | SanityImageMetadata
+  | CommunityGroupsPage
+  | LifeGroupsPage
+  | CalendarPage
+  | WatchPage
+  | ConnectPage
+  | ServicesPage
+  | VisitPage
+  | GivingPage
+  | BeliefsPage
+  | AboutPage
+  | HomePage
+  | SanityAssistInstructionTask
+  | SanityAssistTaskStatus
+  | SanityAssistSchemaTypeAnnotations
+  | SanityAssistOutputType
+  | SanityAssistOutputField
+  | AssistInstructionContextReference
+  | SanityAssistInstructionContext
+  | AssistInstructionContext
+  | SanityAssistInstructionUserInput
+  | SanityAssistInstructionPrompt
+  | SanityAssistInstructionFieldRef
+  | SanityAssistInstruction
+  | SanityAssistSchemaTypeField
   | MediaTag
-  | Slug
-export declare const internalGroqTypeReferenceTo: unique symbol
+  | SanityImagePaletteSwatch
+  | SanityImagePalette
+  | SanityImageDimensions
+  | SanityImageMetadata
+  | SanityFileAsset
+  | SanityAssetSourceData
+  | SanityImageAsset
+  | Geopoint
