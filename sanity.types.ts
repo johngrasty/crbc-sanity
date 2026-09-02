@@ -272,7 +272,7 @@ export type JobOpening = {
   _rev: string
   title: string
   department: string
-  employmentType: 'fullTime' | 'partTime' | 'contract' | 'internship'
+  employmentType: 'fullTime' | 'partTime' | 'flexible' | 'contract' | 'internship'
   location: string
   schedule?: string
   summary: string

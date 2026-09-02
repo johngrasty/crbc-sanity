@@ -46,6 +46,7 @@ export default defineType({
         list: [
           {title: 'Full-time', value: 'fullTime'},
           {title: 'Part-time', value: 'partTime'},
+          {title: 'Full-time or part-time', value: 'flexible'},
           {title: 'Contract', value: 'contract'},
           {title: 'Internship', value: 'internship'},
         ],
@@ -200,6 +201,7 @@ export default defineType({
       const typeLabels: Record<string, string> = {
         fullTime: 'Full-time',
         partTime: 'Part-time',
+        flexible: 'Full-time or part-time',
         contract: 'Contract',
         internship: 'Internship',
       }

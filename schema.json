@@ -1895,6 +1895,10 @@
             },
             {
               "type": "string",
+              "value": "flexible"
+            },
+            {
+              "type": "string",
               "value": "contract"
             },
             {
