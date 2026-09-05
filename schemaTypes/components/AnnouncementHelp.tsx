@@ -47,7 +47,7 @@ export function AnnouncementHelp() {
               <Text size={1}>2. Click the Preview button (👁️) in toolbar</Text>
               <Text size={1}>3. Check how it looks on the website</Text>
               <Text size={1}>4. Make changes and refresh to see updates</Text>
-              <Text size={1}>5. Click "Exit Preview" when done</Text>
+              <Text size={1}>5. Click Exit Preview when done</Text>
             </Stack>
           </Box>
         </Stack>

@@ -3,6 +3,7 @@ import { defineField, defineType } from 'sanity';
 export default defineType({
 	name: 'pcoSettings',
 	title: 'Planning Center Settings',
+	description: 'Website credentials belong in the server environment, never in Sanity documents. These legacy settings do not configure the current website integration.',
 	type: 'document',
 	fields: [
 		defineField({
@@ -11,20 +12,6 @@ export default defineType({
 			type: 'string',
 			initialValue: 'Planning Center Online Settings',
 			readOnly: true
-		}),
-		defineField({
-			name: 'apiKey',
-			title: 'PCO API Application ID',
-			type: 'string',
-			description: 'Your Planning Center Online API Application ID',
-			validation: (Rule) => Rule.required()
-		}),
-		defineField({
-			name: 'apiSecret',
-			title: 'PCO API Secret',
-			type: 'string',
-			description: 'Your Planning Center Online API Secret (keep this secure!)',
-			validation: (Rule) => Rule.required()
 		}),
 		defineField({
 			name: 'organizationId',
@@ -69,12 +56,6 @@ export default defineType({
 			description: 'Enable test mode for development (uses sandbox data)',
 			initialValue: false
 		}),
-		defineField({
-			name: 'webhookSecret',
-			title: 'Webhook Secret',
-			type: 'string',
-			description: 'Secret key for validating PCO webhooks (optional)'
-		})
 	],
 	preview: {
 		select: {

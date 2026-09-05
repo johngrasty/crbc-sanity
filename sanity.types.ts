@@ -12,48 +12,7 @@
  * ---------------------------------------------------------------------------------
  */
 
-export declare const internalGroqTypeReferenceTo: unique symbol
-
 // Source: schema.json
-export type Overlay = {
-  opacity: number
-  blendMode: 'multiply' | 'overlay' | 'darken' | 'color'
-}
-
-export type PrimaryCTA = {
-  text: string
-  link: string
-}
-
-export type SecondaryCTA = {
-  text: string
-  link: string
-}
-
-export type Button = {
-  text?: string
-  href?: string
-  useDirectionsLink?: boolean
-  variant?: 'primary' | 'outlined' | 'secondary'
-  target?: '_self' | '_blank'
-  usePcoModal?: boolean
-}
-
-export type SanityImageAssetReference = {
-  _ref: string
-  _type: 'reference'
-  _weak?: boolean
-  [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-}
-
-export type Logo = {
-  asset?: SanityImageAssetReference
-  media?: unknown // Unable to locate the referenced type "logo.media" in schema
-  hotspot?: SanityImageHotspot
-  crop?: SanityImageCrop
-  _type: 'image'
-}
-
 export type Statistic = {
   _type: 'statistic'
   label: string
@@ -71,33 +30,31 @@ export type BentoCard = {
   description?: string
   showLocationInfo?: boolean
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     alt: string
     _type: 'image'
   }
-  button?: Button
+  button?: {
+    text?: string
+    href?: string
+    useDirectionsLink?: boolean
+    variant?: 'primary' | 'outlined' | 'secondary'
+    target?: '_self' | '_blank'
+    usePcoModal?: boolean
+  }
   showServiceTimes?: boolean
   componentType?: '' | 'linkedAvatars' | 'custom'
   class?: 'lg:col-span-3' | 'lg:col-span-2' | 'lg:col-span-1'
   dark?: boolean
   fade?: Array<string>
-}
-
-export type PageReference = {
-  _ref: string
-  _type: 'reference'
-  _weak?: boolean
-  [internalGroqTypeReferenceTo]?: 'page'
-}
-
-export type ArticleReference = {
-  _ref: string
-  _type: 'reference'
-  _weak?: boolean
-  [internalGroqTypeReferenceTo]?: 'article'
 }
 
 export type RichText = Array<
@@ -118,7 +75,19 @@ export type RichText = Array<
             _key: string
           }
         | {
-            reference: PageReference | ArticleReference
+            reference:
+              | {
+                  _ref: string
+                  _type: 'reference'
+                  _weak?: boolean
+                  [internalGroqTypeReferenceTo]?: 'page'
+                }
+              | {
+                  _ref: string
+                  _type: 'reference'
+                  _weak?: boolean
+                  [internalGroqTypeReferenceTo]?: 'article'
+                }
             _type: 'internalLink'
             _key: string
           }
@@ -128,7 +97,12 @@ export type RichText = Array<
       _key: string
     }
   | {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -174,7 +148,18 @@ export type LogoCloud = {
   heading?: string
   logos?: Array<{
     name: string
-    logo: Logo
+    logo: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      _type: 'image'
+    }
     url?: string
     _key: string
   }>
@@ -191,7 +176,12 @@ export type CallToAction = {
     _key: string
   }>
   backgroundImage?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -205,7 +195,12 @@ export type Gallery = {
   heading?: string
   description?: string
   images?: Array<{
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -239,7 +234,12 @@ export type TextWithImage = {
     _key: string
   }>
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -253,15 +253,29 @@ export type Hero = {
   heading: string
   tagline: string
   backgroundImage?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
   }
-  overlay?: Overlay
-  primaryCTA: PrimaryCTA
-  secondaryCTA?: SecondaryCTA
+  overlay?: {
+    opacity: number
+    blendMode: 'multiply' | 'overlay' | 'darken' | 'color'
+  }
+  primaryCTA: {
+    text: string
+    link: string
+  }
+  secondaryCTA?: {
+    text: string
+    link: string
+  }
 }
 
 export type JobOpening = {
@@ -299,7 +313,12 @@ export type CustomSignUp = {
   category: 'event' | 'ministry' | 'volunteer'
   date?: string
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -340,15 +359,12 @@ export type PcoSettings = {
   _updatedAt: string
   _rev: string
   title?: string
-  apiKey: string
-  apiSecret: string
   organizationId?: string
   enabledProducts?: Array<
     'calendar' | 'registrations' | 'check-ins' | 'giving' | 'people' | 'services'
   >
   cacheTimeout?: number
   testMode?: boolean
-  webhookSecret?: string
 }
 
 export type Registration = {
@@ -369,19 +385,17 @@ export type Registration = {
   featured?: boolean
   active?: boolean
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
     _type: 'image'
   }
-}
-
-export type StaffReference = {
-  _ref: string
-  _type: 'reference'
-  _weak?: boolean
-  [internalGroqTypeReferenceTo]?: 'staff'
 }
 
 export type Ministry = {
@@ -394,7 +408,12 @@ export type Ministry = {
   slug: Slug
   description?: string
   heroImage?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -421,7 +440,12 @@ export type Ministry = {
         _key: string
       }
     | {
-        asset?: SanityImageAssetReference
+        asset?: {
+          _ref: string
+          _type: 'reference'
+          _weak?: boolean
+          [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+        }
         media?: unknown
         hotspot?: SanityImageHotspot
         crop?: SanityImageCrop
@@ -429,11 +453,13 @@ export type Ministry = {
         _key: string
       }
   >
-  leadership?: Array<
-    {
-      _key: string
-    } & StaffReference
-  >
+  leadership?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'staff'
+  }>
   meetingTimes?: string
   contactInfo?: {
     email?: string
@@ -441,7 +467,12 @@ export type Ministry = {
     contactPerson?: string
   }
   gallery?: Array<{
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -450,13 +481,6 @@ export type Ministry = {
   }>
   pcoTag?: string
   featured?: boolean
-}
-
-export type SanityFileAssetReference = {
-  _ref: string
-  _type: 'reference'
-  _weak?: boolean
-  [internalGroqTypeReferenceTo]?: 'sanity.fileAsset'
 }
 
 export type Resource = {
@@ -469,7 +493,12 @@ export type Resource = {
   description?: string
   category: 'forms' | 'bible-study' | 'documents' | 'worship' | 'newsletter'
   file: {
-    asset?: SanityFileAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.fileAsset'
+    }
     media?: unknown
     _type: 'file'
   }
@@ -488,9 +517,19 @@ export type Article = {
   slug: Slug
   publishedAt: string
   category: 'news' | 'devotional' | 'ministry' | 'missions' | 'general'
-  author?: StaffReference
+  author?: {
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    [internalGroqTypeReferenceTo]?: 'staff'
+  }
   mainImage?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -504,7 +543,12 @@ export type Article = {
     metaTitle?: string
     metaDescription?: string
     shareImage?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -636,7 +680,12 @@ export type Settings = {
     title?: string
     description?: string
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -667,7 +716,12 @@ export type Announcement = {
   slug: Slug
   description: string
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -694,7 +748,12 @@ export type Announcement = {
         _key: string
       }
     | {
-        asset?: SanityImageAssetReference
+        asset?: {
+          _ref: string
+          _type: 'reference'
+          _weak?: boolean
+          [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+        }
         media?: unknown
         hotspot?: SanityImageHotspot
         crop?: SanityImageCrop
@@ -718,11 +777,13 @@ export type StaffOrder = {
   _updatedAt: string
   _rev: string
   category: 'pastoral' | 'ministry' | 'support' | 'deacons'
-  staff: Array<
-    {
-      _key: string
-    } & StaffReference
-  >
+  staff: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'staff'
+  }>
 }
 
 export type Staff = {
@@ -736,7 +797,12 @@ export type Staff = {
   role: string
   category: 'pastoral' | 'ministry' | 'support' | 'deacons'
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -782,7 +848,12 @@ export type Page = {
     metaTitle?: string
     metaDescription?: string
     shareImage?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -790,7 +861,12 @@ export type Page = {
     }
   }
   image?: {
-    asset?: SanityImageAssetReference
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
     media?: unknown
     hotspot?: SanityImageHotspot
     crop?: SanityImageCrop
@@ -816,7 +892,12 @@ export type Page = {
         _key: string
       }
     | {
-        asset?: SanityImageAssetReference
+        asset?: {
+          _ref: string
+          _type: 'reference'
+          _weak?: boolean
+          [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+        }
         media?: unknown
         hotspot?: SanityImageHotspot
         crop?: SanityImageCrop
@@ -898,7 +979,12 @@ export type WatchPage = {
     title?: string
     description?: string
     backgroundImage?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -926,7 +1012,12 @@ export type WatchPage = {
     title?: string
     description?: string
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -960,7 +1051,12 @@ export type ConnectPage = {
       }
     }
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1007,7 +1103,12 @@ export type ConnectPage = {
     linkText?: string
     linkHref?: string
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1045,7 +1146,12 @@ export type ServicesPage = {
       href?: string
     }
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1073,7 +1179,12 @@ export type ServicesPage = {
     title?: string
     description?: string
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1115,7 +1226,12 @@ export type VisitPage = {
       href?: string
     }
     images?: Array<{
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1186,7 +1302,12 @@ export type GivingPage = {
       href?: string
     }
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1256,7 +1377,12 @@ export type BeliefsPage = {
       href?: string
     }
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1297,7 +1423,12 @@ export type BeliefsPage = {
       href?: string
     }
     image?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1317,7 +1448,12 @@ export type AboutPage = {
     heading: string
     lead: string
     images?: Array<{
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1359,7 +1495,12 @@ export type AboutPage = {
     subheading?: string
     lead?: string
     teamImage?: {
-      asset?: SanityImageAssetReference
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
@@ -1383,11 +1524,13 @@ export type AboutPage = {
       _type: 'block'
       _key: string
     }>
-    members?: Array<
-      {
-        _key: string
-      } & StaffReference
-    >
+    members?: Array<{
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      _key: string
+      [internalGroqTypeReferenceTo]?: 'staff'
+    }>
   }
   history?: {
     heading?: string
@@ -1476,16 +1619,14 @@ export type SanityAssistOutputField = {
   path?: string
 }
 
-export type AssistInstructionContextReference = {
-  _ref: string
-  _type: 'reference'
-  _weak?: boolean
-  [internalGroqTypeReferenceTo]?: 'assist.instruction.context'
-}
-
 export type SanityAssistInstructionContext = {
   _type: 'sanity.assist.instruction.context'
-  reference: AssistInstructionContextReference
+  reference: {
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    [internalGroqTypeReferenceTo]?: 'assist.instruction.context'
+  }
 }
 
 export type AssistInstructionContext = {
@@ -1617,7 +1758,6 @@ export type SanityImageMetadata = {
   palette?: SanityImagePalette
   lqip?: string
   blurHash?: string
-  thumbHash?: string
   hasAlpha?: boolean
   isOpaque?: boolean
 }
@@ -1633,14 +1773,14 @@ export type SanityFileAsset = {
   title?: string
   description?: string
   altText?: string
-  sha1hash: string
-  extension: string
-  mimeType: string
-  size: number
-  assetId: string
+  sha1hash?: string
+  extension?: string
+  mimeType?: string
+  size?: number
+  assetId?: string
   uploadId?: string
-  path: string
-  url: string
+  path?: string
+  url?: string
   source?: SanityAssetSourceData
 }
 
@@ -1662,14 +1802,14 @@ export type SanityImageAsset = {
   title?: string
   description?: string
   altText?: string
-  sha1hash: string
-  extension: string
-  mimeType: string
-  size: number
-  assetId: string
+  sha1hash?: string
+  extension?: string
+  mimeType?: string
+  size?: number
+  assetId?: string
   uploadId?: string
-  path: string
-  url: string
+  path?: string
+  url?: string
   metadata?: SanityImageMetadata
   source?: SanityAssetSourceData
 }
@@ -1682,16 +1822,8 @@ export type Geopoint = {
 }
 
 export type AllSanitySchemaTypes =
-  | Overlay
-  | PrimaryCTA
-  | SecondaryCTA
-  | Button
-  | SanityImageAssetReference
-  | Logo
   | Statistic
   | BentoCard
-  | PageReference
-  | ArticleReference
   | RichText
   | LogoCloud
   | CallToAction
@@ -1705,9 +1837,7 @@ export type AllSanitySchemaTypes =
   | Slug
   | PcoSettings
   | Registration
-  | StaffReference
   | Ministry
-  | SanityFileAssetReference
   | Resource
   | Article
   | FooterMenu
@@ -1736,7 +1866,6 @@ export type AllSanitySchemaTypes =
   | SanityAssistSchemaTypeAnnotations
   | SanityAssistOutputType
   | SanityAssistOutputField
-  | AssistInstructionContextReference
   | SanityAssistInstructionContext
   | AssistInstructionContext
   | SanityAssistInstructionUserInput
@@ -1753,3 +1882,4 @@ export type AllSanitySchemaTypes =
   | SanityAssetSourceData
   | SanityImageAsset
   | Geopoint
+export declare const internalGroqTypeReferenceTo: unique symbol

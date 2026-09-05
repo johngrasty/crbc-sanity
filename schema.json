@@ -1,245 +1,5 @@
 [
   {
-    "type": "type",
-    "name": "overlay",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "opacity": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "number"
-          },
-          "optional": false
-        },
-        "blendMode": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "union",
-            "of": [
-              {
-                "type": "string",
-                "value": "multiply"
-              },
-              {
-                "type": "string",
-                "value": "overlay"
-              },
-              {
-                "type": "string",
-                "value": "darken"
-              },
-              {
-                "type": "string",
-                "value": "color"
-              }
-            ]
-          },
-          "optional": false
-        }
-      }
-    }
-  },
-  {
-    "type": "type",
-    "name": "primaryCTA",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "text": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": false
-        },
-        "link": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": false
-        }
-      }
-    }
-  },
-  {
-    "type": "type",
-    "name": "secondaryCTA",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "text": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": false
-        },
-        "link": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": false
-        }
-      }
-    }
-  },
-  {
-    "type": "type",
-    "name": "button",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "text": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": true
-        },
-        "href": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": true
-        },
-        "useDirectionsLink": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        },
-        "variant": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "union",
-            "of": [
-              {
-                "type": "string",
-                "value": "primary"
-              },
-              {
-                "type": "string",
-                "value": "outlined"
-              },
-              {
-                "type": "string",
-                "value": "secondary"
-              }
-            ]
-          },
-          "optional": true
-        },
-        "target": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "union",
-            "of": [
-              {
-                "type": "string",
-                "value": "_self"
-              },
-              {
-                "type": "string",
-                "value": "_blank"
-              }
-            ]
-          },
-          "optional": true
-        },
-        "usePcoModal": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      }
-    }
-  },
-  {
-    "type": "type",
-    "name": "sanity.imageAsset.reference",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_ref": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          }
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "reference"
-          }
-        },
-        "_weak": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      },
-      "dereferencesTo": "sanity.imageAsset"
-    }
-  },
-  {
-    "type": "type",
-    "name": "logo",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "asset": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "inline",
-            "name": "sanity.imageAsset.reference"
-          },
-          "optional": true
-        },
-        "media": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "inline",
-            "name": "logo.media"
-          },
-          "optional": true
-        },
-        "hotspot": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "inline",
-            "name": "sanity.imageHotspot"
-          },
-          "optional": true
-        },
-        "crop": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "inline",
-            "name": "sanity.imageCrop"
-          },
-          "optional": true
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "image"
-          }
-        }
-      }
-    }
-  },
-  {
     "name": "statistic",
     "type": "type",
     "value": {
@@ -346,8 +106,30 @@
               "asset": {
                 "type": "objectAttribute",
                 "value": {
-                  "type": "inline",
-                  "name": "sanity.imageAsset.reference"
+                  "type": "object",
+                  "attributes": {
+                    "_ref": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
+                    }
+                  },
+                  "dereferencesTo": "sanity.imageAsset"
                 },
                 "optional": true
               },
@@ -395,8 +177,75 @@
         "button": {
           "type": "objectAttribute",
           "value": {
-            "type": "inline",
-            "name": "button"
+            "type": "object",
+            "attributes": {
+              "text": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                },
+                "optional": true
+              },
+              "href": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                },
+                "optional": true
+              },
+              "useDirectionsLink": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "boolean"
+                },
+                "optional": true
+              },
+              "variant": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "union",
+                  "of": [
+                    {
+                      "type": "string",
+                      "value": "primary"
+                    },
+                    {
+                      "type": "string",
+                      "value": "outlined"
+                    },
+                    {
+                      "type": "string",
+                      "value": "secondary"
+                    }
+                  ]
+                },
+                "optional": true
+              },
+              "target": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "union",
+                  "of": [
+                    {
+                      "type": "string",
+                      "value": "_self"
+                    },
+                    {
+                      "type": "string",
+                      "value": "_blank"
+                    }
+                  ]
+                },
+                "optional": true
+              },
+              "usePcoModal": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "boolean"
+                },
+                "optional": true
+              }
+            }
           },
           "optional": true
         },
@@ -467,66 +316,6 @@
           "optional": true
         }
       }
-    }
-  },
-  {
-    "type": "type",
-    "name": "page.reference",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_ref": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          }
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "reference"
-          }
-        },
-        "_weak": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      },
-      "dereferencesTo": "page"
-    }
-  },
-  {
-    "type": "type",
-    "name": "article.reference",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_ref": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          }
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "reference"
-          }
-        },
-        "_weak": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      },
-      "dereferencesTo": "article"
     }
   },
   {
@@ -686,12 +475,56 @@
                               "type": "union",
                               "of": [
                                 {
-                                  "type": "inline",
-                                  "name": "page.reference"
+                                  "type": "object",
+                                  "attributes": {
+                                    "_ref": {
+                                      "type": "objectAttribute",
+                                      "value": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "_type": {
+                                      "type": "objectAttribute",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "reference"
+                                      }
+                                    },
+                                    "_weak": {
+                                      "type": "objectAttribute",
+                                      "value": {
+                                        "type": "boolean"
+                                      },
+                                      "optional": true
+                                    }
+                                  },
+                                  "dereferencesTo": "page"
                                 },
                                 {
-                                  "type": "inline",
-                                  "name": "article.reference"
+                                  "type": "object",
+                                  "attributes": {
+                                    "_ref": {
+                                      "type": "objectAttribute",
+                                      "value": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "_type": {
+                                      "type": "objectAttribute",
+                                      "value": {
+                                        "type": "string",
+                                        "value": "reference"
+                                      }
+                                    },
+                                    "_weak": {
+                                      "type": "objectAttribute",
+                                      "value": {
+                                        "type": "boolean"
+                                      },
+                                      "optional": true
+                                    }
+                                  },
+                                  "dereferencesTo": "article"
                                 }
                               ]
                             },
@@ -755,8 +588,30 @@
               "asset": {
                 "type": "objectAttribute",
                 "value": {
-                  "type": "inline",
-                  "name": "sanity.imageAsset.reference"
+                  "type": "object",
+                  "attributes": {
+                    "_ref": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
+                    }
+                  },
+                  "dereferencesTo": "sanity.imageAsset"
                 },
                 "optional": true
               },
@@ -1151,8 +1006,69 @@
                 "logo": {
                   "type": "objectAttribute",
                   "value": {
-                    "type": "inline",
-                    "name": "logo"
+                    "type": "object",
+                    "attributes": {
+                      "asset": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "object",
+                          "attributes": {
+                            "_ref": {
+                              "type": "objectAttribute",
+                              "value": {
+                                "type": "string"
+                              }
+                            },
+                            "_type": {
+                              "type": "objectAttribute",
+                              "value": {
+                                "type": "string",
+                                "value": "reference"
+                              }
+                            },
+                            "_weak": {
+                              "type": "objectAttribute",
+                              "value": {
+                                "type": "boolean"
+                              },
+                              "optional": true
+                            }
+                          },
+                          "dereferencesTo": "sanity.imageAsset"
+                        },
+                        "optional": true
+                      },
+                      "media": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "unknown"
+                        },
+                        "optional": true
+                      },
+                      "hotspot": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "inline",
+                          "name": "sanity.imageHotspot"
+                        },
+                        "optional": true
+                      },
+                      "crop": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "inline",
+                          "name": "sanity.imageCrop"
+                        },
+                        "optional": true
+                      },
+                      "_type": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "string",
+                          "value": "image"
+                        }
+                      }
+                    }
                   },
                   "optional": false
                 },
@@ -1275,8 +1191,30 @@
               "asset": {
                 "type": "objectAttribute",
                 "value": {
-                  "type": "inline",
-                  "name": "sanity.imageAsset.reference"
+                  "type": "object",
+                  "attributes": {
+                    "_ref": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
+                    }
+                  },
+                  "dereferencesTo": "sanity.imageAsset"
                 },
                 "optional": true
               },
@@ -1375,8 +1313,30 @@
                 "asset": {
                   "type": "objectAttribute",
                   "value": {
-                    "type": "inline",
-                    "name": "sanity.imageAsset.reference"
+                    "type": "object",
+                    "attributes": {
+                      "_ref": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "_type": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "string",
+                          "value": "reference"
+                        }
+                      },
+                      "_weak": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "boolean"
+                        },
+                        "optional": true
+                      }
+                    },
+                    "dereferencesTo": "sanity.imageAsset"
                   },
                   "optional": true
                 },
@@ -1671,8 +1631,30 @@
               "asset": {
                 "type": "objectAttribute",
                 "value": {
-                  "type": "inline",
-                  "name": "sanity.imageAsset.reference"
+                  "type": "object",
+                  "attributes": {
+                    "_ref": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
+                    }
+                  },
+                  "dereferencesTo": "sanity.imageAsset"
                 },
                 "optional": true
               },
@@ -1765,8 +1747,30 @@
               "asset": {
                 "type": "objectAttribute",
                 "value": {
-                  "type": "inline",
-                  "name": "sanity.imageAsset.reference"
+                  "type": "object",
+                  "attributes": {
+                    "_ref": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
+                    }
+                  },
+                  "dereferencesTo": "sanity.imageAsset"
                 },
                 "optional": true
               },
@@ -1807,24 +1811,87 @@
         "overlay": {
           "type": "objectAttribute",
           "value": {
-            "type": "inline",
-            "name": "overlay"
+            "type": "object",
+            "attributes": {
+              "opacity": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "number"
+                },
+                "optional": false
+              },
+              "blendMode": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "union",
+                  "of": [
+                    {
+                      "type": "string",
+                      "value": "multiply"
+                    },
+                    {
+                      "type": "string",
+                      "value": "overlay"
+                    },
+                    {
+                      "type": "string",
+                      "value": "darken"
+                    },
+                    {
+                      "type": "string",
+                      "value": "color"
+                    }
+                  ]
+                },
+                "optional": false
+              }
+            }
           },
           "optional": true
         },
         "primaryCTA": {
           "type": "objectAttribute",
           "value": {
-            "type": "inline",
-            "name": "primaryCTA"
+            "type": "object",
+            "attributes": {
+              "text": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                },
+                "optional": false
+              },
+              "link": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                },
+                "optional": false
+              }
+            }
           },
           "optional": false
         },
         "secondaryCTA": {
           "type": "objectAttribute",
           "value": {
-            "type": "inline",
-            "name": "secondaryCTA"
+            "type": "object",
+            "attributes": {
+              "text": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                },
+                "optional": false
+              },
+              "link": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                },
+                "optional": false
+              }
+            }
           },
           "optional": true
         }
@@ -2094,8 +2161,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -2323,20 +2412,6 @@
         },
         "optional": true
       },
-      "apiKey": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "string"
-        },
-        "optional": false
-      },
-      "apiSecret": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "string"
-        },
-        "optional": false
-      },
       "organizationId": {
         "type": "objectAttribute",
         "value": {
@@ -2391,13 +2466,6 @@
         "type": "objectAttribute",
         "value": {
           "type": "boolean"
-        },
-        "optional": true
-      },
-      "webhookSecret": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "string"
         },
         "optional": true
       }
@@ -2552,8 +2620,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -2591,36 +2681,6 @@
         },
         "optional": true
       }
-    }
-  },
-  {
-    "type": "type",
-    "name": "staff.reference",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_ref": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          }
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "reference"
-          }
-        },
-        "_weak": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      },
-      "dereferencesTo": "staff"
     }
   },
   {
@@ -2688,8 +2748,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -2919,8 +3001,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -2979,16 +3083,38 @@
           "of": {
             "type": "object",
             "attributes": {
-              "_key": {
+              "_ref": {
                 "type": "objectAttribute",
                 "value": {
                   "type": "string"
                 }
+              },
+              "_type": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string",
+                  "value": "reference"
+                }
+              },
+              "_weak": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "boolean"
+                },
+                "optional": true
               }
             },
+            "dereferencesTo": "staff",
             "rest": {
-              "type": "inline",
-              "name": "staff.reference"
+              "type": "object",
+              "attributes": {
+                "_key": {
+                  "type": "objectAttribute",
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },
@@ -3041,8 +3167,30 @@
               "asset": {
                 "type": "objectAttribute",
                 "value": {
-                  "type": "inline",
-                  "name": "sanity.imageAsset.reference"
+                  "type": "object",
+                  "attributes": {
+                    "_ref": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
+                    }
+                  },
+                  "dereferencesTo": "sanity.imageAsset"
                 },
                 "optional": true
               },
@@ -3106,36 +3254,6 @@
         },
         "optional": true
       }
-    }
-  },
-  {
-    "type": "type",
-    "name": "sanity.fileAsset.reference",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_ref": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          }
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "reference"
-          }
-        },
-        "_weak": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      },
-      "dereferencesTo": "sanity.fileAsset"
     }
   },
   {
@@ -3224,8 +3342,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.fileAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.fileAsset"
               },
               "optional": true
             },
@@ -3381,8 +3521,30 @@
       "author": {
         "type": "objectAttribute",
         "value": {
-          "type": "inline",
-          "name": "staff.reference"
+          "type": "object",
+          "attributes": {
+            "_ref": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "string"
+              }
+            },
+            "_type": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "string",
+                "value": "reference"
+              }
+            },
+            "_weak": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "boolean"
+              },
+              "optional": true
+            }
+          },
+          "dereferencesTo": "staff"
         },
         "optional": true
       },
@@ -3394,8 +3556,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -3492,8 +3676,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -4310,8 +4516,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -4499,8 +4727,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -4730,8 +4980,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -4901,16 +5173,38 @@
           "of": {
             "type": "object",
             "attributes": {
-              "_key": {
+              "_ref": {
                 "type": "objectAttribute",
                 "value": {
                   "type": "string"
                 }
+              },
+              "_type": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string",
+                  "value": "reference"
+                }
+              },
+              "_weak": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "boolean"
+                },
+                "optional": true
               }
             },
+            "dereferencesTo": "staff",
             "rest": {
-              "type": "inline",
-              "name": "staff.reference"
+              "type": "object",
+              "attributes": {
+                "_key": {
+                  "type": "objectAttribute",
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },
@@ -5008,8 +5302,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -5387,8 +5703,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -5438,8 +5776,30 @@
             "asset": {
               "type": "objectAttribute",
               "value": {
-                "type": "inline",
-                "name": "sanity.imageAsset.reference"
+                "type": "object",
+                "attributes": {
+                  "_ref": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "_type": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "string",
+                      "value": "reference"
+                    }
+                  },
+                  "_weak": {
+                    "type": "objectAttribute",
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "optional": true
+                  }
+                },
+                "dereferencesTo": "sanity.imageAsset"
               },
               "optional": true
             },
@@ -5662,8 +6022,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -6115,8 +6497,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -6289,8 +6693,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -6481,8 +6907,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -6823,8 +7271,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -7043,8 +7513,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -7224,8 +7716,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -7472,8 +7986,30 @@
                     "asset": {
                       "type": "objectAttribute",
                       "value": {
-                        "type": "inline",
-                        "name": "sanity.imageAsset.reference"
+                        "type": "object",
+                        "attributes": {
+                          "_ref": {
+                            "type": "objectAttribute",
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "_type": {
+                            "type": "objectAttribute",
+                            "value": {
+                              "type": "string",
+                              "value": "reference"
+                            }
+                          },
+                          "_weak": {
+                            "type": "objectAttribute",
+                            "value": {
+                              "type": "boolean"
+                            },
+                            "optional": true
+                          }
+                        },
+                        "dereferencesTo": "sanity.imageAsset"
                       },
                       "optional": true
                     },
@@ -7907,8 +8443,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -8330,8 +8888,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -8587,8 +9167,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -8703,8 +9305,30 @@
                     "asset": {
                       "type": "objectAttribute",
                       "value": {
-                        "type": "inline",
-                        "name": "sanity.imageAsset.reference"
+                        "type": "object",
+                        "attributes": {
+                          "_ref": {
+                            "type": "objectAttribute",
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "_type": {
+                            "type": "objectAttribute",
+                            "value": {
+                              "type": "string",
+                              "value": "reference"
+                            }
+                          },
+                          "_weak": {
+                            "type": "objectAttribute",
+                            "value": {
+                              "type": "boolean"
+                            },
+                            "optional": true
+                          }
+                        },
+                        "dereferencesTo": "sanity.imageAsset"
                       },
                       "optional": true
                     },
@@ -9025,8 +9649,30 @@
                   "asset": {
                     "type": "objectAttribute",
                     "value": {
-                      "type": "inline",
-                      "name": "sanity.imageAsset.reference"
+                      "type": "object",
+                      "attributes": {
+                        "_ref": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "_type": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "string",
+                            "value": "reference"
+                          }
+                        },
+                        "_weak": {
+                          "type": "objectAttribute",
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "optional": true
+                        }
+                      },
+                      "dereferencesTo": "sanity.imageAsset"
                     },
                     "optional": true
                   },
@@ -9250,16 +9896,38 @@
                 "of": {
                   "type": "object",
                   "attributes": {
-                    "_key": {
+                    "_ref": {
                       "type": "objectAttribute",
                       "value": {
                         "type": "string"
                       }
+                    },
+                    "_type": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "string",
+                        "value": "reference"
+                      }
+                    },
+                    "_weak": {
+                      "type": "objectAttribute",
+                      "value": {
+                        "type": "boolean"
+                      },
+                      "optional": true
                     }
                   },
+                  "dereferencesTo": "staff",
                   "rest": {
-                    "type": "inline",
-                    "name": "staff.reference"
+                    "type": "object",
+                    "attributes": {
+                      "_key": {
+                        "type": "objectAttribute",
+                        "value": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -9796,36 +10464,6 @@
     }
   },
   {
-    "type": "type",
-    "name": "assist.instruction.context.reference",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_ref": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          }
-        },
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "reference"
-          }
-        },
-        "_weak": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "boolean"
-          },
-          "optional": true
-        }
-      },
-      "dereferencesTo": "assist.instruction.context"
-    }
-  },
-  {
     "name": "sanity.assist.instruction.context",
     "type": "type",
     "value": {
@@ -9841,8 +10479,30 @@
         "reference": {
           "type": "objectAttribute",
           "value": {
-            "type": "inline",
-            "name": "assist.instruction.context.reference"
+            "type": "object",
+            "attributes": {
+              "_ref": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              },
+              "_type": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string",
+                  "value": "reference"
+                }
+              },
+              "_weak": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "boolean"
+                },
+                "optional": true
+              }
+            },
+            "dereferencesTo": "assist.instruction.context"
           },
           "optional": false
         }
@@ -10608,13 +11268,6 @@
           },
           "optional": true
         },
-        "thumbHash": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": true
-        },
         "hasAlpha": {
           "type": "objectAttribute",
           "value": {
@@ -10707,35 +11360,35 @@
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "extension": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "mimeType": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "size": {
         "type": "objectAttribute",
         "value": {
           "type": "number"
         },
-        "optional": false
+        "optional": true
       },
       "assetId": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "uploadId": {
         "type": "objectAttribute",
@@ -10749,14 +11402,14 @@
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "url": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "source": {
         "type": "objectAttribute",
@@ -10880,35 +11533,35 @@
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "extension": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "mimeType": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "size": {
         "type": "objectAttribute",
         "value": {
           "type": "number"
         },
-        "optional": false
+        "optional": true
       },
       "assetId": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "uploadId": {
         "type": "objectAttribute",
@@ -10922,14 +11575,14 @@
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "url": {
         "type": "objectAttribute",
         "value": {
           "type": "string"
         },
-        "optional": false
+        "optional": true
       },
       "metadata": {
         "type": "objectAttribute",

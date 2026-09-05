@@ -2,7 +2,7 @@ import {defineCliConfig} from 'sanity/cli'
 import {config} from 'dotenv'
 
 // Load environment variables
-config()
+config({quiet: true})
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID
 const dataset = process.env.SANITY_STUDIO_DATASET
@@ -18,14 +18,11 @@ if (!dataset) {
 export default defineCliConfig({
   api: {
     projectId,
-    dataset
+    dataset,
   },
-  /**
-   * Enable auto-updates for studios.
-   * Learn more at https://www.sanity.io/docs/cli#auto-updates
-   */
+  // Deploy the same dependency versions verified locally.
   deployment: {
     appId: 's8gohn15uxftcysrkubns5ky',
-    autoUpdates: true,
+    autoUpdates: false,
   },
 })

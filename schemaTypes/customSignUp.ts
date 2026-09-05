@@ -146,7 +146,6 @@ export default defineType({
 	preview: {
 		select: {
 			title: 'title',
-			description: 'description',
 			category: 'category',
 			date: 'date',
 			active: 'active',
@@ -154,7 +153,7 @@ export default defineType({
 			media: 'image'
 		},
 		prepare(selection) {
-			const { title, description, category, date, active, featured, media } = selection;
+			const { title, category, date, active, featured, media } = selection;
 			
 			// Build status badges
 			const badges = [];
