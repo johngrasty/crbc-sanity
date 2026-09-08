@@ -9,13 +9,21 @@
     "start": "sanity start",
     "build": "sanity build",
     "deploy": "sanity deploy",
-    "deploy-graphql": "sanity graphql deploy"
+    "deploy-graphql": "sanity graphql deploy",
+    "check": "tsc --noEmit",
+    "schema:check": "sanity schema validate",
+    "typegen": "sanity schema extract --enforce-required-fields && sanity typegen generate",
+    "verify": "npm run check && npm run lint && npm test && npm run schema:check && npm run build",
+    "lint": "eslint . --max-warnings=0",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "keywords": [
     "sanity"
   ],
   "dependencies": {
     "@sanity/assist": "^5.0.0",
+    "@sanity/client": "^7.27.0",
+    "@sanity/preview-url-secret": "^4.1.5",
     "@sanity/vision": "^4.14.2",
     "dotenv": "^17.2.2",
     "lucide-react": "^0.542.0",
@@ -38,5 +46,17 @@
     "printWidth": 100,
     "bracketSpacing": false,
     "singleQuote": true
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0 <23"
+  },
+  "overrides": {
+    "@sanity/runtime-cli": {
+      "adm-zip": "0.6.0"
+    },
+    "sanity": {
+      "@sanity/uuid": "3.0.3"
+    }
   }
 }

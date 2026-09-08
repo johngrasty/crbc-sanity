@@ -6,105 +6,44 @@ import {assist} from '@sanity/assist'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
 import {PreviewAction} from './structure/documentActions'
+import {singletonActions, singletonTypes} from './structure/singletons'
+import {
+  createDocumentPreviewUrl,
+  documentSlug,
+  previewableTypes,
+  previewOrigin,
+  singletonPaths,
+} from './structure/preview'
 
-// Validate required environment variables
-const requiredEnvs = {
-  projectId: process.env.SANITY_STUDIO_PROJECT_ID,
-  dataset: process.env.SANITY_STUDIO_DATASET
-} as const;
-
-// Validate before use
-Object.entries(requiredEnvs).forEach(([key, value]) => {
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-});
-
-// After validation, we can safely assert these are strings
-const projectId = requiredEnvs.projectId as string;
-const dataset = requiredEnvs.dataset as string;
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID
+const dataset = process.env.SANITY_STUDIO_DATASET
+if (!projectId) throw new Error('Missing required environment variable: SANITY_STUDIO_PROJECT_ID')
+if (!dataset) throw new Error('Missing required environment variable: SANITY_STUDIO_DATASET')
 
 export default defineConfig({
   name: 'default',
   title: 'CRBC',
-
   projectId,
   dataset,
-
-  plugins: [
-    structureTool({
-      structure: deskStructure
-    }),
-    visionTool(),
-    media(),
-    assist()
-  ],
-
+  plugins: [structureTool({structure: deskStructure}), visionTool(), media(), assist()],
   schema: {
     types: schemaTypes,
+    templates: (templates) => templates.filter(({schemaType}) => !singletonTypes.has(schemaType)),
   },
-
   document: {
-    // For church settings - only allow one instance
     actions: (input, context) => {
-      if (context.schemaType === 'settings') {
-        return input.filter(({ action }) => action && !['delete', 'duplicate'].includes(action));
+      if (singletonTypes.has(context.schemaType)) {
+        return input.filter(({action}) => action && singletonActions.has(action))
       }
-      
-      // Add preview action for previewable types
-      const previewableTypes = ['announcement', 'ministry', 'article', 'page'];
-      if (previewableTypes.includes(context.schemaType)) {
-        return [...input, PreviewAction];
-      }
-      
-      return input;
+      return previewableTypes.has(context.schemaType) ? [...input, PreviewAction] : input
     },
-    
-    // Preview configuration for announcements
     productionUrl: async (prev, context) => {
-      const {document} = context;
-      const previewUrl = process.env.SANITY_STUDIO_PREVIEW_URL || 'http://localhost:5173';
-      
-      // Handle announcement previews
-      if (document._type === 'announcement') {
-        const slug = (document.slug as any)?.current;
-        if (slug) {
-          return `${previewUrl}/api/preview?type=announcement&slug=${slug}`;
-        }
+      const {document} = context
+      if (previewableTypes.has(document._type) && documentSlug(document)) {
+        return createDocumentPreviewUrl(context.getClient({apiVersion: '2025-02-19'}), document)
       }
-      
-      // Handle ministry previews
-      if (document._type === 'ministry') {
-        const slug = (document.slug as any)?.current;
-        if (slug) {
-          return `${previewUrl}/ministries/${slug}`;
-        }
-      }
-      
-      // Handle page previews
-      if (document._type === 'page') {
-        const slug = (document.slug as any)?.current;
-        if (slug) {
-          return `${previewUrl}/${slug}`;
-        }
-      }
-      
-      // Default to homepage for singleton pages
-      if (['homePage', 'aboutPage', 'beliefsPage', 'givingPage', 'visitPage', 'connectPage', 'watchPage'].includes(document._type)) {
-        const pageMap: Record<string, string> = {
-          homePage: '',
-          aboutPage: 'about',
-          beliefsPage: 'beliefs',
-          givingPage: 'giving',
-          visitPage: 'visit',
-          connectPage: 'connect',
-          watchPage: 'watch'
-        };
-        const path = pageMap[document._type] || '';
-        return `${previewUrl}/${path}`;
-      }
-      
-      return prev;
-    }
-  }
+      const path = singletonPaths[document._type]
+      return path ? new URL(path, previewOrigin).toString() : prev
+    },
+  },
 })

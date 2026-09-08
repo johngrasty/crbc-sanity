@@ -45,7 +45,7 @@ export default defineType({
           type: 'string',
           title: 'Alternative Text',
           description: 'Describe what the image shows (10-125 characters). Should support the card\'s message. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
-          validation: (Rule: any) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
+          validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
         }
       ]
     }),

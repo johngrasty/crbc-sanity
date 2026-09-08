@@ -181,11 +181,10 @@ export default defineType({
 			featured: 'featured',
 			startDate: 'startDate',
 			endDate: 'endDate',
-			ctaText: 'ctaText',
 			media: 'image'
 		},
 		prepare(selection) {
-			const { title, description, active, priority, featured, startDate, endDate, ctaText, media } = selection;
+			const { title, description, active, priority, featured, startDate, endDate, media } = selection;
 			const now = new Date();
 			const start = startDate ? new Date(startDate) : null;
 			const end = endDate ? new Date(endDate) : null;

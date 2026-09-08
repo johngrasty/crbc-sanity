@@ -72,8 +72,8 @@ export default defineType({
 			category: 'category',
 			restricted: 'restricted'
 		},
-		prepare({ title, category, restricted }: { title: string; category: 'forms' | 'bible-study' | 'documents' | 'worship' | 'newsletter'; restricted: boolean }) {
-			const categories = {
+		prepare({ title, category, restricted }) {
+			const categories: Record<string, string> = {
 				'forms': 'Ministry Forms',
 				'bible-study': 'Bible Study',
 				'documents': 'Church Documents',

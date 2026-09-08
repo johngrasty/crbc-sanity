@@ -10,7 +10,7 @@ export const SignUpHelp = () => {
 				<p style={{ marginBottom: '1rem' }}>
 					<strong>What are Custom Sign-Ups?</strong>
 					<br />
-					Custom sign-ups are for PCO People forms or external registration links that aren't
+					Custom sign-ups are for PCO People forms or external registration links that are not
 					full events in Planning Center Calendar.
 				</p>
 				<p style={{ marginBottom: '1rem' }}>
@@ -20,7 +20,7 @@ export const SignUpHelp = () => {
 					<li>PCO People forms (surveys, volunteer sign-ups, etc.)</li>
 					<li>External registration links</li>
 					<li>Ongoing ministry opportunities</li>
-					<li>Simple sign-ups that don't need a full event in PCO Calendar</li>
+					<li>Simple sign-ups that do not need a full event in PCO Calendar</li>
 				</ul>
 				<p style={{ marginBottom: '1rem' }}>
 					<strong>Note:</strong> Most events should be managed in Planning Center Calendar and
