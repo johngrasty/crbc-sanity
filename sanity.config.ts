@@ -7,13 +7,7 @@ import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
 import {PreviewAction} from './structure/documentActions'
 import {singletonActions, singletonTypes} from './structure/singletons'
-import {
-  createDocumentPreviewUrl,
-  documentSlug,
-  previewableTypes,
-  previewOrigin,
-  singletonPaths,
-} from './structure/preview'
+import {previewableTypes, previewOrigin, singletonPaths} from './structure/preview'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID
 const dataset = process.env.SANITY_STUDIO_DATASET
@@ -37,11 +31,10 @@ export default defineConfig({
       }
       return previewableTypes.has(context.schemaType) ? [...input, PreviewAction] : input
     },
-    productionUrl: async (prev, context) => {
-      const {document} = context
-      if (previewableTypes.has(document._type) && documentSlug(document)) {
-        return createDocumentPreviewUrl(context.getClient({apiVersion: '2025-02-19'}), document)
-      }
+    // Studio re-resolves productionUrl on every debounced form change, so it must
+    // never mint a preview secret here (that writes to the dataset on each pause in
+    // typing). Slugged types get a secret only when the Preview action is clicked.
+    productionUrl: async (prev, {document}) => {
       const path = singletonPaths[document._type]
       return path ? new URL(path, previewOrigin).toString() : prev
     },
