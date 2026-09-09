@@ -106,6 +106,15 @@ export const deskStructure = (S: StructureBuilder) =>
 
       S.divider(),
 
+      // Site Alert (single banner shown on every page; weather closures, urgent notices)
+      S.listItem()
+        .title('Site Alert (closures, urgent notices)')
+        .id('siteAlert')
+        .icon(AlertCircle)
+        .child(S.document().schemaType('siteAlert').documentId('siteAlert')),
+
+      S.divider(),
+
       // Ministries Section
       S.listItem()
         .title('Ministries')
@@ -377,11 +386,6 @@ export const deskStructure = (S: StructureBuilder) =>
                     .filter('_type == "announcement" && active == false')
                     .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
                 ),
-              S.divider(),
-              S.listItem()
-                .title('Site Alerts')
-                .icon(AlertCircle)
-                .child(S.documentTypeList('siteAlert')),
             ])
         ),
 
