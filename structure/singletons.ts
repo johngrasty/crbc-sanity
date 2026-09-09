@@ -12,6 +12,7 @@ export const singletonTypes = new Set([
   'lifeGroupsPage',
   'communityGroupsPage',
   'settings',
+  'siteAlert',
   'designTokens',
   'pcoSettings',
   'mainMenu',
