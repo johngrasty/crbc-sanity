@@ -1003,6 +1003,11 @@ export type WatchPage = {
     youtubeUrl?: string
     facebookUrl?: string
   }
+  recentMessages?: {
+    title?: string
+    description?: string
+    embedUrl?: string
+  }
   archive?: {
     title?: string
     description?: string
