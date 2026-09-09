@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity';
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list';
 
 export default defineType({
 	name: 'staff',
@@ -84,12 +85,8 @@ export default defineType({
 			title: 'Phone',
 			type: 'string'
 		}),
-		defineField({
-			name: 'order',
-			title: 'Display Order',
-			type: 'number',
-			description: 'Used to control the order of staff members within their category'
-		}),
+		// Set by drag-and-drop in the Staff & Leadership lists; hidden from the form.
+		orderRankField({ type: 'staff' }),
 		defineField({
 			name: 'isActive',
 			title: 'Active',
@@ -99,12 +96,13 @@ export default defineType({
 		})
 	],
 	orderings: [
+		orderRankOrdering,
 		{
-			title: 'Category, Display Order',
+			title: 'Category, then display order',
 			name: 'categoryOrder',
 			by: [
 				{ field: 'category', direction: 'asc' },
-				{ field: 'order', direction: 'asc' },
+				{ field: 'orderRank', direction: 'asc' },
 				{ field: 'name', direction: 'asc' }
 			]
 		}

@@ -14,7 +14,6 @@ export const singletonTypes = new Set([
   'settings',
   'siteAlert',
   'designTokens',
-  'pcoSettings',
   'mainMenu',
   'footerMenu',
   'footerSettings',

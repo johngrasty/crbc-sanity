@@ -352,52 +352,6 @@ export type Slug = {
   source?: string
 }
 
-export type PcoSettings = {
-  _id: string
-  _type: 'pcoSettings'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  title?: string
-  organizationId?: string
-  enabledProducts?: Array<
-    'calendar' | 'registrations' | 'check-ins' | 'giving' | 'people' | 'services'
-  >
-  cacheTimeout?: number
-  testMode?: boolean
-}
-
-export type Registration = {
-  _id: string
-  _type: 'registration'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  title: string
-  slug: Slug
-  description?: string
-  category: 'event' | 'ministry' | 'volunteer'
-  integrationMethod: 'embed' | 'link' | 'api'
-  pcoEventId?: string
-  pcoFormUrl?: string
-  pcoEmbedCode?: string
-  deadline?: string
-  featured?: boolean
-  active?: boolean
-  image?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
-    media?: unknown
-    hotspot?: SanityImageHotspot
-    crop?: SanityImageCrop
-    _type: 'image'
-  }
-}
-
 export type Ministry = {
   _id: string
   _type: 'ministry'
@@ -770,22 +724,6 @@ export type Announcement = {
   endDate?: string
 }
 
-export type StaffOrder = {
-  _id: string
-  _type: 'staffOrder'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  category: 'pastoral' | 'ministry' | 'support' | 'deacons'
-  staff: Array<{
-    _ref: string
-    _type: 'reference'
-    _weak?: boolean
-    _key: string
-    [internalGroqTypeReferenceTo]?: 'staff'
-  }>
-}
-
 export type Staff = {
   _id: string
   _type: 'staff'
@@ -830,7 +768,7 @@ export type Staff = {
   }>
   email?: string
   phone?: string
-  order?: number
+  orderRank?: string
   isActive?: boolean
 }
 
@@ -1840,8 +1778,6 @@ export type AllSanitySchemaTypes =
   | SanityImageCrop
   | SanityImageHotspot
   | Slug
-  | PcoSettings
-  | Registration
   | Ministry
   | Resource
   | Article
@@ -1852,7 +1788,6 @@ export type AllSanitySchemaTypes =
   | Settings
   | SiteAlert
   | Announcement
-  | StaffOrder
   | Staff
   | Page
   | CommunityGroupsPage

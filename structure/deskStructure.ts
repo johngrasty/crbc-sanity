@@ -1,4 +1,5 @@
-import { StructureBuilder } from 'sanity/structure';
+import { StructureBuilder, StructureResolverContext } from 'sanity/structure';
+import { orderableDocumentListDeskItem } from '@sanity/orderable-document-list';
 import {
   BellRing,
   Settings,
@@ -8,7 +9,6 @@ import {
   Folder,
   Navigation,
   UserCircle,
-  ListOrdered,
   Menu,
   MenuSquare,
   Church,
@@ -21,7 +21,6 @@ import {
   MapPin,
   Heart,
   UserPlus,
-  Database,
   HelpCircle,
   CalendarDays,
   Briefcase
@@ -29,7 +28,7 @@ import {
 import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
 import { SignUpHelp } from '../schemaTypes/components/SignUpHelp';
 
-export const deskStructure = (S: StructureBuilder) =>
+export const deskStructure = (S: StructureBuilder, context: StructureResolverContext) =>
   S.list()
     .title('Content')
     .items([
@@ -274,11 +273,6 @@ export const deskStructure = (S: StructureBuilder) =>
                 .id('designTokens')
                 .icon(Palette)
                 .child(S.document().schemaType('designTokens').documentId('designTokens')),
-              S.listItem()
-                .title('Planning Center Settings')
-                .id('pcoSettings')
-                .icon(Database)
-                .child(S.document().schemaType('pcoSettings').documentId('pcoSettings')),
             ])
         ),
 
@@ -292,14 +286,49 @@ export const deskStructure = (S: StructureBuilder) =>
           S.list()
             .title('Staff & Leadership')
             .items([
+              // Drag to reorder within each category. The plugin writes staff.orderRank;
+              // the website sorts by category, then orderRank.
+              orderableDocumentListDeskItem({
+                type: 'staff',
+                title: 'Pastoral Staff (drag to reorder)',
+                icon: UserCircle,
+                filter: 'category == "pastoral"',
+                id: 'staff-pastoral',
+                S,
+                context,
+              }),
+              orderableDocumentListDeskItem({
+                type: 'staff',
+                title: 'Ministry Staff (drag to reorder)',
+                icon: UserCircle,
+                filter: 'category == "ministry"',
+                id: 'staff-ministry',
+                S,
+                context,
+              }),
+              orderableDocumentListDeskItem({
+                type: 'staff',
+                title: 'Support Staff (drag to reorder)',
+                icon: UserCircle,
+                filter: 'category == "support"',
+                id: 'staff-support',
+                S,
+                context,
+              }),
+              orderableDocumentListDeskItem({
+                type: 'staff',
+                title: 'Deacons (drag to reorder)',
+                icon: UserCircle,
+                filter: 'category == "deacons"',
+                id: 'staff-deacons',
+                S,
+                context,
+              }),
+              S.divider(),
               S.listItem()
-                .title('Staff Members')
-                .icon(UserCircle)
-                .child(S.documentTypeList('staff')),
-              S.listItem()
-                .title('Staff Display Order')
-                .icon(ListOrdered)
-                .child(S.documentTypeList('staffOrder')),
+                .title('All Staff Members')
+                .icon(Users)
+                .child(S.documentTypeList('staff').title('All Staff Members')),
             ])
         ),
 

@@ -4,7 +4,6 @@ import textWithImage from './sections/textWithImage';
 import gallery from './sections/gallery';
 import callToAction from './sections/callToAction';
 import staff from './staff';
-import staffOrder from './staffOrder';
 import announcement from './announcement';
 import settings from './settings';
 import mainMenu from './menus/mainMenu';
@@ -30,8 +29,6 @@ import designTokens from './designTokens';
 import logoCloud from './sections/logo-cloud';
 import footerSettings from './singletons/footer';
 import ministry from './ministry';
-import registration from './registration';
-import pcoSettings from './pcoSettings';
 import customSignUp from './customSignUp';
 import jobOpening from './jobOpening';
 
@@ -50,7 +47,6 @@ export const schemaTypes = [
 	communityGroupsPage,
 	page,
 	staff,
-	staffOrder,
 	announcement,
 	siteAlert,
 	settings,
@@ -61,8 +57,6 @@ export const schemaTypes = [
 	article,
 	resource,
 	ministry,
-	registration,
-	pcoSettings,
 	customSignUp,
 	jobOpening,
 	// Objects (Sections)
