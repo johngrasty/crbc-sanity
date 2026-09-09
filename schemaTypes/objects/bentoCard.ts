@@ -20,7 +20,13 @@ export default defineType({
       name: 'description',
       title: 'Description',
       type: 'text',
-      rows: 3
+      rows: 3,
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const parent = context.parent as { showLocationInfo?: boolean } | undefined;
+          if (value || parent?.showLocationInfo) return true;
+          return 'Add a description, or turn on Show location info.';
+        })
     }),
     defineField({
       name: 'showLocationInfo',
@@ -47,7 +53,13 @@ export default defineType({
           description: 'Describe what the image shows (10-125 characters). Should support the card\'s message. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
           validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
         }
-      ]
+      ],
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const parent = context.parent as { componentType?: string } | undefined;
+          if (value || parent?.componentType) return true;
+          return 'Add a background image, or choose a component type for this card.';
+        })
     }),
     defineField({
       name: 'button',
@@ -103,7 +115,14 @@ export default defineType({
           description: 'Open this link in a Planning Center modal instead of navigating away',
           initialValue: false
         }
-      ]
+      ],
+      validation: (Rule) =>
+        Rule.custom((value) => {
+          const button = value as { text?: string; href?: string; useDirectionsLink?: boolean } | undefined;
+          if (!button?.text) return true;
+          if (button.href || button.useDirectionsLink) return true;
+          return 'Add a button link, or turn on Use directions link.';
+        })
     }),
     defineField({
       name: 'showServiceTimes',
@@ -136,7 +155,8 @@ export default defineType({
           { title: 'Medium (2 columns)', value: 'lg:col-span-2' },
           { title: 'Small (1 column)', value: 'lg:col-span-1' }
         ]
-      }
+      },
+      validation: (Rule) => Rule.required().error('Pick a card width so the home page grid lays out correctly')
     }),
     defineField({
       name: 'dark',

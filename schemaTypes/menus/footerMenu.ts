@@ -64,7 +64,8 @@ export default defineType({
 										}
 									}
 								}
-							]
+							],
+							validation: (Rule) => Rule.min(1).error('Add at least one link in this column')
 						}
 					],
 					preview: {
@@ -81,7 +82,8 @@ export default defineType({
 						}
 					}
 				}
-			]
+			],
+			validation: (Rule) => Rule.min(1).error('Add at least one footer column')
 		}),
 		defineField({
 			name: 'socialLinks',

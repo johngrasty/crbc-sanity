@@ -49,7 +49,8 @@ export default defineType({
           title: 'Description',
           type: 'text',
           rows: 4,
-          initialValue: 'Whether you\'re exploring faith for the first time or looking for a new church home, we welcome you with open arms. Come as you are and discover a community where you can grow in your relationship with God and connect with others.'
+          initialValue: 'Whether you\'re exploring faith for the first time or looking for a new church home, we welcome you with open arms. Come as you are and discover a community where you can grow in your relationship with God and connect with others.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'primaryButton',
@@ -113,8 +114,8 @@ export default defineType({
               ]
             }
           ],
-          validation: (Rule) => Rule.length(5).error('Please upload exactly 5 images for the hero section grid'),
-          description: 'Upload exactly 5 images that will be displayed in the hero section grid. The layout is optimized for 5 images.'
+          validation: (Rule) => Rule.min(3).max(5).error('Please upload between 3 and 5 images for the hero section grid'),
+          description: 'Upload 3 to 5 images that will be displayed in the hero section grid. The layout adapts to the number you upload.'
         })
       ]
     }),
@@ -127,14 +128,16 @@ export default defineType({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Plan Your Visit'
+          initialValue: 'Plan Your Visit',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
           rows: 3,
-          initialValue: 'We want your first visit to be comfortable and welcoming. Here\'s everything you need to know to plan your visit with us.'
+          initialValue: 'We want your first visit to be comfortable and welcoming. Here\'s everything you need to know to plan your visit with us.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'serviceInfo',
@@ -145,7 +148,8 @@ export default defineType({
               name: 'title',
               title: 'Service Info Title',
               type: 'string',
-              initialValue: 'Service Times'
+              initialValue: 'Service Times',
+              validation: (Rule) => Rule.required()
             }),
             defineField({
               name: 'note',
@@ -166,7 +170,8 @@ export default defineType({
               name: 'title',
               title: 'Section Title',
               type: 'string',
-              initialValue: 'What to Expect'
+              initialValue: 'What to Expect',
+              validation: (Rule) => Rule.required()
             }),
             defineField({
               name: 'items',
@@ -179,13 +184,15 @@ export default defineType({
                     defineField({
                       name: 'title',
                       title: 'Item Title',
-                      type: 'string'
+                      type: 'string',
+                      validation: (Rule) => Rule.required()
                     }),
                     defineField({
                       name: 'description',
                       title: 'Item Description',
                       type: 'text',
-                      rows: 3
+                      rows: 3,
+                      validation: (Rule) => Rule.required()
                     }),
                     defineField({
                       name: 'icon',
@@ -217,7 +224,8 @@ export default defineType({
                   description: 'Safe, fun, and age-appropriate programs for children during the service. Check-in process ensures security and peace of mind.',
                   icon: 'baby'
                 }
-              ]
+              ],
+              validation: (Rule) => Rule.min(1).error('Add at least one thing visitors can expect')
             })
           ]
         }),
@@ -230,7 +238,8 @@ export default defineType({
               name: 'title',
               title: 'Location Title',
               type: 'string',
-              initialValue: 'Find Us'
+              initialValue: 'Find Us',
+              validation: (Rule) => Rule.required()
             }),
             defineField({
               name: 'addressNote',
@@ -246,7 +255,8 @@ export default defineType({
               type: 'text',
               rows: 4,
               initialValue: 'We\'re easy to find with plenty of free parking available. Look for the CRBC sign at the main entrance. Our greeters will be happy to help you find your way around.',
-              description: 'Custom directions and parking information specific to first-time visitors'
+              description: 'Custom directions and parking information specific to first-time visitors',
+              validation: (Rule) => Rule.required().error('The visit page shows this as the parking and directions text')
             })
           ]
         })
@@ -261,14 +271,16 @@ export default defineType({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Frequently Asked Questions'
+          initialValue: 'Frequently Asked Questions',
+          validation: (Rule) => Rule.required().error('The visit page shows this as the FAQ heading')
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
           rows: 2,
-          initialValue: 'Have questions about visiting? We\'ve got answers. Can\'t find what you\'re looking for? Feel free to contact us directly.'
+          initialValue: 'Have questions about visiting? We\'ve got answers. Can\'t find what you\'re looking for? Feel free to contact us directly.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'contactInfo',
@@ -307,13 +319,15 @@ export default defineType({
                 defineField({
                   name: 'question',
                   title: 'Question',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'answer',
                   title: 'Answer',
                   type: 'text',
-                  rows: 4
+                  rows: 4,
+                  validation: (Rule) => Rule.required()
                 })
               ]
             }
@@ -343,7 +357,8 @@ export default defineType({
               question: 'Is there parking available?',
               answer: 'Yes! We have a large parking lot behind the church building with plenty of free parking spaces. Our greeters can help direct you if needed.'
             }
-          ]
+          ],
+          validation: (Rule) => Rule.min(1).error('Add at least one question')
         })
       ]
     })

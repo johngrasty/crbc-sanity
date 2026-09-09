@@ -33,6 +33,7 @@ export default defineType({
       type: 'string',
       group: 'hero',
       initialValue: 'Watch Online',
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'hero',
@@ -45,6 +46,7 @@ export default defineType({
           title: 'Hero Title',
           type: 'string',
           initialValue: 'Watch Online',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'description',
@@ -53,6 +55,7 @@ export default defineType({
           rows: 3,
           initialValue:
             'Join us for live worship services or catch up on past messages. Experience our services from anywhere, anytime.',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'backgroundImage',
@@ -76,6 +79,7 @@ export default defineType({
           title: 'Section Title',
           type: 'string',
           initialValue: 'Live Now',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'description',
@@ -84,6 +88,7 @@ export default defineType({
           rows: 2,
           initialValue:
             'Join us live for our worship service. Services are every Sunday at 10:30 AM.',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'subsplashEmbedCode',
@@ -112,6 +117,7 @@ export default defineType({
           title: 'Section Title',
           type: 'string',
           initialValue: 'Watch on Social Media',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'description',
@@ -120,6 +126,7 @@ export default defineType({
           rows: 2,
           initialValue:
             'Prefer to watch on your favorite platform? Find us on YouTube and Facebook.',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'youtubeUrl',
@@ -146,6 +153,7 @@ export default defineType({
           title: 'Section Title',
           type: 'string',
           initialValue: 'Recent Messages',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'description',
@@ -153,6 +161,7 @@ export default defineType({
           type: 'text',
           rows: 2,
           initialValue: 'Catch up on our latest messages, with the most recent first.',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'embedUrl',
@@ -187,6 +196,7 @@ export default defineType({
           title: 'Section Title',
           type: 'string',
           initialValue: 'Browse by Series',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'description',
@@ -194,6 +204,7 @@ export default defineType({
           type: 'text',
           rows: 2,
           initialValue: 'Explore a sermon series and follow along from the beginning.',
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'subsplashEmbedCode',

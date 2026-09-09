@@ -20,14 +20,17 @@ export default defineType({
           name: 'title',
           title: 'SEO Title',
           type: 'string',
-          validation: Rule => Rule.max(60).warning('Keep SEO titles under 60 characters')
+          validation: Rule => [Rule.required(), Rule.max(60).warning('Keep SEO titles under 60 characters')]
         }),
         defineField({
           name: 'description',
           title: 'SEO Description',
           type: 'text',
           rows: 3,
-          validation: Rule => Rule.max(160).warning('Keep SEO descriptions under 160 characters')
+          validation: Rule => [
+            Rule.required(),
+            Rule.max(160).warning('Keep SEO descriptions under 160 characters')
+          ]
         })
       ]
     }),
@@ -39,13 +42,15 @@ export default defineType({
         defineField({
           name: 'title',
           title: 'Hero Title',
-          type: 'string'
+          type: 'string',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Hero Description',
           type: 'text',
-          rows: 4
+          rows: 4,
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'buttons',
@@ -60,12 +65,14 @@ export default defineType({
                 defineField({
                   name: 'text',
                   title: 'Button Text',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'href',
                   title: 'Button Link',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 })
               ]
             }),
@@ -77,12 +84,14 @@ export default defineType({
                 defineField({
                   name: 'text',
                   title: 'Button Text',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'href',
                   title: 'Button Link',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 })
               ]
             })
@@ -102,7 +111,8 @@ export default defineType({
               type: 'string',
               validation: Rule => Rule.required()
             })
-          ]
+          ],
+          validation: (Rule) => Rule.required()
         })
       ]
     }),
@@ -114,13 +124,15 @@ export default defineType({
         defineField({
           name: 'title',
           title: 'Contact Section Title',
-          type: 'string'
+          type: 'string',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Contact Section Description',
           type: 'text',
-          rows: 3
+          rows: 3,
+          validation: (Rule) => Rule.required()
         })
       ]
     }),
@@ -132,13 +144,15 @@ export default defineType({
         defineField({
           name: 'title',
           title: 'Section Title',
-          type: 'string'
+          type: 'string',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
-          rows: 3
+          rows: 3,
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'cards',
@@ -159,19 +173,22 @@ export default defineType({
                 defineField({
                   name: 'title',
                   title: 'Card Title',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'description',
                   title: 'Card Description',
                   type: 'text',
-                  rows: 2
+                  rows: 2,
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'href',
                   title: 'Card Link',
                   type: 'url',
-                  description: 'Link to Planning Center Online form or other resource'
+                  description: 'Link to Planning Center Online form or other resource',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'iconColor',
@@ -201,14 +218,16 @@ export default defineType({
                 }
               }
             })
-          ]
+          ],
+          validation: (Rule) => Rule.min(1).error('Add at least one connect card')
         }),
         defineField({
           name: 'note',
           title: 'Privacy Note',
           type: 'text',
           rows: 2,
-          description: 'Note about privacy and data usage'
+          description: 'Note about privacy and data usage',
+          validation: (Rule) => Rule.required().error('The connect page shows this under the cards')
         })
       ]
     }),

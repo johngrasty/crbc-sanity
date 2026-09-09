@@ -41,7 +41,8 @@ export default defineType({
           name: 'tagline',
           title: 'Tagline',
           type: 'string',
-          initialValue: 'Rooted in Scripture, guided by faith.'
+          initialValue: 'Rooted in Scripture, guided by faith.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'taglineLink',
@@ -52,13 +53,15 @@ export default defineType({
               name: 'text',
               title: 'Link Text',
               type: 'string',
-              initialValue: 'Learn more'
+              initialValue: 'Learn more',
+              validation: (Rule) => Rule.required()
             }),
             defineField({
               name: 'href',
               title: 'Link URL',
               type: 'string',
-              initialValue: '/about'
+              initialValue: '/about',
+              validation: (Rule) => Rule.required()
             })
           ]
         }),
@@ -74,7 +77,8 @@ export default defineType({
           title: 'Description',
           type: 'text',
           rows: 3,
-          initialValue: 'Our faith is built on the solid foundation of God\'s Word. Discover the core beliefs and biblical truths that guide our church family and shape our worship together.'
+          initialValue: 'Our faith is built on the solid foundation of God\'s Word. Discover the core beliefs and biblical truths that guide our church family and shape our worship together.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'primaryButton',
@@ -132,7 +136,8 @@ export default defineType({
               description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
               validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
-          ]
+          ],
+          validation: (Rule) => Rule.required()
         })
       ]
     }),
@@ -145,20 +150,23 @@ export default defineType({
           name: 'subheading',
           title: 'Section Subheading',
           type: 'string',
-          initialValue: 'Our Foundation'
+          initialValue: 'Our Foundation',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Biblical Truth'
+          initialValue: 'Biblical Truth',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
           rows: 3,
-          initialValue: 'Our beliefs are rooted in Scripture and guide every aspect of our church life. These fundamental truths shape our worship, fellowship, and mission in the community.'
+          initialValue: 'Our beliefs are rooted in Scripture and guide every aspect of our church life. These fundamental truths shape our worship, fellowship, and mission in the community.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'introText',
@@ -178,7 +186,8 @@ export default defineType({
               title: 'Quote Text',
               type: 'text',
               rows: 4,
-              initialValue: 'All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in righteousness, so that the servant of God may be thoroughly equipped for every good work.'
+              initialValue: 'All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in righteousness, so that the servant of God may be thoroughly equipped for every good work.',
+              validation: (Rule) => Rule.required()
             }),
             defineField({
               name: 'reference',
@@ -205,13 +214,15 @@ export default defineType({
                 defineField({
                   name: 'title',
                   title: 'Belief Title',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'description',
                   title: 'Belief Description',
                   type: 'text',
-                  rows: 3
+                  rows: 3,
+                  validation: (Rule) => Rule.required()
                 })
               ]
             }
@@ -229,14 +240,16 @@ export default defineType({
               title: 'The Church',
               description: 'We believe the church is the body of Christ, called to worship, fellowship, discipleship, ministry, and mission in the world.'
             }
-          ]
+          ],
+          validation: (Rule) => Rule.min(1).error('Add at least one belief')
         }),
         defineField({
           name: 'closingText',
           title: 'Closing Text',
           type: 'text',
           rows: 3,
-          initialValue: 'These foundational truths shape our worship, guide our relationships, and inspire our service to others. We invite you to explore these beliefs with us and discover how God\'s truth can transform your life.'
+          initialValue: 'These foundational truths shape our worship, guide our relationships, and inspire our service to others. We invite you to explore these beliefs with us and discover how God\'s truth can transform your life.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'callToAction',
@@ -271,7 +284,8 @@ export default defineType({
           title: 'CTA Title',
           type: 'string',
           initialValue: 'Ready to take the next step?',
-          description: 'Main heading for the call-to-action section'
+          description: 'Main heading for the call-to-action section',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
@@ -279,7 +293,8 @@ export default defineType({
           type: 'text',
           rows: 3,
           initialValue: "Join us in worship and discover more about what we believe. We'd love to answer your questions and help you grow in faith.",
-          description: 'Supporting text for the CTA'
+          description: 'Supporting text for the CTA',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'primaryButton',
@@ -321,9 +336,9 @@ export default defineType({
         }),
         defineField({
           name: 'image',
-          title: 'Optional Image',
+          title: 'Image',
           type: 'image',
-          description: 'Optional decorative image for the CTA section',
+          description: 'Image for the CTA section',
           options: {
             hotspot: true,
             aiAssist: {
@@ -338,7 +353,8 @@ export default defineType({
               description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
               validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
-          ]
+          ],
+          validation: (Rule) => Rule.required()
         })
       ]
     }),

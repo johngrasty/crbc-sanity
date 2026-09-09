@@ -55,7 +55,8 @@ export default defineType({
           title: 'Description',
           type: 'text',
           rows: 3,
-          initialValue: 'Your generosity helps us share Christ\'s love, serve our community, and support those in need. Every gift makes an eternal difference.'
+          initialValue: 'Your generosity helps us share Christ\'s love, serve our community, and support those in need. Every gift makes an eternal difference.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'primaryButton',
@@ -107,9 +108,10 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              initialValue: 'Hands giving offering in church'
+              validation: (Rule) => Rule.required().error('Describe this photo for screen readers')
             })
-          ]
+          ],
+          validation: (Rule) => Rule.required()
         })
       ]
     }),
@@ -122,21 +124,25 @@ export default defineType({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Give Online'
+          initialValue: 'Give Online',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
           rows: 2,
-          initialValue: 'Secure, convenient online giving through our trusted partner Subsplash.'
+          initialValue: 'Secure, convenient online giving through our trusted partner Subsplash.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'subsplashEmbedCode',
           title: 'Subsplash Embed Code',
           type: 'text',
           rows: 5,
-          description: 'Paste the full embed code from Subsplash here'
+          description: 'Paste the full embed code from Subsplash here',
+          validation: (Rule) =>
+            Rule.required().error('The giving page cannot show the online giving form without this')
         })
       ]
     }),
@@ -149,14 +155,16 @@ export default defineType({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Other Ways to Give'
+          initialValue: 'Other Ways to Give',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
           rows: 2,
-          initialValue: 'We offer several convenient ways for you to support our ministry.'
+          initialValue: 'We offer several convenient ways for you to support our ministry.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'methods',
@@ -169,13 +177,15 @@ export default defineType({
                 defineField({
                   name: 'title',
                   title: 'Method Title',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'description',
                   title: 'Method Description',
                   type: 'text',
-                  rows: 3
+                  rows: 3,
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'icon',
@@ -207,7 +217,8 @@ export default defineType({
               description: 'Donate appreciated assets for potential tax benefits. Contact our office for transfer instructions.',
               icon: 'chart'
             }
-          ]
+          ],
+          validation: (Rule) => Rule.min(1).error('Add at least one giving method')
         })
       ]
     }),
@@ -220,14 +231,16 @@ export default defineType({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Why We Give'
+          initialValue: 'Why We Give',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'description',
           title: 'Section Description',
           type: 'text',
           rows: 4,
-          initialValue: 'Giving is an act of worship and obedience to God. It allows us to participate in His work and demonstrates our trust in His provision. Through your generous gifts, we can continue to serve our community, support missions, and care for those in need.'
+          initialValue: 'Giving is an act of worship and obedience to God. It allows us to participate in His work and demonstrates our trust in His provision. Through your generous gifts, we can continue to serve our community, support missions, and care for those in need.',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'scriptureVerse',
@@ -266,7 +279,8 @@ export default defineType({
           name: 'title',
           title: 'Section Title',
           type: 'string',
-          initialValue: 'Frequently Asked Questions'
+          initialValue: 'Frequently Asked Questions',
+          validation: (Rule) => Rule.required()
         }),
         defineField({
           name: 'questions',
@@ -279,13 +293,15 @@ export default defineType({
                 defineField({
                   name: 'question',
                   title: 'Question',
-                  type: 'string'
+                  type: 'string',
+                  validation: (Rule) => Rule.required()
                 }),
                 defineField({
                   name: 'answer',
                   title: 'Answer',
                   type: 'text',
-                  rows: 3
+                  rows: 3,
+                  validation: (Rule) => Rule.required()
                 })
               ]
             }
@@ -303,7 +319,8 @@ export default defineType({
               question: 'Can I set up recurring gifts?',
               answer: 'Absolutely! You can set up weekly, bi-weekly, or monthly recurring gifts through our online giving platform.'
             }
-          ]
+          ],
+          validation: (Rule) => Rule.min(1).error('Add at least one question')
         })
       ]
     })
