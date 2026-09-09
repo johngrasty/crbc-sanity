@@ -41,14 +41,6 @@ preview setup. They cannot be established by the offline tests alone. Generating
 preview link creates a short-lived Sanity preview-secret draft using the editor's session.
 See [preview setup](ANNOUNCEMENT_PREVIEW_SETUP.md).
 
-## Legacy Planning Center settings
-
-The website does not read the `pcoSettings` document. Its old API credential inputs have
-been removed. This schema change does not erase existing document fields or revision
-history. If credentials were entered there, an administrator should rotate them in
-Planning Center and remove stored secret fields from Sanity. Do not export those values
-while investigating. Set replacement credentials only in the website server environment.
-
 ## Code layout
 
 - `schemaTypes/` contains the registered content definitions.
