@@ -105,12 +105,13 @@ export default defineType({
         },
         {
           name: 'subsplashEmbedCode',
+          // Keep stored rollback values recognized by the Studio form.
           hidden: true,
           readOnly: true,
           title: 'Subsplash Embed Code',
           type: 'text',
           rows: 5,
-          description: 'Paste the Subsplash live stream embed code here',
+          description: 'Retained for rollback after the URL migration; do not edit.',
         },
         {
           name: 'showWhenOffline',
@@ -235,13 +236,13 @@ export default defineType({
         },
         {
           name: 'subsplashEmbedCode',
+          // Keep stored rollback values recognized by the Studio form.
           hidden: true,
           readOnly: true,
           title: 'Subsplash Series Embed Code',
           type: 'text',
           rows: 5,
-          description:
-            'Paste a Subsplash Media Library embed configured to display Media Series. The existing archive embed remains supported.',
+          description: 'Retained for rollback after the URL migration; do not edit.',
         },
       ],
     }),

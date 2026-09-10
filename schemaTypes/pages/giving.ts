@@ -199,12 +199,13 @@ export default defineType({
         }),
         defineField({
           name: 'subsplashEmbedCode',
+          // Keep stored rollback values recognized by the Studio form.
           hidden: true,
           readOnly: true,
           title: 'Subsplash Embed Code',
           type: 'text',
           rows: 5,
-          description: 'Retained during the URL migration; do not edit.',
+          description: 'Retained for rollback after the URL migration; do not edit.',
         }),
       ],
       group: 'onlineGiving',
