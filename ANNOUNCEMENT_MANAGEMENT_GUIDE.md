@@ -51,8 +51,8 @@ This guide will help church staff manage announcements in the Sanity Studio.
 
 ### Settings Tab
 
-- **Featured**: Toggle to feature prominently on homepage
-  - Featured announcements get a star badge ⭐
+- **Featured**: Reserved for future use; has no effect on the website today
+  - Featured announcements get a star badge ⭐ in the Studio list only
 
 - **Priority**: Number from 1-10 (default: 5)
   - Higher numbers appear first in the carousel

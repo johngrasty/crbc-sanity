@@ -13,15 +13,6 @@ export default defineType({
 			validation: (Rule) => Rule.required()
 		}),
 		defineField({
-			name: 'slug',
-			title: 'Slug',
-			type: 'slug',
-			options: {
-				source: 'name'
-			},
-			validation: (Rule) => Rule.required()
-		}),
-		defineField({
 			name: 'role',
 			title: 'Role/Title',
 			type: 'string',
@@ -56,7 +47,7 @@ export default defineType({
 					name: 'alt',
 					type: 'string',
 					title: 'Alternative Text',
-					description: 'Describe the person (10-125 characters). Example: "Professional portrait of John Smith". Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+					description: 'Example: "Professional portrait of John Smith". Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
 					validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
 				}
 			]

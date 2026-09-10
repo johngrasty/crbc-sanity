@@ -4,13 +4,33 @@ export default defineType({
   name: 'beliefsPage',
   title: 'Beliefs Page',
   type: 'document',
+  groups: [
+    {
+      name: 'hero',
+      title: 'Hero',
+      default: true
+    },
+    {
+      name: 'beliefs',
+      title: 'Beliefs'
+    },
+    {
+      name: 'cta',
+      title: 'Call to action'
+    },
+    {
+      name: 'seo',
+      title: 'SEO'
+    }
+  ],
   fields: [
     defineField({
       name: 'title',
       title: 'Page Title',
       type: 'string',
       initialValue: 'What We Believe',
-      validation: (Rule) => Rule.required()
+      validation: (Rule) => Rule.required(),
+      group: 'hero'
     }),
     defineField({
       name: 'seo',
@@ -30,7 +50,8 @@ export default defineType({
           rows: 2,
           initialValue: 'Discover our core beliefs and theological foundations that guide our church community.'
         })
-      ]
+      ],
+      group: 'seo'
     }),
     defineField({
       name: 'hero',
@@ -133,13 +154,14 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+              description: 'Be specific, not generic. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
               validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
           ],
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'hero'
     }),
     defineField({
       name: 'content',
@@ -271,7 +293,8 @@ export default defineType({
             })
           ]
         })
-      ]
+      ],
+      group: 'beliefs'
     }),
     defineField({
       name: 'cta',
@@ -350,13 +373,14 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+              description: 'Be specific, not generic. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
               validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
           ],
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'cta'
     }),
   ],
   preview: {

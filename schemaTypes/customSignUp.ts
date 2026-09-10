@@ -28,18 +28,6 @@ export default defineType({
 			group: 'content'
 		}),
 		defineField({
-			name: 'slug',
-			title: 'Slug',
-			type: 'slug',
-			description: 'URL-friendly identifier',
-			options: {
-				source: 'title',
-				maxLength: 96
-			},
-			validation: (Rule) => Rule.required(),
-			group: 'content'
-		}),
-		defineField({
 			name: 'description',
 			title: 'Description',
 			type: 'text',
@@ -114,7 +102,7 @@ export default defineType({
 			name: 'featured',
 			title: 'Featured',
 			type: 'boolean',
-			description: 'Show on homepage featured events section (in addition to sign-ups page)',
+			description: 'Show this sign-up at the top of the Sign-Ups page.',
 			initialValue: false,
 			group: 'settings'
 		})

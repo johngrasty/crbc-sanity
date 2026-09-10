@@ -12,22 +12,6 @@ export default defineType({
 			validation: (Rule) => Rule.required()
 		}),
 		defineField({
-			name: 'pageType',
-			title: 'Page Type',
-			type: 'string',
-			options: {
-				list: [
-					{ title: 'Home', value: 'home' },
-					{ title: 'About', value: 'about' },
-					{ title: 'Ministries', value: 'ministries' },
-					{ title: 'Events', value: 'events' },
-					{ title: 'Contact', value: 'contact' },
-					{ title: 'Other', value: 'other' }
-				]
-			},
-			validation: (Rule) => Rule.required()
-		}),
-		defineField({
 			name: 'slug',
 			title: 'Slug',
 			type: 'slug',
@@ -105,7 +89,7 @@ export default defineType({
 	preview: {
 		select: {
 			title: 'title',
-			subtitle: 'pageType',
+			subtitle: 'slug.current',
 			media: 'image'
 		}
 	}

@@ -4,12 +4,36 @@ export default defineType({
   name: 'connectPage',
   title: 'Connect Page',
   type: 'document',
+  groups: [
+    {
+      name: 'hero',
+      title: 'Hero',
+      default: true
+    },
+    {
+      name: 'contact',
+      title: 'Contact'
+    },
+    {
+      name: 'connectCards',
+      title: 'Ways to connect'
+    },
+    {
+      name: 'cta',
+      title: 'Calls to action'
+    },
+    {
+      name: 'seo',
+      title: 'SEO'
+    }
+  ],
   fields: [
     defineField({
       name: 'title',
       title: 'Page Title',
       type: 'string',
-      initialValue: 'Connect Page'
+      initialValue: 'Connect Page',
+      group: 'hero'
     }),
     defineField({
       name: 'seo',
@@ -32,7 +56,8 @@ export default defineType({
             Rule.max(160).warning('Keep SEO descriptions under 160 characters')
           ]
         })
-      ]
+      ],
+      group: 'seo'
     }),
     defineField({
       name: 'hero',
@@ -114,7 +139,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'hero'
     }),
     defineField({
       name: 'contact',
@@ -134,7 +160,8 @@ export default defineType({
           rows: 3,
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'contact'
     }),
     defineField({
       name: 'connectCards',
@@ -229,7 +256,8 @@ export default defineType({
           description: 'Note about privacy and data usage',
           validation: (Rule) => Rule.required().error('The connect page shows this under the cards')
         })
-      ]
+      ],
+      group: 'connectCards'
     }),
     defineField({
       name: 'newsletterCta',
@@ -302,7 +330,8 @@ export default defineType({
           },
           initialValue: 'bg-blue-50'
         })
-      ]
+      ],
+      group: 'cta'
     }),
     defineField({
       name: 'smsCta',
@@ -365,7 +394,8 @@ export default defineType({
             })
           ]
         })
-      ]
+      ],
+      group: 'cta'
     })
   ],
   preview: {

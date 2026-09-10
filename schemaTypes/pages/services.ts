@@ -4,13 +4,37 @@ export default defineType({
 	name: 'servicesPage',
 	title: 'Services Page',
 	type: 'document',
+	groups: [
+		{
+			name: 'hero',
+			title: 'Hero',
+			default: true
+		},
+		{
+			name: 'schedule',
+			title: 'Schedule'
+		},
+		{
+			name: 'ministries',
+			title: 'Ministries'
+		},
+		{
+			name: 'cta',
+			title: 'Call to action'
+		},
+		{
+			name: 'seo',
+			title: 'SEO'
+		}
+	],
 	fields: [
 		defineField({
 			name: 'title',
 			title: 'Page Title',
 			type: 'string',
 			initialValue: 'Services & Schedule',
-			validation: (Rule) => Rule.required()
+			validation: (Rule) => Rule.required(),
+			group: 'hero'
 		}),
 		defineField({
 			name: 'seo',
@@ -31,7 +55,8 @@ export default defineType({
 					initialValue:
 						'Join us for worship, Bible study, and fellowship. View our complete weekly schedule of services and programs at Calvary Road Baptist Church.'
 				})
-			]
+			],
+			group: 'seo'
 		}),
 		defineField({
 			name: 'hero',
@@ -135,7 +160,7 @@ export default defineType({
 							title: 'Alt Text',
 							type: 'string',
 							description:
-								'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+								'Be specific, not generic. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
 							validation: (Rule) =>
 								Rule.required()
 									.min(10)
@@ -145,7 +170,8 @@ export default defineType({
 					],
 					validation: (Rule) => Rule.required()
 				})
-			]
+			],
+			group: 'hero'
 		}),
 		defineField({
 			name: 'schedule',
@@ -165,7 +191,8 @@ export default defineType({
 					type: 'string',
 					initialValue: 'Join us throughout the week'
 				})
-			]
+			],
+			group: 'schedule'
 		}),
 		defineField({
 			name: 'ministries',
@@ -224,7 +251,16 @@ export default defineType({
 									name: 'icon',
 									title: 'Icon',
 									type: 'string',
-									description: 'Icon name (book, users, smile, zap, etc.)',
+									description: 'Pick the small symbol shown above the program name.',
+									options: {
+										list: [
+											{ title: 'Book', value: 'book' },
+											{ title: 'People', value: 'users' },
+											{ title: 'Smiling face', value: 'smile' },
+											{ title: 'Lightning bolt', value: 'zap' }
+										],
+										layout: 'dropdown'
+									},
 									initialValue: 'book'
 								})
 							],
@@ -272,7 +308,8 @@ export default defineType({
 					],
 					validation: (Rule) => Rule.min(1).error('Add at least one ministry program')
 				})
-			]
+			],
+			group: 'ministries'
 		}),
 		defineField({
 			name: 'cta',
@@ -311,7 +348,7 @@ export default defineType({
 							title: 'Alt Text',
 							type: 'string',
 							description:
-								'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+								'Be specific, not generic. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
 							validation: (Rule) =>
 								Rule.required()
 									.min(10)
@@ -374,7 +411,8 @@ export default defineType({
 						})
 					]
 				})
-			]
+			],
+			group: 'cta'
 		})
 	],
 	preview: {
