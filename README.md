@@ -62,3 +62,14 @@ actual file and folder packaging functions. See the
 The nested `@sanity/uuid` uses patch 3.0.3, which updates its UUID dependency. Preview
 secret tests exercise that ID generation. Remove these overrides when Sanity's declared
 dependency versions include the fixes.
+
+## Image descriptions
+
+Describe the image in the context of the page. For a staff portrait, use the person's
+name and role. For ministry photos, describe the activity, such as "Volunteers packing
+food boxes" or "Students discussing a Bible passage". Avoid filenames and phrases
+such as "image of". Review any AI suggestion against the actual photo before publishing.
+The field description gives the length required by that form.
+
+The website's `scripts/audit-alt-text.js` remains a read-only way to find missing or
+generic descriptions. See the website's `scripts/README.md` for its command.

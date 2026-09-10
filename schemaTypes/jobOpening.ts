@@ -1,3 +1,4 @@
+import {orderRankField, orderRankOrdering} from '@sanity/orderable-document-list'
 import {defineField, defineType} from 'sanity'
 import {Briefcase} from 'lucide-react'
 
@@ -160,25 +161,10 @@ export default defineType({
         ),
       group: 'publishing',
     }),
-    defineField({
-      name: 'displayOrder',
-      title: 'Display order',
-      type: 'number',
-      description: 'Lower numbers appear first.',
-      initialValue: 100,
-      validation: (Rule) => Rule.required().integer().min(0),
-      group: 'publishing',
-    }),
+    orderRankField({type: 'jobOpening'}),
   ],
   orderings: [
-    {
-      title: 'Website order',
-      name: 'websiteOrder',
-      by: [
-        {field: 'displayOrder', direction: 'asc'},
-        {field: 'title', direction: 'asc'},
-      ],
-    },
+    orderRankOrdering,
     {
       title: 'Closing soon',
       name: 'closingSoon',

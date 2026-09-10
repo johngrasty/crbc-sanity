@@ -52,7 +52,7 @@ export type BentoCard = {
   }
   showServiceTimes?: boolean
   componentType?: '' | 'linkedAvatars' | 'custom'
-  class: 'lg:col-span-3' | 'lg:col-span-2' | 'lg:col-span-1'
+  class: 'lg:col-span-3' | 'lg:col-span-2'
   dark?: boolean
   fade?: Array<string>
 }
@@ -165,89 +165,6 @@ export type LogoCloud = {
   }>
 }
 
-export type CallToAction = {
-  _type: 'callToAction'
-  heading?: string
-  text?: string
-  buttons?: Array<{
-    text?: string
-    link?: string
-    style?: 'primary' | 'secondary' | 'outline'
-    _key: string
-  }>
-  backgroundImage?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
-    media?: unknown
-    hotspot?: SanityImageHotspot
-    crop?: SanityImageCrop
-    _type: 'image'
-  }
-  style?: 'light' | 'dark' | 'brand'
-}
-
-export type Gallery = {
-  _type: 'gallery'
-  heading?: string
-  description?: string
-  images?: Array<{
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
-    media?: unknown
-    hotspot?: SanityImageHotspot
-    crop?: SanityImageCrop
-    caption?: string
-    alt?: string
-    _type: 'image'
-    _key: string
-  }>
-  layout?: 'grid' | 'masonry' | 'carousel'
-}
-
-export type TextWithImage = {
-  _type: 'textWithImage'
-  heading?: string
-  text?: Array<{
-    children?: Array<{
-      marks?: Array<string>
-      text?: string
-      _type: 'span'
-      _key: string
-    }>
-    style?: 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote'
-    listItem?: 'bullet' | 'number'
-    markDefs?: Array<{
-      href?: string
-      _type: 'link'
-      _key: string
-    }>
-    level?: number
-    _type: 'block'
-    _key: string
-  }>
-  image?: {
-    asset?: {
-      _ref: string
-      _type: 'reference'
-      _weak?: boolean
-      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
-    }
-    media?: unknown
-    hotspot?: SanityImageHotspot
-    crop?: SanityImageCrop
-    _type: 'image'
-  }
-  imagePosition?: 'left' | 'right'
-}
-
 export type Hero = {
   _type: 'hero'
   heading: string
@@ -298,7 +215,7 @@ export type JobOpening = {
   active: boolean
   openDate?: string
   closeDate?: string
-  displayOrder: number
+  orderRank?: string
 }
 
 export type CustomSignUp = {
@@ -606,6 +523,10 @@ export type Settings = {
   _createdAt: string
   _updatedAt: string
   _rev: string
+  integrations?: {
+    newsletterSignupUrl: string
+    newsletterArchiveEmbedUrl: string
+  }
   name: string
   url?: string
   contact?: {
@@ -716,7 +637,6 @@ export type Announcement = {
   >
   ctaText?: string
   ctaLink?: string
-  featured?: boolean
   priority: number
   active?: boolean
   startDate: string
@@ -840,20 +760,6 @@ export type Page = {
         _key: string
       }
   >
-  sections?: Array<
-    | ({
-        _key: string
-      } & Hero)
-    | ({
-        _key: string
-      } & TextWithImage)
-    | ({
-        _key: string
-      } & Gallery)
-    | ({
-        _key: string
-      } & CallToAction)
-  >
 }
 
 export type CommunityGroupsPage = {
@@ -862,6 +768,7 @@ export type CommunityGroupsPage = {
   _createdAt: string
   _updatedAt: string
   _rev: string
+  pcoGroupTypeName: string
   title: string
   heading: string
   lead: string
@@ -877,6 +784,7 @@ export type LifeGroupsPage = {
   _createdAt: string
   _updatedAt: string
   _rev: string
+  pcoGroupTypeName: string
   title: string
   heading: string
   lead: string
@@ -929,6 +837,7 @@ export type WatchPage = {
   liveStream?: {
     title: string
     description: string
+    embedUrl?: string
     subsplashEmbedCode?: string
     showWhenOffline?: boolean
   }
@@ -946,6 +855,7 @@ export type WatchPage = {
   archive?: {
     title: string
     description: string
+    embedUrl?: string
     subsplashEmbedCode?: string
   }
   seo?: {
@@ -1258,7 +1168,9 @@ export type GivingPage = {
   onlineGiving?: {
     title: string
     description: string
-    subsplashEmbedCode: string
+    embedUrl: string
+    directGivingUrl?: string
+    subsplashEmbedCode?: string
   }
   givingOptions?: {
     title: string
@@ -1766,9 +1678,6 @@ export type AllSanitySchemaTypes =
   | BentoCard
   | RichText
   | LogoCloud
-  | CallToAction
-  | Gallery
-  | TextWithImage
   | Hero
   | JobOpening
   | CustomSignUp

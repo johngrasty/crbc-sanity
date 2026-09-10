@@ -1,3 +1,4 @@
+import {subsplashUrl} from '../../lib/integration-urls'
 import {defineField, defineType} from 'sanity'
 
 export default defineType({
@@ -91,7 +92,21 @@ export default defineType({
           validation: (Rule) => Rule.required(),
         },
         {
+          name: 'embedUrl',
+          title: 'Subsplash Embed URL',
+          type: 'url',
+          description:
+            'Paste the Subsplash preview or player URL for this section. Use a URL, not script or iframe code.',
+          validation: (Rule) =>
+            Rule.uri({scheme: ['https']}).custom(
+              (value) =>
+                !value || Boolean(subsplashUrl(value)) || 'Use a https://subsplash.com URL',
+            ),
+        },
+        {
           name: 'subsplashEmbedCode',
+          hidden: true,
+          readOnly: true,
           title: 'Subsplash Embed Code',
           type: 'text',
           rows: 5,
@@ -207,7 +222,21 @@ export default defineType({
           validation: (Rule) => Rule.required(),
         },
         {
+          name: 'embedUrl',
+          title: 'Subsplash Embed URL',
+          type: 'url',
+          description:
+            'Paste the Subsplash preview or player URL for this section. Use a URL, not script or iframe code.',
+          validation: (Rule) =>
+            Rule.uri({scheme: ['https']}).custom(
+              (value) =>
+                !value || Boolean(subsplashUrl(value)) || 'Use a https://subsplash.com URL',
+            ),
+        },
+        {
           name: 'subsplashEmbedCode',
+          hidden: true,
+          readOnly: true,
           title: 'Subsplash Series Embed Code',
           type: 'text',
           rows: 5,
