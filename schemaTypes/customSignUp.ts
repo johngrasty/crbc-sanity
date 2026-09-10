@@ -28,18 +28,6 @@ export default defineType({
 			group: 'content'
 		}),
 		defineField({
-			name: 'slug',
-			title: 'Slug',
-			type: 'slug',
-			description: 'URL-friendly identifier',
-			options: {
-				source: 'title',
-				maxLength: 96
-			},
-			validation: (Rule) => Rule.required(),
-			group: 'content'
-		}),
-		defineField({
 			name: 'description',
 			title: 'Description',
 			type: 'text',
