@@ -78,7 +78,8 @@ export default defineType({
 					type: 'text',
 					rows: 3,
 					initialValue:
-						"Whether you're looking for Sunday worship, midweek Bible study, or opportunities to serve, we have a place for you. Explore our weekly schedule and find where you fit."
+						"Whether you're looking for Sunday worship, midweek Bible study, or opportunities to serve, we have a place for you. Explore our weekly schedule and find where you fit.",
+					validation: (Rule) => Rule.required()
 				}),
 				defineField({
 					name: 'primaryButton',
@@ -141,7 +142,8 @@ export default defineType({
 									.max(125)
 									.error('Alt text is required (10-125 characters) for accessibility')
 						})
-					]
+					],
+					validation: (Rule) => Rule.required()
 				})
 			]
 		}),
@@ -267,7 +269,8 @@ export default defineType({
 							linkText: 'Learn more',
 							icon: 'zap'
 						}
-					]
+					],
+					validation: (Rule) => Rule.min(1).error('Add at least one ministry program')
 				})
 			]
 		}),
@@ -280,7 +283,8 @@ export default defineType({
 					name: 'title',
 					title: 'CTA Title',
 					type: 'string',
-					initialValue: 'Have questions?'
+					initialValue: 'Have questions?',
+					validation: (Rule) => Rule.required()
 				}),
 				defineField({
 					name: 'description',
@@ -288,7 +292,8 @@ export default defineType({
 					type: 'text',
 					rows: 3,
 					initialValue:
-						"We'd love to help you find the right service or program for you and your family. Our team is here to answer any questions you might have."
+						"We'd love to help you find the right service or program for you and your family. Our team is here to answer any questions you might have.",
+					validation: (Rule) => Rule.required()
 				}),
 				defineField({
 					name: 'image',
@@ -313,7 +318,8 @@ export default defineType({
 									.max(125)
 									.error('Alt text is required (10-125 characters) for accessibility')
 						})
-					]
+					],
+					validation: (Rule) => Rule.required()
 				}),
 				defineField({
 					name: 'benefits',
@@ -327,7 +333,8 @@ export default defineType({
 						'Casual, comfortable atmosphere',
 						'Biblical teaching',
 						'Opportunities to serve'
-					]
+					],
+					validation: (Rule) => Rule.min(1).error('Add at least one benefit')
 				}),
 				defineField({
 					name: 'primaryButton',

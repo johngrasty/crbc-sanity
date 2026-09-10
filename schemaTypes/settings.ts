@@ -8,7 +8,8 @@ export default defineType({
 		defineField({
 			name: 'name',
 			title: 'Church Name',
-			type: 'string'
+			type: 'string',
+			validation: (Rule) => Rule.required()
 		}),
 		defineField({
 			name: 'url',
@@ -26,12 +27,14 @@ export default defineType({
 					title: 'Street Address',
 					type: 'text',
 					rows: 2,
-					description: 'Street number and name'
+					description: 'Street number and name',
+					validation: (Rule) => Rule.required()
 				},
 				{
 					name: 'city',
 					title: 'City',
-					type: 'string'
+					type: 'string',
+					validation: (Rule) => Rule.required()
 				},
 				{
 					name: 'state',
@@ -42,18 +45,20 @@ export default defineType({
 							{ title: 'North Carolina', value: 'NC' }
 						]
 					},
-					initialValue: 'NC'
+					initialValue: 'NC',
+					validation: (Rule) => Rule.required()
 				},
 				{
 					name: 'zipCode',
 					title: 'ZIP Code',
 					type: 'string',
-					validation: (Rule) => Rule.regex(/^\d{5}(-\d{4})?$/).error('Please enter a valid ZIP code')
+					validation: (Rule) => Rule.required().regex(/^\d{5}(-\d{4})?$/).error('Please enter a valid ZIP code')
 				},
 				{
 					name: 'phone',
 					title: 'Phone',
-					type: 'string'
+					type: 'string',
+					validation: (Rule) => Rule.required()
 				},
 				{
 					name: 'email',
@@ -93,18 +98,21 @@ export default defineType({
 									'Friday',
 									'Saturday'
 								]
-							}
+							},
+							validation: (Rule) => Rule.required()
 						},
 						{
 							name: 'time',
 							title: 'Time',
-							type: 'string'
+							type: 'string',
+							validation: (Rule) => Rule.required()
 						},
 						{
 							name: 'description',
 							title: 'Description',
 							type: 'string',
-							description: 'e.g., "Sunday School", "Morning Worship", etc.'
+							description: 'e.g., "Sunday School", "Morning Worship", etc.',
+							validation: (Rule) => Rule.required()
 						},
 						{
 							name: 'detailedDescription',
@@ -128,7 +136,9 @@ export default defineType({
 						}
 					}
 				}
-			]
+			],
+			validation: (Rule) =>
+				Rule.min(1).error('Add at least one service time; the home, visit and services pages list them')
 		}),
 		defineField({
 			name: 'socialMedia',

@@ -58,7 +58,8 @@ export default defineType({
         {
           name: 'subheading',
           title: 'Section Subheading',
-          type: 'string'
+          type: 'string',
+          validation: Rule => Rule.required()
         },
         {
           name: 'cards',

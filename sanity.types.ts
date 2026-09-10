@@ -52,7 +52,7 @@ export type BentoCard = {
   }
   showServiceTimes?: boolean
   componentType?: '' | 'linkedAvatars' | 'custom'
-  class?: 'lg:col-span-3' | 'lg:col-span-2' | 'lg:col-span-1'
+  class: 'lg:col-span-3' | 'lg:col-span-2' | 'lg:col-span-1'
   dark?: boolean
   fade?: Array<string>
 }
@@ -252,7 +252,7 @@ export type Hero = {
   _type: 'hero'
   heading: string
   tagline: string
-  backgroundImage?: {
+  backgroundImage: {
     asset?: {
       _ref: string
       _type: 'reference'
@@ -607,21 +607,21 @@ export type Settings = {
   _createdAt: string
   _updatedAt: string
   _rev: string
-  name?: string
+  name: string
   url?: string
   contact?: {
-    streetAddress?: string
-    city?: string
-    state?: 'NC'
-    zipCode?: string
-    phone?: string
+    streetAddress: string
+    city: string
+    state: 'NC'
+    zipCode: string
+    phone: string
     email?: string
     supportEmail?: string
   }
   serviceTimes?: Array<{
-    day?: 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday'
-    time?: string
-    description?: string
+    day: 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday'
+    time: string
+    description: string
     detailedDescription?: string
     _key: string
   }>
@@ -912,10 +912,10 @@ export type WatchPage = {
   _createdAt: string
   _updatedAt: string
   _rev: string
-  title?: string
+  title: string
   hero?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     backgroundImage?: {
       asset?: {
         _ref: string
@@ -930,25 +930,25 @@ export type WatchPage = {
     }
   }
   liveStream?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     subsplashEmbedCode?: string
     showWhenOffline?: boolean
   }
   socialLinks?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     youtubeUrl?: string
     facebookUrl?: string
   }
   recentMessages?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     embedUrl?: string
   }
   archive?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     subsplashEmbedCode?: string
   }
   seo?: {
@@ -977,23 +977,23 @@ export type ConnectPage = {
   _rev: string
   title?: string
   seo?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
   }
   hero?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     buttons?: {
       primary?: {
-        text?: string
-        href?: string
+        text: string
+        href: string
       }
       secondary?: {
-        text?: string
-        href?: string
+        text: string
+        href: string
       }
     }
-    image?: {
+    image: {
       asset?: {
         _ref: string
         _type: 'reference'
@@ -1008,23 +1008,23 @@ export type ConnectPage = {
     }
   }
   contact?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
   }
   connectCards?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     cards?: Array<{
       id?: string
-      title?: string
-      description?: string
-      href?: string
+      title: string
+      description: string
+      href: string
       iconColor?: 'blue' | 'green' | 'purple' | 'orange'
       icon?: string
       _type: 'connectCard'
       _key: string
     }>
-    note?: string
+    note: string
   }
   newsletterCta?: {
     heading?: string
@@ -1079,7 +1079,7 @@ export type ServicesPage = {
       url?: string
     }
     title: string
-    description?: string
+    description: string
     primaryButton?: {
       text?: string
       href?: string
@@ -1088,7 +1088,7 @@ export type ServicesPage = {
       text?: string
       href?: string
     }
-    image?: {
+    image: {
       asset?: {
         _ref: string
         _type: 'reference'
@@ -1119,9 +1119,9 @@ export type ServicesPage = {
     }>
   }
   cta?: {
-    title?: string
-    description?: string
-    image?: {
+    title: string
+    description: string
+    image: {
       asset?: {
         _ref: string
         _type: 'reference'
@@ -1159,7 +1159,7 @@ export type VisitPage = {
   }
   hero?: {
     title: string
-    description?: string
+    description: string
     primaryButton?: {
       text?: string
       href?: string
@@ -1184,38 +1184,38 @@ export type VisitPage = {
     }>
   }
   planVisit?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     serviceInfo?: {
-      title?: string
+      title: string
       note?: string
     }
     whatToExpect?: {
-      title?: string
+      title: string
       items?: Array<{
-        title?: string
-        description?: string
+        title: string
+        description: string
         icon?: string
         _key: string
       }>
     }
     location?: {
-      title?: string
+      title: string
       addressNote?: string
-      directions?: string
+      directions: string
     }
   }
   faq?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     contactInfo?: {
       text?: string
       href?: string
       openInPlanningCenterModal?: boolean
     }
     questions?: Array<{
-      question?: string
-      answer?: string
+      question: string
+      answer: string
       _key: string
     }>
   }
@@ -1235,7 +1235,7 @@ export type GivingPage = {
   hero?: {
     tagline?: string
     title: string
-    description?: string
+    description: string
     primaryButton?: {
       text?: string
       href?: string
@@ -1244,7 +1244,7 @@ export type GivingPage = {
       text?: string
       href?: string
     }
-    image?: {
+    image: {
       asset?: {
         _ref: string
         _type: 'reference'
@@ -1254,28 +1254,28 @@ export type GivingPage = {
       media?: unknown
       hotspot?: SanityImageHotspot
       crop?: SanityImageCrop
-      alt?: string
+      alt: string
       _type: 'image'
     }
   }
   onlineGiving?: {
-    title?: string
-    description?: string
-    subsplashEmbedCode?: string
+    title: string
+    description: string
+    subsplashEmbedCode: string
   }
   givingOptions?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     methods?: Array<{
-      title?: string
-      description?: string
+      title: string
+      description: string
       icon?: string
       _key: string
     }>
   }
   whyGive?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     scriptureVerse?: {
       text?: string
       reference?: string
@@ -1283,10 +1283,10 @@ export type GivingPage = {
     }
   }
   faq?: {
-    title?: string
+    title: string
     questions?: Array<{
-      question?: string
-      answer?: string
+      question: string
+      answer: string
       _key: string
     }>
   }
@@ -1304,13 +1304,13 @@ export type BeliefsPage = {
     description?: string
   }
   hero?: {
-    tagline?: string
+    tagline: string
     taglineLink?: {
-      text?: string
-      href?: string
+      text: string
+      href: string
     }
     title: string
-    description?: string
+    description: string
     primaryButton?: {
       text?: string
       href?: string
@@ -1319,7 +1319,7 @@ export type BeliefsPage = {
       text?: string
       href?: string
     }
-    image?: {
+    image: {
       asset?: {
         _ref: string
         _type: 'reference'
@@ -1334,29 +1334,29 @@ export type BeliefsPage = {
     }
   }
   content?: {
-    subheading?: string
-    title?: string
-    description?: string
+    subheading: string
+    title: string
+    description: string
     introText?: string
     quote?: {
-      text?: string
+      text: string
       reference?: string
       version?: string
     }
     beliefs?: Array<{
-      title?: string
-      description?: string
+      title: string
+      description: string
       _key: string
     }>
-    closingText?: string
+    closingText: string
     callToAction?: {
       title?: string
       description?: string
     }
   }
   cta?: {
-    title?: string
-    description?: string
+    title: string
+    description: string
     primaryButton?: {
       text?: string
       href?: string
@@ -1365,7 +1365,7 @@ export type BeliefsPage = {
       text?: string
       href?: string
     }
-    image?: {
+    image: {
       asset?: {
         _ref: string
         _type: 'reference'
@@ -1514,7 +1514,7 @@ export type HomePage = {
   showAnnouncementText?: boolean
   bentoSection?: {
     heading: string
-    subheading?: string
+    subheading: string
     cards?: Array<
       {
         _key: string
