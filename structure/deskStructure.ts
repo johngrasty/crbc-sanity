@@ -23,14 +23,15 @@ import {
   UserPlus,
   HelpCircle,
   CalendarDays,
-  Briefcase
+  Briefcase,
+  Wrench
 } from 'lucide-react';
 import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
 import { SignUpHelp } from '../schemaTypes/components/SignUpHelp';
 
 export const deskStructure = (S: StructureBuilder, context: StructureResolverContext) =>
   S.list()
-    .title('Content')
+    .title('CRBC Website')
     .items([
       // Pages Section
       S.listItem()
@@ -131,7 +132,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
             .title('Sign-Ups')
             .items([
               S.listItem()
-                .title('📖 About Sign-Ups')
+                .title('About Sign-Ups')
                 .icon(HelpCircle)
                 .child(
                   S.component(SignUpHelp)
@@ -146,64 +147,8 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     .title('All Custom Sign-Ups')
                     .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'featured', direction: 'desc' }, { field: 'date', direction: 'asc' }])
                 ),
-              S.divider(),
               S.listItem()
-                .title('By Category')
-                .icon(Folder)
-                .child(
-                  S.list()
-                    .title('Sign-Ups by Category')
-                    .items([
-                      S.listItem()
-                        .title('📅 Events')
-                        .icon(CalendarDays)
-                        .child(
-                          S.documentTypeList('customSignUp')
-                            .title('Event Sign-Ups')
-                            .filter('_type == "customSignUp" && category == "event"')
-                            .defaultOrdering([{ field: 'date', direction: 'asc' }])
-                        ),
-                      S.listItem()
-                        .title('⛪ Ministries')
-                        .icon(Church)
-                        .child(
-                          S.documentTypeList('customSignUp')
-                            .title('Ministry Sign-Ups')
-                            .filter('_type == "customSignUp" && category == "ministry"')
-                            .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'title', direction: 'asc' }])
-                        ),
-                      S.listItem()
-                        .title('🤝 Volunteer Opportunities')
-                        .icon(UserPlus)
-                        .child(
-                          S.documentTypeList('customSignUp')
-                            .title('Volunteer Sign-Ups')
-                            .filter('_type == "customSignUp" && category == "volunteer"')
-                            .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'title', direction: 'asc' }])
-                        ),
-                    ])
-                ),
-              S.divider(),
-              S.listItem()
-                .title('⭐ Featured Sign-Ups')
-                .icon(CalendarDays)
-                .child(
-                  S.documentTypeList('customSignUp')
-                    .title('Featured Sign-Ups')
-                    .filter('_type == "customSignUp" && featured == true && active == true')
-                    .defaultOrdering([{ field: 'date', direction: 'asc' }])
-                ),
-              S.listItem()
-                .title('✅ Active Sign-Ups')
-                .icon(UserPlus)
-                .child(
-                  S.documentTypeList('customSignUp')
-                    .title('Active Sign-Ups')
-                    .filter('_type == "customSignUp" && active == true')
-                    .defaultOrdering([{ field: 'date', direction: 'asc' }])
-                ),
-              S.listItem()
-                .title('💤 Inactive Sign-Ups')
+                .title('Inactive Sign-Ups')
                 .icon(UserPlus)
                 .child(
                   S.documentTypeList('customSignUp')
@@ -233,15 +178,6 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     .defaultOrdering([{ field: 'displayOrder', direction: 'asc' }])
                 ),
               S.listItem()
-                .title('Active and Scheduled')
-                .icon(Briefcase)
-                .child(
-                  S.documentTypeList('jobOpening')
-                    .title('Active and Scheduled Job Openings')
-                    .filter('_type == "jobOpening" && active == true && (!defined(closeDate) || closeDate >= now())')
-                    .defaultOrdering([{ field: 'displayOrder', direction: 'asc' }])
-                ),
-              S.listItem()
                 .title('Hidden and Closed')
                 .icon(Briefcase)
                 .child(
@@ -264,15 +200,10 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
             .title('Site Settings')
             .items([
               S.listItem()
-                .title('Church Settings')
+                .title('Church info, service times, social')
                 .id('settings')
                 .icon(Settings)
                 .child(S.document().schemaType('settings').documentId('settings')),
-              S.listItem()
-                .title('Design Tokens')
-                .id('designTokens')
-                .icon(Palette)
-                .child(S.document().schemaType('designTokens').documentId('designTokens')),
             ])
         ),
 
@@ -363,7 +294,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
             .items([
               // Help Guide
               S.listItem()
-                .title('📖 Quick Guide')
+                .title('Quick Guide')
                 .icon(HelpCircle)
                 .child(
                   S.component(AnnouncementHelp)
@@ -378,25 +309,6 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     .title('All Announcements')
                     .defaultOrdering([{ field: 'priority', direction: 'desc' }])
                 ),
-              S.divider(),
-              S.listItem()
-                .title('Active Announcements')
-                .icon(Church)
-                .child(
-                  S.documentTypeList('announcement')
-                    .title('Active Announcements')
-                    .filter('_type == "announcement" && active == true && startDate <= now() && (endDate > now() || !defined(endDate))')
-                    .defaultOrdering([{ field: 'priority', direction: 'desc' }])
-                ),
-              S.listItem()
-                .title('Scheduled Announcements')
-                .icon(Church)
-                .child(
-                  S.documentTypeList('announcement')
-                    .title('Scheduled Announcements')
-                    .filter('_type == "announcement" && active == true && startDate > now()')
-                    .defaultOrdering([{ field: 'startDate', direction: 'asc' }])
-                ),
               S.listItem()
                 .title('Expired Announcements')
                 .icon(Church)
@@ -405,15 +317,6 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     .title('Expired Announcements')
                     .filter('_type == "announcement" && defined(endDate) && endDate < now()')
                     .defaultOrdering([{ field: 'endDate', direction: 'desc' }])
-                ),
-              S.listItem()
-                .title('Inactive Announcements')
-                .icon(Church)
-                .child(
-                  S.documentTypeList('announcement')
-                    .title('Inactive Announcements')
-                    .filter('_type == "announcement" && active == false')
-                    .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
                 ),
             ])
         ),
@@ -452,6 +355,24 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     .schemaType('footerSettings')
                     .documentId('footerSettings')
                 ),
+            ])
+        ),
+
+      S.divider(),
+
+      // Developer settings: values a volunteer editor should not need to touch.
+      S.listItem()
+        .title('Developer settings')
+        .icon(Wrench)
+        .child(
+          S.list()
+            .title('Developer settings')
+            .items([
+              S.listItem()
+                .title('Design Tokens')
+                .id('designTokens')
+                .icon(Palette)
+                .child(S.document().schemaType('designTokens').documentId('designTokens')),
             ])
         ),
     ]);
