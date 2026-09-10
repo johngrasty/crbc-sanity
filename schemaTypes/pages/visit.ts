@@ -220,7 +220,10 @@ export default defineType({
                       name: 'icon',
                       title: 'Icon Name',
                       type: 'string',
-                      description: 'Icon identifier (e.g., "clock", "users", "heart")'
+                      // The Visit page renders these items with no icon (src/routes/visit/+page.svelte:200).
+                      // Hidden rather than deleted so stored values survive; unhide if the page starts drawing one.
+                      description: 'Not used. The Visit page does not show an icon for these items.',
+                      hidden: true
                     })
                   ]
                 }

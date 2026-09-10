@@ -222,7 +222,10 @@ export default defineType({
                   name: 'icon',
                   title: 'Icon Name',
                   type: 'string',
-                  description: 'Icon identifier (e.g., "mail", "bank", "phone")'
+                  // The Give page renders these methods with no icon (src/routes/give/+page.svelte:260).
+                  // Hidden rather than deleted so stored values survive; unhide if the page starts drawing one.
+                  description: 'Not used. The Give page does not show an icon for these methods.',
+                  hidden: true
                 })
               ]
             }

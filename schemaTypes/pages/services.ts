@@ -251,7 +251,16 @@ export default defineType({
 									name: 'icon',
 									title: 'Icon',
 									type: 'string',
-									description: 'Icon name (book, users, smile, zap, etc.)',
+									description: 'Pick the small symbol shown above the program name.',
+									options: {
+										list: [
+											{ title: 'Book', value: 'book' },
+											{ title: 'People', value: 'users' },
+											{ title: 'Smiling face', value: 'smile' },
+											{ title: 'Lightning bolt', value: 'zap' }
+										],
+										layout: 'dropdown'
+									},
 									initialValue: 'book'
 								})
 							],
