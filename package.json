@@ -37,8 +37,10 @@
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^5.0.2",
+    "@sanity/runtime-cli": "12.4.0",
     "@types/react": "^19.1.12",
     "eslint": "^9.35.0",
+    "lexorank": "1.0.5",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   },

@@ -1,5 +1,5 @@
-import { StructureBuilder, StructureResolverContext } from 'sanity/structure';
-import { orderableDocumentListDeskItem } from '@sanity/orderable-document-list';
+import {StructureBuilder, StructureResolverContext} from 'sanity/structure'
+import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {
   BellRing,
   Settings,
@@ -24,10 +24,10 @@ import {
   HelpCircle,
   CalendarDays,
   Briefcase,
-  Wrench
-} from 'lucide-react';
-import { AnnouncementHelp } from '../schemaTypes/components/AnnouncementHelp';
-import { SignUpHelp } from '../schemaTypes/components/SignUpHelp';
+  Wrench,
+} from 'lucide-react'
+import {AnnouncementHelp} from '../schemaTypes/components/AnnouncementHelp'
+import {SignUpHelp} from '../schemaTypes/components/SignUpHelp'
 
 export const deskStructure = (S: StructureBuilder, context: StructureResolverContext) =>
   S.list()
@@ -95,13 +95,12 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .title('Community Groups Page')
                 .id('communityGroupsPage')
                 .icon(Users)
-                .child(S.document().schemaType('communityGroupsPage').documentId('communityGroupsPage')),
+                .child(
+                  S.document().schemaType('communityGroupsPage').documentId('communityGroupsPage'),
+                ),
               S.divider(),
-              S.listItem()
-                .title('Other Pages')
-                .icon(FileText)
-                .child(S.documentTypeList('page')),
-            ])
+              S.listItem().title('Other Pages').icon(FileText).child(S.documentTypeList('page')),
+            ]),
         ),
 
       S.divider(),
@@ -116,10 +115,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
       S.divider(),
 
       // Ministries Section
-      S.listItem()
-        .title('Ministries')
-        .icon(Heart)
-        .child(S.documentTypeList('ministry')),
+      S.listItem().title('Ministries').icon(Heart).child(S.documentTypeList('ministry')),
 
       S.divider(),
 
@@ -134,10 +130,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
               S.listItem()
                 .title('About Sign-Ups')
                 .icon(HelpCircle)
-                .child(
-                  S.component(SignUpHelp)
-                    .title('Custom Sign-Ups Guide')
-                ),
+                .child(S.component(SignUpHelp).title('Custom Sign-Ups Guide')),
               S.divider(),
               S.listItem()
                 .title('All Custom Sign-Ups')
@@ -145,7 +138,11 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .child(
                   S.documentTypeList('customSignUp')
                     .title('All Custom Sign-Ups')
-                    .defaultOrdering([{ field: 'active', direction: 'desc' }, { field: 'featured', direction: 'desc' }, { field: 'date', direction: 'asc' }])
+                    .defaultOrdering([
+                      {field: 'active', direction: 'desc'},
+                      {field: 'featured', direction: 'desc'},
+                      {field: 'date', direction: 'asc'},
+                    ]),
                 ),
               S.listItem()
                 .title('Inactive Sign-Ups')
@@ -154,9 +151,9 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                   S.documentTypeList('customSignUp')
                     .title('Inactive Sign-Ups')
                     .filter('_type == "customSignUp" && active == false')
-                    .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
+                    .defaultOrdering([{field: '_updatedAt', direction: 'desc'}]),
                 ),
-            ])
+            ]),
         ),
 
       S.divider(),
@@ -169,24 +166,26 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
           S.list()
             .title('Job Openings')
             .items([
-              S.listItem()
-                .title('All Job Openings')
-                .icon(Briefcase)
-                .child(
-                  S.documentTypeList('jobOpening')
-                    .title('All Job Openings')
-                    .defaultOrdering([{ field: 'displayOrder', direction: 'asc' }])
-                ),
+              orderableDocumentListDeskItem({
+                type: 'jobOpening',
+                title: 'All Job Openings (drag to reorder)',
+                icon: Briefcase,
+                id: 'job-openings-order',
+                S,
+                context,
+              }),
               S.listItem()
                 .title('Hidden and Closed')
                 .icon(Briefcase)
                 .child(
                   S.documentTypeList('jobOpening')
                     .title('Hidden and Closed Job Openings')
-                    .filter('_type == "jobOpening" && (active != true || (defined(closeDate) && closeDate < now()))')
-                    .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
+                    .filter(
+                      '_type == "jobOpening" && (active != true || (defined(closeDate) && closeDate < now()))',
+                    )
+                    .defaultOrdering([{field: '_updatedAt', direction: 'desc'}]),
                 ),
-            ])
+            ]),
         ),
 
       S.divider(),
@@ -200,11 +199,11 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
             .title('Site Settings')
             .items([
               S.listItem()
-                .title('Church info, service times, social')
+                .title('Church info, service times, integrations')
                 .id('settings')
                 .icon(Settings)
                 .child(S.document().schemaType('settings').documentId('settings')),
-            ])
+            ]),
         ),
 
       S.divider(),
@@ -260,7 +259,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .title('All Staff Members')
                 .icon(Users)
                 .child(S.documentTypeList('staff').title('All Staff Members')),
-            ])
+            ]),
         ),
 
       // Content Section
@@ -271,15 +270,9 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
           S.list()
             .title('Content')
             .items([
-              S.listItem()
-                .title('Articles')
-                .icon(BookOpen)
-                .child(S.documentTypeList('article')),
-              S.listItem()
-                .title('Resources')
-                .icon(Folder)
-                .child(S.documentTypeList('resource')),
-            ])
+              S.listItem().title('Articles').icon(BookOpen).child(S.documentTypeList('article')),
+              S.listItem().title('Resources').icon(Folder).child(S.documentTypeList('resource')),
+            ]),
         ),
 
       S.divider(),
@@ -296,10 +289,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
               S.listItem()
                 .title('Quick Guide')
                 .icon(HelpCircle)
-                .child(
-                  S.component(AnnouncementHelp)
-                    .title('Announcement Management Guide')
-                ),
+                .child(S.component(AnnouncementHelp).title('Announcement Management Guide')),
               S.divider(),
               S.listItem()
                 .title('All Announcements')
@@ -307,7 +297,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .child(
                   S.documentTypeList('announcement')
                     .title('All Announcements')
-                    .defaultOrdering([{ field: 'priority', direction: 'desc' }])
+                    .defaultOrdering([{field: 'priority', direction: 'desc'}]),
                 ),
               S.listItem()
                 .title('Expired Announcements')
@@ -316,9 +306,9 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                   S.documentTypeList('announcement')
                     .title('Expired Announcements')
                     .filter('_type == "announcement" && defined(endDate) && endDate < now()')
-                    .defaultOrdering([{ field: 'endDate', direction: 'desc' }])
+                    .defaultOrdering([{field: 'endDate', direction: 'desc'}]),
                 ),
-            ])
+            ]),
         ),
 
       S.divider(),
@@ -334,28 +324,16 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
               S.listItem()
                 .title('Main Menu')
                 .icon(Menu)
-                .child(
-                  S.document()
-                    .schemaType('mainMenu')
-                    .documentId('mainMenu')
-                ),
+                .child(S.document().schemaType('mainMenu').documentId('mainMenu')),
               S.listItem()
                 .title('Footer Menu')
                 .icon(MenuSquare)
-                .child(
-                  S.document()
-                    .schemaType('footerMenu')
-                    .documentId('footerMenu')
-                ),
+                .child(S.document().schemaType('footerMenu').documentId('footerMenu')),
               S.listItem()
                 .title('Footer Settings')
                 .icon(MenuSquare)
-                .child(
-                  S.document()
-                    .schemaType('footerSettings')
-                    .documentId('footerSettings')
-                ),
-            ])
+                .child(S.document().schemaType('footerSettings').documentId('footerSettings')),
+            ]),
         ),
 
       S.divider(),
@@ -373,6 +351,6 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .id('designTokens')
                 .icon(Palette)
                 .child(S.document().schemaType('designTokens').documentId('designTokens')),
-            ])
+            ]),
         ),
-    ]);
+    ])

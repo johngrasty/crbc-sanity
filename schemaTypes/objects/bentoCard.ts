@@ -1,20 +1,22 @@
-import { defineField, defineType } from 'sanity';
+import {navigationUriOptions, validateNavigationLink} from '../../lib/navigation-link'
+import {defineField, defineType} from 'sanity'
 
 export default defineType({
   name: 'bentoCard',
   title: 'Bento Card',
   type: 'object',
+  fieldsets: [{name: 'advanced', title: 'Advanced', options: {collapsible: true, collapsed: true}}],
   fields: [
     defineField({
       name: 'eyebrow',
       title: 'Eyebrow Text',
-      type: 'string'
+      type: 'string',
     }),
     defineField({
       name: 'title',
       title: 'Card Title',
       type: 'string',
-      validation: Rule => Rule.required()
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'description',
@@ -23,17 +25,17 @@ export default defineType({
       rows: 3,
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          const parent = context.parent as { showLocationInfo?: boolean } | undefined;
-          if (value || parent?.showLocationInfo) return true;
-          return 'Add a description, or turn on Show location info.';
-        })
+          const parent = context.parent as {showLocationInfo?: boolean} | undefined
+          if (value || parent?.showLocationInfo) return true
+          return 'Add a description, or turn on Show location info.'
+        }),
     }),
     defineField({
       name: 'showLocationInfo',
       title: 'Show Location Info',
       type: 'boolean',
       description: 'Display contact information from settings (phone, address) in this card',
-      initialValue: false
+      initialValue: false,
     }),
     defineField({
       name: 'image',
@@ -42,141 +44,157 @@ export default defineType({
       options: {
         hotspot: true,
         aiAssist: {
-          imageDescriptionField: 'alt'
-        }
+          imageDescriptionField: 'alt',
+        },
       },
       fields: [
         {
           name: 'alt',
           type: 'string',
           title: 'Alternative Text',
-          description: 'Should support the card\'s message. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
-          validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
-        }
+          description:
+            'Should support the card\'s message. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
+          validation: (Rule) =>
+            Rule.required()
+              .min(10)
+              .max(125)
+              .error('Alt text is required (10-125 characters) for accessibility'),
+        },
       ],
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          const parent = context.parent as { componentType?: string } | undefined;
-          if (value || parent?.componentType) return true;
-          return 'Add a background image, or choose a component type for this card.';
-        })
+          const parent = context.parent as {componentType?: string} | undefined
+          if (value || parent?.componentType) return true
+          return 'Add a background image, or choose a component type for this card.'
+        }),
     }),
     defineField({
       name: 'button',
       title: 'Call to Action Button',
       type: 'object',
+      fieldsets: [
+        {name: 'advanced', title: 'Advanced', options: {collapsible: true, collapsed: true}},
+      ],
       fields: [
         {
           name: 'text',
           title: 'Button Text',
-          type: 'string'
+          type: 'string',
         },
         {
           name: 'href',
+          validation: (Rule) => Rule.uri(navigationUriOptions).custom(validateNavigationLink),
           title: 'Button Link',
-          type: 'string'
+          type: 'url',
         },
         {
           name: 'useDirectionsLink',
           title: 'Use Directions Link',
           type: 'boolean',
           description: 'Generate directions link using address from settings',
-          initialValue: false
+          initialValue: false,
         },
         {
           name: 'variant',
+          fieldset: 'advanced',
           title: 'Button Style',
           type: 'string',
           options: {
             list: [
-              { title: 'Primary', value: 'primary' },
-              { title: 'Outlined', value: 'outlined' },
-              { title: 'Secondary', value: 'secondary' }
-            ]
+              {title: 'Primary', value: 'primary'},
+              {title: 'Outlined', value: 'outlined'},
+              {title: 'Secondary', value: 'secondary'},
+            ],
           },
-          initialValue: 'primary'
+          initialValue: 'primary',
         },
         {
           name: 'target',
+          fieldset: 'advanced',
           title: 'Link Target',
           type: 'string',
           options: {
             list: [
-              { title: 'Same Window', value: '_self' },
-              { title: 'New Window', value: '_blank' }
-            ]
+              {title: 'Same Window', value: '_self'},
+              {title: 'New Window', value: '_blank'},
+            ],
           },
-          initialValue: '_self'
+          initialValue: '_self',
         },
         {
           name: 'usePcoModal',
+          fieldset: 'advanced',
           title: 'Open in Planning Center Modal',
           type: 'boolean',
           description: 'Open this link in a Planning Center modal instead of navigating away',
-          initialValue: false
-        }
+          initialValue: false,
+        },
       ],
       validation: (Rule) =>
         Rule.custom((value) => {
-          const button = value as { text?: string; href?: string; useDirectionsLink?: boolean } | undefined;
-          if (!button?.text) return true;
-          if (button.href || button.useDirectionsLink) return true;
-          return 'Add a button link, or turn on Use directions link.';
-        })
+          const button = value as
+            {text?: string; href?: string; useDirectionsLink?: boolean} | undefined
+          if (!button?.text) return true
+          if (button.href || button.useDirectionsLink) return true
+          return 'Add a button link, or turn on Use directions link.'
+        }),
     }),
     defineField({
       name: 'showServiceTimes',
       title: 'Show Service Times',
       type: 'boolean',
       description: 'Display service times from settings in this card (makes it a ServiceTimesCard)',
-      initialValue: false
+      initialValue: false,
     }),
     defineField({
       name: 'componentType',
+      fieldset: 'advanced',
       title: 'Component Type',
       type: 'string',
       description: 'Select a special component to render in this card',
       options: {
         list: [
-          { title: 'None', value: '' },
-          { title: 'Linked Avatars', value: 'linkedAvatars' },
-          { title: 'Custom Component', value: 'custom' }
-        ]
-      }
+          {title: 'None', value: ''},
+          {title: 'Linked Avatars', value: 'linkedAvatars'},
+          {title: 'Custom Component', value: 'custom'},
+        ],
+      },
     }),
     defineField({
       name: 'class',
-      title: 'CSS Classes',
+      title: 'Card Width',
       type: 'string',
-      description: 'Additional CSS classes for layout (e.g., lg:col-span-3, lg:col-span-2)',
+      description: 'Choose how much of a row this card occupies on desktop.',
       options: {
         list: [
-          { title: 'Large (3 columns)', value: 'lg:col-span-3' },
-          { title: 'Medium (2 columns)', value: 'lg:col-span-2' },
-          { title: 'Small (1 column)', value: 'lg:col-span-1' }
-        ]
+          {title: 'Half a row', value: 'lg:col-span-3'},
+          {title: 'One third of a row', value: 'lg:col-span-2'},
+        ],
       },
-      validation: (Rule) => Rule.required().error('Pick a card width so the home page grid lays out correctly')
+      validation: (Rule) =>
+        Rule.required().error('Pick a card width so the home page grid lays out correctly'),
     }),
     defineField({
       name: 'dark',
+      fieldset: 'advanced',
       title: 'Dark Theme',
       type: 'boolean',
       description: 'Use dark theme for this card',
-      initialValue: false
+      initialValue: false,
     }),
     defineField({
       name: 'fade',
+      fieldset: 'advanced',
       title: 'Fade Effects',
       type: 'array',
-      of: [{ type: 'string' }],
+      of: [{type: 'string'}],
       options: {
         list: [
-          { title: 'Top', value: 'top' },
-          { title: 'Bottom', value: 'bottom' }
-        ]
-      }
-    })
+          {title: 'Top', value: 'top'},
+          {title: 'Bottom', value: 'bottom'},
+        ],
+      },
+    }),
   ],
   preview: {
     select: {
@@ -185,28 +203,28 @@ export default defineType({
       media: 'image',
       showServiceTimes: 'showServiceTimes',
       showLocationInfo: 'showLocationInfo',
-      componentType: 'componentType'
+      componentType: 'componentType',
     },
-    prepare({ title, eyebrow, media, showServiceTimes, componentType, showLocationInfo }) {
-      let subtitle = eyebrow || '';
-      
+    prepare({title, eyebrow, media, showServiceTimes, componentType, showLocationInfo}) {
+      let subtitle = eyebrow || ''
+
       if (showServiceTimes) {
-        subtitle += ' • Service Times Card';
+        subtitle += ' • Service Times Card'
       }
-      
+
       if (showLocationInfo) {
-        subtitle += ' • Location Card';
+        subtitle += ' • Location Card'
       }
-      
+
       if (componentType && componentType !== '') {
-        subtitle += ` • ${componentType}`;
+        subtitle += ` • ${componentType}`
       }
-      
+
       return {
         title: title,
         subtitle: subtitle,
-        media: media
-      };
-    }
-  }
-});
+        media: media,
+      }
+    },
+  },
+})

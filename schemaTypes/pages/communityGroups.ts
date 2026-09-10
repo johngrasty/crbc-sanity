@@ -1,10 +1,22 @@
-import { defineType, defineField } from 'sanity';
+import {defineType, defineField} from 'sanity'
 
 export default defineType({
   name: 'communityGroupsPage',
   title: 'Community Groups Page',
   type: 'document',
   fields: [
+    defineField({
+      name: 'pcoGroupTypeName',
+      title: 'Planning Center Group Type',
+      type: 'string',
+      description:
+        'Copy the group type name exactly as it appears in Planning Center Groups. Only groups of this type appear on this page.',
+      initialValue: 'Community Groups',
+      validation: (Rule) =>
+        Rule.required().custom(
+          (value) => !value || value === value.trim() || 'Remove spaces at the beginning or end',
+        ),
+    }),
     defineField({
       name: 'title',
       title: 'Page Title',
@@ -53,7 +65,7 @@ export default defineType({
     prepare() {
       return {
         title: 'Community Groups Page',
-      };
+      }
     },
   },
-});
+})

@@ -1,4 +1,5 @@
-import { defineType } from 'sanity'
+import {navigationUriOptions, validateNavigationLink} from '../../lib/navigation-link'
+import {defineType} from 'sanity'
 
 export default defineType({
   name: 'footerSettings',
@@ -14,20 +15,20 @@ export default defineType({
           name: 'subheading',
           title: 'Subheading',
           type: 'string',
-          validation: Rule => Rule.required()
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'title',
           title: 'Main Title',
           type: 'string',
-          validation: Rule => Rule.required()
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'description',
           title: 'Description',
           type: 'text',
           rows: 3,
-          validation: Rule => Rule.required()
+          validation: (Rule) => Rule.required(),
         },
         {
           name: 'button',
@@ -38,31 +39,35 @@ export default defineType({
               name: 'text',
               title: 'Button Text',
               type: 'string',
-              validation: Rule => Rule.required()
+              validation: (Rule) => Rule.required(),
             },
             {
               name: 'href',
               title: 'Button Link',
-              type: 'string',
-              validation: Rule => Rule.required()
+              type: 'url',
+              validation: (Rule) => [
+                Rule.required(),
+                Rule.uri(navigationUriOptions).custom(validateNavigationLink),
+              ],
             },
             {
               name: 'usePcoModal',
               title: 'Open in Planning Center Modal',
               type: 'boolean',
-              description: 'When enabled, the button will open in a Planning Center modal instead of navigating to a new page',
-              initialValue: false
-            }
-          ]
-        }
-      ]
+              description:
+                'When enabled, the button will open in a Planning Center modal instead of navigating to a new page',
+              initialValue: false,
+            },
+          ],
+        },
+      ],
     },
   ],
   preview: {
     prepare() {
       return {
-        title: 'Footer Settings'
+        title: 'Footer Settings',
       }
-    }
-  }
+    },
+  },
 })
