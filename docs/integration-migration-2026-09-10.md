@@ -18,4 +18,6 @@ The integration transaction timed out after applying its four document updates. 
 
 All seventeen website paths refreshed successfully, with Community Groups succeeding on a targeted retry. Production browser checks passed at desktop and mobile widths: ten newsletter entries, the existing giving fund and frequency, video archive content, six Community Groups, six Life Groups, jobs, and the calendar. Neither run reported a JavaScript error. Unsigned preview requests remained unauthorized.
 
-Legacy field removal and the separate recovered event changes remain pending.
+The three legacy embed fields remain hidden and read-only for rollback. Keeping their definitions prevents Sanity from showing unknown-field warnings for the preserved values. The website cleanup removes the old embed query fallbacks after the migrated URLs have been verified. This follows [Sanity's migration cleanup guidance](https://learn.sanity.build/learn/course/handling-schema-changes-confidently/tidy-up-the-schema-and-front-end-code).
+
+The recovered event changes are released separately from this migration.
