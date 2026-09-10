@@ -102,7 +102,7 @@ export default defineType({
 			name: 'featured',
 			title: 'Featured',
 			type: 'boolean',
-			description: 'Show on homepage featured events section (in addition to sign-ups page)',
+			description: 'Show this sign-up at the top of the Sign-Ups page.',
 			initialValue: false,
 			group: 'settings'
 		})
