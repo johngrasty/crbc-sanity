@@ -4,13 +4,37 @@ export default defineType({
 	name: 'servicesPage',
 	title: 'Services Page',
 	type: 'document',
+	groups: [
+		{
+			name: 'hero',
+			title: 'Hero',
+			default: true
+		},
+		{
+			name: 'schedule',
+			title: 'Schedule'
+		},
+		{
+			name: 'ministries',
+			title: 'Ministries'
+		},
+		{
+			name: 'cta',
+			title: 'Call to action'
+		},
+		{
+			name: 'seo',
+			title: 'SEO'
+		}
+	],
 	fields: [
 		defineField({
 			name: 'title',
 			title: 'Page Title',
 			type: 'string',
 			initialValue: 'Services & Schedule',
-			validation: (Rule) => Rule.required()
+			validation: (Rule) => Rule.required(),
+			group: 'hero'
 		}),
 		defineField({
 			name: 'seo',
@@ -31,7 +55,8 @@ export default defineType({
 					initialValue:
 						'Join us for worship, Bible study, and fellowship. View our complete weekly schedule of services and programs at Calvary Road Baptist Church.'
 				})
-			]
+			],
+			group: 'seo'
 		}),
 		defineField({
 			name: 'hero',
@@ -145,7 +170,8 @@ export default defineType({
 					],
 					validation: (Rule) => Rule.required()
 				})
-			]
+			],
+			group: 'hero'
 		}),
 		defineField({
 			name: 'schedule',
@@ -165,7 +191,8 @@ export default defineType({
 					type: 'string',
 					initialValue: 'Join us throughout the week'
 				})
-			]
+			],
+			group: 'schedule'
 		}),
 		defineField({
 			name: 'ministries',
@@ -272,7 +299,8 @@ export default defineType({
 					],
 					validation: (Rule) => Rule.min(1).error('Add at least one ministry program')
 				})
-			]
+			],
+			group: 'ministries'
 		}),
 		defineField({
 			name: 'cta',
@@ -374,7 +402,8 @@ export default defineType({
 						})
 					]
 				})
-			]
+			],
+			group: 'cta'
 		})
 	],
 	preview: {

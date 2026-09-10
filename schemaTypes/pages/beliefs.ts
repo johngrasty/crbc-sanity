@@ -4,13 +4,33 @@ export default defineType({
   name: 'beliefsPage',
   title: 'Beliefs Page',
   type: 'document',
+  groups: [
+    {
+      name: 'hero',
+      title: 'Hero',
+      default: true
+    },
+    {
+      name: 'beliefs',
+      title: 'Beliefs'
+    },
+    {
+      name: 'cta',
+      title: 'Call to action'
+    },
+    {
+      name: 'seo',
+      title: 'SEO'
+    }
+  ],
   fields: [
     defineField({
       name: 'title',
       title: 'Page Title',
       type: 'string',
       initialValue: 'What We Believe',
-      validation: (Rule) => Rule.required()
+      validation: (Rule) => Rule.required(),
+      group: 'hero'
     }),
     defineField({
       name: 'seo',
@@ -30,7 +50,8 @@ export default defineType({
           rows: 2,
           initialValue: 'Discover our core beliefs and theological foundations that guide our church community.'
         })
-      ]
+      ],
+      group: 'seo'
     }),
     defineField({
       name: 'hero',
@@ -139,7 +160,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'hero'
     }),
     defineField({
       name: 'content',
@@ -271,7 +293,8 @@ export default defineType({
             })
           ]
         })
-      ]
+      ],
+      group: 'beliefs'
     }),
     defineField({
       name: 'cta',
@@ -356,7 +379,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'cta'
     }),
   ],
   preview: {

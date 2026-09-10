@@ -4,13 +4,33 @@ export default defineType({
   name: 'visitPage',
   title: 'Visit Page',
   type: 'document',
+  groups: [
+    {
+      name: 'hero',
+      title: 'Hero',
+      default: true
+    },
+    {
+      name: 'planVisit',
+      title: 'Plan your visit'
+    },
+    {
+      name: 'faq',
+      title: 'FAQ'
+    },
+    {
+      name: 'seo',
+      title: 'SEO'
+    }
+  ],
   fields: [
     defineField({
       name: 'title',
       title: 'Page Title',
       type: 'string',
       initialValue: 'Visit Us',
-      validation: (Rule) => Rule.required()
+      validation: (Rule) => Rule.required(),
+      group: 'hero'
     }),
     defineField({
       name: 'seo',
@@ -30,7 +50,8 @@ export default defineType({
           rows: 2,
           initialValue: 'Plan your first visit to CRBC. Find service times, what to expect, directions, and answers to common questions about visiting our church.'
         })
-      ]
+      ],
+      group: 'seo'
     }),
     defineField({
       name: 'hero',
@@ -117,7 +138,8 @@ export default defineType({
           validation: (Rule) => Rule.min(3).max(5).error('Please upload between 3 and 5 images for the hero section grid'),
           description: 'Upload 3 to 5 images that will be displayed in the hero section grid. The layout adapts to the number you upload.'
         })
-      ]
+      ],
+      group: 'hero'
     }),
     defineField({
       name: 'planVisit',
@@ -260,7 +282,8 @@ export default defineType({
             })
           ]
         })
-      ]
+      ],
+      group: 'planVisit'
     }),
     defineField({
       name: 'faq',
@@ -360,7 +383,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.min(1).error('Add at least one question')
         })
-      ]
+      ],
+      group: 'faq'
     })
   ],
   preview: {

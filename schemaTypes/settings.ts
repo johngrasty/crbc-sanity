@@ -4,18 +4,39 @@ export default defineType({
 	name: 'settings',
 	title: 'Church Settings',
 	type: 'document',
+	groups: [
+		{
+			name: 'churchInfo',
+			title: 'Church info',
+			default: true
+		},
+		{
+			name: 'serviceTimes',
+			title: 'Service times'
+		},
+		{
+			name: 'socialMedia',
+			title: 'Social media'
+		},
+		{
+			name: 'seo',
+			title: 'SEO'
+		}
+	],
 	fields: [
 		defineField({
 			name: 'name',
 			title: 'Church Name',
 			type: 'string',
-			validation: (Rule) => Rule.required()
+			validation: (Rule) => Rule.required(),
+			group: 'churchInfo'
 		}),
 		defineField({
 			name: 'url',
 			title: 'Church Website URL',
 			type: 'url',
-			description: 'The main website URL (e.g., https://www.example.com)'
+			description: 'The main website URL (e.g., https://www.example.com)',
+			group: 'churchInfo'
 		}),
 		defineField({
 			name: 'contact',
@@ -74,7 +95,8 @@ export default defineType({
 					description: 'Email address for support inquiries (used on error pages)',
 					validation: (Rule) => Rule.email().error('Please enter a valid email address')
 				}
-			]
+			],
+			group: 'churchInfo'
 		}),
 		defineField({
 			name: 'serviceTimes',
@@ -138,7 +160,8 @@ export default defineType({
 				}
 			],
 			validation: (Rule) =>
-				Rule.min(1).error('Add at least one service time; the home, visit and services pages list them')
+				Rule.min(1).error('Add at least one service time; the home, visit and services pages list them'),
+			group: 'serviceTimes'
 		}),
 		defineField({
 			name: 'socialMedia',
@@ -160,7 +183,8 @@ export default defineType({
 					title: 'YouTube URL',
 					type: 'url'
 				}
-			]
+			],
+			group: 'socialMedia'
 		}),
 		defineField({
 			name: 'seo',
@@ -184,7 +208,8 @@ export default defineType({
 					type: 'image',
 					description: 'Used when sharing on social media'
 				}
-			]
+			],
+			group: 'seo'
 		})
 	],
 	preview: {

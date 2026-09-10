@@ -4,13 +4,41 @@ export default defineType({
   name: 'givingPage',
   title: 'Giving Page',
   type: 'document',
+  groups: [
+    {
+      name: 'hero',
+      title: 'Hero',
+      default: true
+    },
+    {
+      name: 'onlineGiving',
+      title: 'Give online'
+    },
+    {
+      name: 'givingOptions',
+      title: 'Other ways to give'
+    },
+    {
+      name: 'whyGive',
+      title: 'Why we give'
+    },
+    {
+      name: 'faq',
+      title: 'FAQ'
+    },
+    {
+      name: 'seo',
+      title: 'SEO'
+    }
+  ],
   fields: [
     defineField({
       name: 'title',
       title: 'Page Title',
       type: 'string',
       initialValue: 'Give',
-      validation: (Rule) => Rule.required()
+      validation: (Rule) => Rule.required(),
+      group: 'hero'
     }),
     defineField({
       name: 'seo',
@@ -30,7 +58,8 @@ export default defineType({
           rows: 2,
           initialValue: 'Partner with us in God\'s work through your generous giving. Support our ministries, missions, and community outreach.'
         })
-      ]
+      ],
+      group: 'seo'
     }),
     defineField({
       name: 'hero',
@@ -113,7 +142,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.required()
         })
-      ]
+      ],
+      group: 'hero'
     }),
     defineField({
       name: 'onlineGiving',
@@ -144,7 +174,8 @@ export default defineType({
           validation: (Rule) =>
             Rule.required().error('The giving page cannot show the online giving form without this')
         })
-      ]
+      ],
+      group: 'onlineGiving'
     }),
     defineField({
       name: 'givingOptions',
@@ -220,7 +251,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.min(1).error('Add at least one giving method')
         })
-      ]
+      ],
+      group: 'givingOptions'
     }),
     defineField({
       name: 'whyGive',
@@ -268,7 +300,8 @@ export default defineType({
             })
           ]
         })
-      ]
+      ],
+      group: 'whyGive'
     }),
     defineField({
       name: 'faq',
@@ -322,7 +355,8 @@ export default defineType({
           ],
           validation: (Rule) => Rule.min(1).error('Add at least one question')
         })
-      ]
+      ],
+      group: 'faq'
     })
   ],
   preview: {
