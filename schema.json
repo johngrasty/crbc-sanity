@@ -2110,14 +2110,6 @@
         },
         "optional": false
       },
-      "slug": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "inline",
-          "name": "slug"
-        },
-        "optional": false
-      },
       "description": {
         "type": "objectAttribute",
         "value": {
@@ -2336,36 +2328,6 @@
             "type": "number"
           },
           "optional": false
-        }
-      }
-    }
-  },
-  {
-    "name": "slug",
-    "type": "type",
-    "value": {
-      "type": "object",
-      "attributes": {
-        "_type": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string",
-            "value": "slug"
-          }
-        },
-        "current": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": false
-        },
-        "source": {
-          "type": "objectAttribute",
-          "value": {
-            "type": "string"
-          },
-          "optional": true
         }
       }
     }
@@ -2940,6 +2902,36 @@
           "type": "boolean"
         },
         "optional": true
+      }
+    }
+  },
+  {
+    "name": "slug",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "slug"
+          }
+        },
+        "current": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": false
+        },
+        "source": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        }
       }
     }
   },
@@ -4835,14 +4827,6 @@
         },
         "optional": false
       },
-      "slug": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "inline",
-          "name": "slug"
-        },
-        "optional": false
-      },
       "role": {
         "type": "objectAttribute",
         "value": {
@@ -5206,39 +5190,6 @@
         "type": "objectAttribute",
         "value": {
           "type": "string"
-        },
-        "optional": false
-      },
-      "pageType": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "union",
-          "of": [
-            {
-              "type": "string",
-              "value": "home"
-            },
-            {
-              "type": "string",
-              "value": "about"
-            },
-            {
-              "type": "string",
-              "value": "ministries"
-            },
-            {
-              "type": "string",
-              "value": "events"
-            },
-            {
-              "type": "string",
-              "value": "contact"
-            },
-            {
-              "type": "string",
-              "value": "other"
-            }
-          ]
         },
         "optional": false
       },
@@ -7276,7 +7227,25 @@
                     "icon": {
                       "type": "objectAttribute",
                       "value": {
-                        "type": "string"
+                        "type": "union",
+                        "of": [
+                          {
+                            "type": "string",
+                            "value": "book"
+                          },
+                          {
+                            "type": "string",
+                            "value": "users"
+                          },
+                          {
+                            "type": "string",
+                            "value": "smile"
+                          },
+                          {
+                            "type": "string",
+                            "value": "zap"
+                          }
+                        ]
                       },
                       "optional": true
                     }

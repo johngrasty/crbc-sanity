@@ -308,7 +308,6 @@ export type CustomSignUp = {
   _updatedAt: string
   _rev: string
   title: string
-  slug: Slug
   description: string
   category: 'event' | 'ministry' | 'volunteer'
   date?: string
@@ -344,12 +343,6 @@ export type SanityImageHotspot = {
   y: number
   height: number
   width: number
-}
-
-export type Slug = {
-  _type: 'slug'
-  current: string
-  source?: string
 }
 
 export type Ministry = {
@@ -435,6 +428,12 @@ export type Ministry = {
   }>
   pcoTag?: string
   featured?: boolean
+}
+
+export type Slug = {
+  _type: 'slug'
+  current: string
+  source?: string
 }
 
 export type Resource = {
@@ -731,7 +730,6 @@ export type Staff = {
   _updatedAt: string
   _rev: string
   name: string
-  slug: Slug
   role: string
   category: 'pastoral' | 'ministry' | 'support' | 'deacons'
   image?: {
@@ -779,7 +777,6 @@ export type Page = {
   _updatedAt: string
   _rev: string
   title: string
-  pageType: 'home' | 'about' | 'ministries' | 'events' | 'contact' | 'other'
   slug: Slug
   description?: string
   seo?: {
@@ -1114,7 +1111,7 @@ export type ServicesPage = {
       description: string
       link: string
       linkText?: string
-      icon?: string
+      icon?: 'book' | 'users' | 'smile' | 'zap'
       _key: string
     }>
   }
@@ -1777,8 +1774,8 @@ export type AllSanitySchemaTypes =
   | CustomSignUp
   | SanityImageCrop
   | SanityImageHotspot
-  | Slug
   | Ministry
+  | Slug
   | Resource
   | Article
   | FooterMenu
