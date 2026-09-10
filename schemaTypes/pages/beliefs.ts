@@ -154,7 +154,7 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+              description: 'Be specific, not generic. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
               validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
           ],
@@ -373,7 +373,7 @@ export default defineType({
               name: 'alt',
               title: 'Alt Text',
               type: 'string',
-              description: 'Describe the specific image used (10-125 characters). Be specific, not generic. Use AI Assist (✨) to generate. See ALT_TEXT_GUIDE.md.',
+              description: 'Be specific, not generic. Use AI Assist (✨) to generate. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
               validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
             })
           ],

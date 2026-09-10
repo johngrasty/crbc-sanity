@@ -64,7 +64,7 @@ export default defineType({
 					name: 'alt',
 					type: 'string',
 					title: 'Alternative Text',
-					description: 'Describe what the image shows (10-125 characters). Use AI Assist (✨) to generate, then review. See ALT_TEXT_GUIDE.md for examples.',
+					description: 'Use AI Assist (✨) to generate, then review. 10 to 125 characters. Describe what is in the photo. Do not start with "image of".',
 					validation: (Rule) => Rule.required().min(10).max(125).error('Alt text is required (10-125 characters) for accessibility')
 				}
 			]
