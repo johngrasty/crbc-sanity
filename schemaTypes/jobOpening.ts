@@ -23,6 +23,13 @@ export default defineType({
     },
   ],
   fields: [
+    // Preserve the former ordering value after migration to orderRank.
+    defineField({
+      name: 'displayOrder',
+      type: 'number',
+      hidden: true,
+      readOnly: true,
+    }),
     defineField({
       name: 'title',
       title: 'Job title',
