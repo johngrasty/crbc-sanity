@@ -5,6 +5,25 @@ export default defineType({
   title: 'Life Groups Page',
   type: 'document',
   fields: [
+    // Retain definitions for stored values retired from the website.
+    defineField({
+      name: 'footerNote',
+      type: 'text',
+      hidden: true,
+      readOnly: true,
+    }),
+    defineField({
+      name: 'kidsMinistryLink',
+      type: 'string',
+      hidden: true,
+      readOnly: true,
+    }),
+    defineField({
+      name: 'studentsMinistryLink',
+      type: 'string',
+      hidden: true,
+      readOnly: true,
+    }),
     defineField({
       name: 'pcoGroupTypeName',
       title: 'Planning Center Group Type',

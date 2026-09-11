@@ -201,6 +201,7 @@ export type JobOpening = {
   _createdAt: string
   _updatedAt: string
   _rev: string
+  displayOrder?: number
   title: string
   department: string
   employmentType: 'fullTime' | 'partTime' | 'flexible' | 'contract' | 'internship'
@@ -784,6 +785,9 @@ export type LifeGroupsPage = {
   _createdAt: string
   _updatedAt: string
   _rev: string
+  footerNote?: string
+  kidsMinistryLink?: string
+  studentsMinistryLink?: string
   pcoGroupTypeName: string
   title: string
   heading: string
