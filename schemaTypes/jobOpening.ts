@@ -120,6 +120,26 @@ export default defineType({
       group: 'application',
     }),
     defineField({
+      name: 'acceptingApplications',
+      title: 'Accepting applications',
+      type: 'boolean',
+      description:
+        'Turn this off to keep the role on the website without the Apply button, for example while you interview the people who already applied.',
+      initialValue: true,
+      group: 'application',
+    }),
+    defineField({
+      name: 'applicationsClosedNote',
+      title: 'Note while applications are closed',
+      type: 'text',
+      rows: 2,
+      description:
+        'Shown where the Apply button was. Leave blank to use: "We are not taking new applications while we interview the people who have already applied."',
+      hidden: ({document}) => document?.acceptingApplications !== false,
+      validation: (Rule) => Rule.max(240),
+      group: 'application',
+    }),
+    defineField({
       name: 'applicationUrl',
       title: 'Application URL',
       type: 'url',
@@ -186,8 +206,17 @@ export default defineType({
       active: 'active',
       openDate: 'openDate',
       closeDate: 'closeDate',
+      acceptingApplications: 'acceptingApplications',
     },
-    prepare({title, department, employmentType, active, openDate, closeDate}) {
+    prepare({
+      title,
+      department,
+      employmentType,
+      active,
+      openDate,
+      closeDate,
+      acceptingApplications,
+    }) {
       const now = new Date()
       const opens = openDate ? new Date(openDate) : null
       const closes = closeDate ? new Date(closeDate) : null
@@ -203,6 +232,7 @@ export default defineType({
       if (!active) status = 'Hidden'
       else if (opens && opens > now) status = 'Scheduled'
       else if (closes && closes < now) status = 'Closed'
+      else if (acceptingApplications === false) status = 'Not accepting applications'
 
       return {
         title,
