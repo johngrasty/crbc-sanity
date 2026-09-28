@@ -211,6 +211,8 @@ export type JobOpening = {
   responsibilities?: Array<string>
   qualifications?: Array<string>
   applicationInstructions?: string
+  acceptingApplications?: boolean
+  applicationsClosedNote?: string
   applicationUrl?: string
   applicationEmail?: string
   active: boolean

@@ -1413,6 +1413,20 @@
         },
         "optional": true
       },
+      "acceptingApplications": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "boolean"
+        },
+        "optional": true
+      },
+      "applicationsClosedNote": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
       "applicationUrl": {
         "type": "objectAttribute",
         "value": {
