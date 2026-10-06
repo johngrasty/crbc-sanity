@@ -2,6 +2,7 @@ import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
+import {passagesField} from './passage'
 import {publicationPolicyField} from './publicationPolicy'
 
 // A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
@@ -171,6 +172,7 @@ export default defineType({
       ],
       group: 'details',
     }),
+    {...passagesField, group: 'details'},
     {...publicationPolicyField, group: 'publishing'},
     defineField({
       name: 'publishAt',

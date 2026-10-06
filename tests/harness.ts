@@ -22,6 +22,7 @@ import {
   type DocumentActionComponent,
   type DocumentActionsVersionType,
   type NewDocumentCreationContext,
+  type ObjectSchemaType,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -441,6 +442,24 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       return [...dataset.values()]
         .sort((a, b) => a._id.localeCompare(b._id))
         .map((document) => structuredClone(document))
+    },
+
+    // The values a list field offers, in order, each with the title its dropdown or radio
+    // buttons show. A plain value shows as itself.
+    choices(type: string, field: string): {title: string; value: unknown}[] {
+      const fieldType = (schema.get(type) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type
+      const list = (fieldType?.options as {list?: unknown[]} | undefined)?.list
+      if (!list) throw new Error(`${type}.${field} has no list of values`)
+      return list.map((option) =>
+        option && typeof option === 'object' && 'value' in option
+          ? {
+              title: String((option as {title?: unknown}).title ?? option.value),
+              value: option.value,
+            }
+          : {title: String(option), value: option},
+      )
     },
   }
 }

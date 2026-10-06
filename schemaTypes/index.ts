@@ -30,6 +30,7 @@ import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
 import mediaItem from './media/mediaItem'
 import mediaSettings from './media/mediaSettings'
+import passage from './media/passage'
 
 export const schemaTypes = [
   // Documents
@@ -67,4 +68,5 @@ export const schemaTypes = [
   richText,
   bentoCard,
   statistic,
+  passage,
 ]
