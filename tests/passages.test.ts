@@ -336,3 +336,55 @@ test('speakers, topics and passages share the People and scripture tab, after De
     assert.deepEqual(tabs, ['People and scripture'], field)
   }
 })
+
+// The display text of the first passage after an edit to a new media item's draft.
+async function displayEditor() {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  return async (patch: {set?: Record<string, unknown>; unset?: string[]}) => {
+    const version = await studio.edit(item._id, patch)
+    return (version.passages as {display?: string}[] | undefined)?.[0]?.display
+  }
+}
+const a = 'passages[_key=="a"]'
+
+test('Studio fills an empty display text as the editor picks the book, chapter and verses', async () => {
+  const displayAfter = await displayEditor()
+  assert.equal(
+    await displayAfter({set: {passages: [{_key: 'a', _type: 'passage', book: 'Jas'}]}}),
+    undefined,
+  )
+  assert.equal(await displayAfter({set: {[`${a}.chapterStart`]: 1}}), 'James 1')
+  assert.equal(await displayAfter({set: {[`${a}.verseStart`]: 2}}), 'James 1:2')
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 4}}), 'James 1:2-4')
+  assert.equal(await displayAfter({set: {[`${a}.book`]: 'Phil'}}), 'Philippians 1:2-4')
+})
+
+test('a pasted passage without display text gets one', async () => {
+  const displayAfter = await displayEditor()
+  const pasted = {_key: 'a', _type: 'passage', book: 'Rom', chapterStart: 4}
+  assert.equal(await displayAfter({set: {passages: [pasted]}}), 'Romans 4')
+})
+
+test('display text an editor wrote stays when the reference changes', async () => {
+  const displayAfter = await displayEditor()
+  const written = passage('a', {display: 'Joy in trials'})
+  assert.equal(await displayAfter({set: {passages: [written]}}), 'Joy in trials')
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 5}}), 'Joy in trials')
+
+  // Cleared, it stays empty until the reference changes again.
+  assert.equal(await displayAfter({unset: [`${a}.display`]}), undefined)
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 6}}), 'James 1:2-6')
+})
+
+test('opening a published item with a passage that lacks display text writes nothing', async () => {
+  const published = {
+    _id: 'item',
+    _type: 'mediaItem',
+    contentId: 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
+    passages: [{_key: 'a', _type: 'passage', book: 'Rom', chapterStart: 4}],
+  }
+  const studio = createHarness({documents: [published]})
+  assert.deepEqual(await studio.open('item'), published)
+  assert.deepEqual(studio.documents(), [published])
+})

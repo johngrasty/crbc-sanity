@@ -30,12 +30,16 @@ import {
   prepareForPreview,
   resolveInitialValue,
   resolveInitialValueForType,
+  stringToPath,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type KeyedSegment,
   type NewDocumentCreationContext,
   type ObjectSchemaType,
+  type Path,
+  type PathSegment,
   type PreviewableType,
   type SanityClient,
   type SanityDocument,
@@ -265,24 +269,61 @@ function textOf(node: ReactNode): string {
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
-// Applies set, then unset, as Sanity does. Paths are dotted field names.
+type Container = Record<string, unknown> | unknown[]
+
+// The array index a path segment names, or -1 when there's no such item. Only an index or a
+// {_key} names one.
+function indexIn(items: unknown[], segment: PathSegment): number {
+  if (typeof segment === 'number') return segment
+  if (!segment || typeof segment !== 'object' || Array.isArray(segment)) return -1
+  const {_key} = segment as KeyedSegment
+  return items.findIndex((item) => (item as {_key?: unknown} | null)?._key === _key)
+}
+
+// The value holding a path's last segment. A set creates missing objects on the way, as Sanity
+// does. A keyed segment needs its item to exist, as in Sanity, where a set or unset on a missing
+// item changes nothing.
+function parentAt(document: TestDocument, path: Path, create: boolean): Container | undefined {
+  let target: unknown = document
+  for (const segment of path.slice(0, -1)) {
+    if (Array.isArray(target)) {
+      target = target[indexIn(target, segment)]
+    } else if (target && typeof target === 'object' && typeof segment === 'string') {
+      const object = target as Record<string, unknown>
+      if (create) object[segment] ??= {}
+      target = object[segment]
+    } else {
+      return undefined
+    }
+  }
+  return target && typeof target === 'object' ? (target as Container) : undefined
+}
+
+// Applies set, then unset, as Sanity does. Paths are in Sanity's string form, such as title,
+// editorHold.note or passages[_key=="a"].display.
 function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatch): TestDocument {
   const next = structuredClone(document)
   for (const [path, value] of Object.entries(set)) {
-    const keys = path.split('.')
-    const field = keys.pop() as string
-    let target: Record<string, unknown> = next
-    for (const key of keys) target = (target[key] ??= {}) as Record<string, unknown>
-    target[field] = structuredClone(value)
+    const segments = stringToPath(path)
+    const last = segments[segments.length - 1]
+    const parent = parentAt(next, segments, true)
+    if (Array.isArray(parent)) {
+      const index = indexIn(parent, last)
+      if (index >= 0) parent[index] = structuredClone(value)
+    } else if (parent && typeof last === 'string') {
+      parent[last] = structuredClone(value)
+    }
   }
   for (const path of unset) {
-    const keys = path.split('.')
-    const field = keys.pop() as string
-    const parent = keys.reduce<unknown>(
-      (value, key) => (value as Record<string, unknown>)?.[key],
-      next,
-    )
-    if (parent && typeof parent === 'object') delete (parent as Record<string, unknown>)[field]
+    const segments = stringToPath(path)
+    const last = segments[segments.length - 1]
+    const parent = parentAt(next, segments, false)
+    if (Array.isArray(parent)) {
+      const index = indexIn(parent, last)
+      if (index >= 0) parent.splice(index, 1)
+    } else if (parent && typeof last === 'string') {
+      delete parent[last]
+    }
   }
   return next
 }

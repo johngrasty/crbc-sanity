@@ -1,16 +1,15 @@
 // A scripture passage on a media item (contract section 3): a book, chapters and verses, and the
 // text viewers read. The website and apps browse and filter by book.
 import {BookOpen} from 'lucide-react'
-import {useEffect, useRef} from 'react'
 import {
   defineArrayMember,
   defineField,
   defineType,
-  set,
-  type ObjectInputProps,
+  pathToString,
   type ValidationContext,
 } from 'sanity'
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
+import type {FormFollowUp} from '../../structure/documentConfig'
 import {bookFor, books} from './books'
 import {labelLimit} from './limits'
 import {itemLimit} from './lists'
@@ -75,25 +74,22 @@ export function displayAfterChange(
   return !after?.display?.trim() || after.display === previous ? next : undefined
 }
 
-// Fills the display text in as the editor picks the book, chapters and verses. Its first run
-// compares against no passage at all, so a passage that opens with an empty display text gets
-// one. Patching during render throws, so it runs in an effect. A read-only form, such as one
-// that hasn't loaded yet, refuses any patch, so the input waits until it can write.
-function PassageInput(props: ObjectInputProps) {
-  const {onChange, readOnly} = props
-  const value = props.value as PassageValue | undefined
-  const previous = useRef<PassageValue | undefined>(undefined)
-
-  useEffect(() => {
-    if (readOnly) return
-    const before = previous.current
-    previous.current = value
-    if (before === value) return
-    const display = displayAfterChange(before, value)
-    if (display !== undefined) onChange(set(display, ['display']))
-  }, [onChange, readOnly, value])
-
-  return props.renderDefault(props)
+// The media item's follow-up step: as an editor changes a passage's reference, Studio fills in
+// its display text or keeps it in step, as displayAfterChange decides. A passage counts as the
+// same one by its _key, and a new or pasted one is compared with no passage at all. When the form
+// loads, previous is the same as version, so nothing changes.
+export const passageDisplayPatch: FormFollowUp = ({previous, version}) => {
+  type Item = PassageValue & {_key?: unknown}
+  const items = (value: unknown) => (Array.isArray(value) ? (value as Item[]) : [])
+  const before = new Map(items(previous.passages).map((item) => [item?._key, item]))
+  const set: Record<string, string> = {}
+  for (const item of items(version.passages)) {
+    if (typeof item?._key !== 'string') continue
+    const display = displayAfterChange(before.get(item._key), item)
+    if (display === undefined) continue
+    set[pathToString(['passages', {_key: item._key}, 'display'])] = display
+  }
+  return Object.keys(set).length ? {set} : null
 }
 
 // A verse is a whole number from 1 to 176.
@@ -144,7 +140,6 @@ export default defineType({
     {name: 'start', title: 'Start', options: {columns: 2}},
     {name: 'end', title: 'End', options: {columns: 2}},
   ],
-  components: {input: PassageInput},
   fields: [
     defineField({
       name: 'book',

@@ -11,6 +11,7 @@ import {
 } from 'sanity'
 import {CalendarClock} from 'lucide-react'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {passageDisplayPatch} from '../schemaTypes/media/passage'
 import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
 import type {ZonedStart} from '../schemaTypes/media/zonedStart'
@@ -85,8 +86,8 @@ export const templates: TemplateResolver = (prev) =>
 export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter(({templateId}) => !singletonsWithTemplates.has(templateId))
 
-// A patch for one document version. Keys in set and entries in unset are field paths such as
-// title or editorHold.note.
+// A patch for one document version. Keys in set and entries in unset are paths in Sanity's string
+// form, such as title, editorHold.note or passages[_key=="a"].display.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step keeps fields of a draft or release version in step as the editor works.
@@ -117,10 +118,16 @@ const fillSlotLength: FormFollowUp = ({previous, version}) => {
   return untouched ? {set: {expectedDurationMinutes: slot.expectedDurationMinutes}} : null
 }
 
-// Each type's follow-up steps, in order. Every type with a slug keeps its slug history.
+// Each type's follow-up steps, in order. Every type with a slug keeps its slug history, and a
+// media item fills in its passages' display text.
+const slugSteps: Partial<Record<string, FormFollowUp[]>> = Object.fromEntries(
+  Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]]),
+)
+
 export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
   serviceEvent: [fillSlotLength],
-  ...Object.fromEntries(Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]])),
+  ...slugSteps,
+  mediaItem: [...(slugSteps.mediaItem ?? []), passageDisplayPatch],
 }
 
 // The form components sanity.config.ts passes to Sanity. They run each type's follow-up steps in
