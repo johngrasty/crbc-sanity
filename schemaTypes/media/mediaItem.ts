@@ -1,15 +1,20 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
+import {labelLimit} from './limits'
 import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
 
-// A real day written as YYYY-MM-DD, the way Sanity stores a date field.
+// A real day written as YYYY-MM-DD, the way Sanity stores a date field. setUTCFullYear, unlike
+// Date.UTC, doesn't read years 0 to 99 as 1900 to 1999.
 function isCalendarDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
   if (!match) return false
   const [year, month, day] = match.slice(1).map(Number)
-  const date = new Date(Date.UTC(year, month - 1, day))
-  return date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  )
 }
 
 const kinds = [
@@ -53,7 +58,7 @@ export default defineType({
       description:
         'The sermon or service title viewers see. You can publish without one, but the recording waits until you add it.',
       validation: (rule) => [
-        rule.max(200),
+        labelLimit(rule),
         rule
           .custom((value) =>
             value ? true : "Add a title. The recording won't publish until the item has one.",

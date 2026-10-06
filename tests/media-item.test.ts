@@ -151,14 +151,17 @@ test('the time zone is required and must be an Area/Location zone Intl knows', a
   }
 })
 
-test('a title holds up to 200 characters', async () => {
+test('a title holds up to 200 characters, counted as Unicode code points', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
-  // é is two UTF-8 bytes, so this also shows the limit counts characters, not bytes.
-  const atLimit = await studio.validate({...item, title: 'é'.repeat(200)})
-  assert.deepEqual(errorsAt(atLimit, 'title'), [])
-  const pastLimit = await studio.validate({...item, title: 'é'.repeat(201)})
-  assert.equal(errorsAt(pastLimit, 'title').length, 1)
+  // é is one UTF-16 unit and two UTF-8 bytes. 😀 is outside the BMP: two UTF-16 units, one
+  // code point, which is how the contract's JSON Schema counts a character.
+  for (const character of ['é', '😀']) {
+    const atLimit = await studio.validate({...item, title: character.repeat(200)})
+    assert.deepEqual(errorsAt(atLimit, 'title'), [], `200 × ${character}`)
+    const pastLimit = await studio.validate({...item, title: character.repeat(201)})
+    assert.equal(errorsAt(pastLimit, 'title').length, 1, `201 × ${character}`)
+  }
 })
 
 test('a placeholder item with no title or service date has warnings, not errors', async () => {
@@ -167,6 +170,18 @@ test('a placeholder item with no title or service date has warnings, not errors'
   assert.deepEqual(errors(markers), [])
   assert.equal(warningsAt(markers, 'title').length, 1)
   assert.equal(warningsAt(markers, 'serviceDate').length, 1)
+})
+
+test('a service date is a real leap day only in a leap year, including years below 100', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  const dateErrors = async (serviceDate: string) =>
+    errorsAt(await studio.validate({...item, serviceDate}), 'serviceDate').length
+  // 1900 isn't a leap year. 2000 and year 0 are, in the proleptic Gregorian calendar.
+  assert.equal(await dateErrors('1900-02-29'), 1)
+  assert.equal(await dateErrors('2000-02-29'), 0)
+  assert.equal(await dateErrors('0000-02-29'), 0)
+  assert.equal(await dateErrors('0000-02-30'), 1)
 })
 
 test('a service date is a calendar date, not an instant', async () => {
