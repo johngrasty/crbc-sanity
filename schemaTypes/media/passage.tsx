@@ -1,7 +1,15 @@
 // A scripture passage on a media item (contract section 3): a book, chapters and verses, and the
 // text viewers read. The website and apps browse and filter by book.
 import {BookOpen} from 'lucide-react'
-import {defineArrayMember, defineField, defineType, type ValidationContext} from 'sanity'
+import {useEffect, useRef} from 'react'
+import {
+  defineArrayMember,
+  defineField,
+  defineType,
+  set,
+  type ObjectInputProps,
+  type ValidationContext,
+} from 'sanity'
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import {bookFor, books} from './books'
 import {labelLimit} from './limits'
@@ -53,6 +61,40 @@ export function referenceText(passage: PassageValue | undefined): string | undef
   return `${name} ${start}${end}`
 }
 
+// The display text a change to a passage should leave, or undefined to leave it as it is. When
+// the reference changes, an empty display text gets the new reference. So does one that still
+// reads as Studio wrote it for the reference before the change. Wording an editor chose stays.
+export function displayAfterChange(
+  before: PassageValue | undefined,
+  after: PassageValue | undefined,
+): string | undefined {
+  const previous = referenceText(before)
+  const next = referenceText(after)
+  if (next === undefined || next === previous || after?.display === next) return undefined
+  return !after?.display?.trim() || after.display === previous ? next : undefined
+}
+
+// Fills the display text in as the editor picks the book, chapters and verses. Its first run
+// compares against no passage at all, so a passage that opens with an empty display text gets
+// one. Patching during render throws, so it runs in an effect. A read-only form, such as one
+// that hasn't loaded yet, refuses any patch, so the input waits until it can write.
+function PassageInput(props: ObjectInputProps) {
+  const {onChange, readOnly} = props
+  const value = props.value as PassageValue | undefined
+  const previous = useRef<PassageValue | undefined>(undefined)
+
+  useEffect(() => {
+    if (readOnly) return
+    const before = previous.current
+    previous.current = value
+    if (before === value) return
+    const display = displayAfterChange(before, value)
+    if (display !== undefined) onChange(set(display, ['display']))
+  }, [onChange, readOnly, value])
+
+  return props.renderDefault(props)
+}
+
 // A verse is a whole number from 1 to 176.
 function verseProblem(verse: number | undefined) {
   if (isMissing(verse)) return true
@@ -97,6 +139,11 @@ export default defineType({
   title: 'Passage',
   type: 'object',
   icon: BookOpen,
+  fieldsets: [
+    {name: 'start', title: 'Start', options: {columns: 2}},
+    {name: 'end', title: 'End', options: {columns: 2}},
+  ],
+  components: {input: PassageInput},
   fields: [
     defineField({
       name: 'book',
@@ -107,32 +154,41 @@ export default defineType({
     }),
     defineField({
       name: 'chapterStart',
-      title: 'Start chapter',
+      title: 'Chapter',
       type: 'number',
+      fieldset: 'start',
       validation: (rule) => [rule.required(), rule.custom(chapterProblem)],
     }),
     defineField({
       name: 'verseStart',
-      title: 'Start verse',
+      title: 'Verse',
       type: 'number',
+      description: 'Leave empty to start at the beginning of the chapter.',
+      fieldset: 'start',
       validation: (rule) => rule.custom(verseProblem),
     }),
     defineField({
       name: 'chapterEnd',
-      title: 'End chapter',
+      title: 'Chapter',
       type: 'number',
+      description: 'Only for a passage that runs into a later chapter.',
+      fieldset: 'end',
       validation: (rule) => rule.custom(chapterEndProblem),
     }),
     defineField({
       name: 'verseEnd',
-      title: 'End verse',
+      title: 'Verse',
       type: 'number',
+      description: 'Leave empty for a single verse or whole chapters.',
+      fieldset: 'end',
       validation: (rule) => rule.custom(verseEndProblem),
     }),
     defineField({
       name: 'display',
       title: 'Display text',
       type: 'string',
+      description:
+        'What viewers read, such as James 1:2-4. Studio fills it in from the book, chapters and verses, and you can change the wording.',
       validation: (rule) => [rule.required(), labelLimit(rule)],
     }),
   ],
@@ -158,6 +214,8 @@ export const passagesField = defineField({
   name: 'passages',
   title: 'Scripture passages',
   type: 'array',
+  description:
+    'The Bible passages the sermon or service covers, up to 20. Viewers can find recordings by book on the website and in the apps.',
   of: [defineArrayMember({type: 'passage'})],
   validation: (rule) =>
     rule.custom((value) => {
