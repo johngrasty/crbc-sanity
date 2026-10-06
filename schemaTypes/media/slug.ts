@@ -119,7 +119,18 @@ const isEntry = (entry: unknown): entry is SlugEntry => {
   return _type === 'slug' && typeof _key === 'string' && typeof current === 'string'
 }
 
-const newKey = () => crypto.randomUUID().replaceAll('-', '').slice(0, 12)
+// A key made from the slug, an FNV-1a hash, so every open form gives a new entry the same key.
+// A key the history already uses moves on to the next attempt.
+function keyFor(slug: string, used: Set<string>): string {
+  for (let attempt = 0; ; attempt++) {
+    let hash = 0x811c9dc5
+    for (const char of attempt ? `${slug}#${attempt}` : slug) {
+      hash = Math.imul(hash ^ (char.codePointAt(0) ?? 0), 0x01000193)
+    }
+    const key = (hash >>> 0).toString(36)
+    if (!used.has(key)) return key
+  }
+}
 
 // The follow-up step that gives a draft or release version its expected history, or null when
 // it already has it.
@@ -142,7 +153,7 @@ export const slugHistoryPatch: FormFollowUp = ({version, published}) => {
   const used = new Set<string>()
   const slugHistory = expected.map((current): SlugEntry => {
     const knownKey = known.get(current)
-    const _key = knownKey && !used.has(knownKey) ? knownKey : newKey()
+    const _key = knownKey && !used.has(knownKey) ? knownKey : keyFor(current, used)
     used.add(_key)
     return {_type: 'slug', _key, current}
   })

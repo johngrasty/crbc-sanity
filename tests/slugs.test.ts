@@ -251,3 +251,15 @@ test("Generate makes a slug from the title that matches the contract's pattern",
   const markers = await studio.validate(item({slug: slug(String(long))}))
   assert.deepEqual(errorsAt(markers, 'slug'), [])
 })
+
+test("two editors' forms write the same history, keys included", async () => {
+  // Both forms run the step on the same change, and both can apply its patch.
+  const documents = [item({slug: slug('easter'), slugHistory: entries('resurrection')})]
+  const [first, second] = await Promise.all(
+    [createHarness({documents}), createHarness({documents})].map((studio) =>
+      studio.edit('item', {set: {slug: slug('easter-sunday')}}),
+    ),
+  )
+  assert.deepEqual(history(first), ['resurrection', 'easter'])
+  assert.deepEqual(first.slugHistory, second.slugHistory)
+})
