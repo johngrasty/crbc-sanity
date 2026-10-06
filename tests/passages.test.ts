@@ -83,6 +83,9 @@ const errorsAt = (markers: Marker[], path: string) =>
 // Every error on the passages list or inside one of its passages.
 const passageErrors = (markers: Marker[]) =>
   markers.filter((marker) => marker.level === 'error' && marker.path.startsWith('passages'))
+// Every error inside the passage with this _key.
+const errorsIn = (markers: Marker[], key: string) =>
+  passageErrors(markers).filter(({path}) => path.startsWith(`passages[_key=="${key}"]`))
 
 // A whole, valid passage, James 1:2-4. fields override or add to it.
 const passage = (key: string, fields: Record<string, unknown> = {}) => ({
@@ -131,4 +134,71 @@ test("every book code matches the contract's OSIS pattern", () => {
   const codes = studio.choices('passage', 'book').map(({value}) => value)
   assert.equal(codes.length, 66)
   for (const code of codes) assert.match(String(code), pattern)
+})
+
+test('a passage needs a book from the list', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const book of [undefined, '', 'Xyz', 'James', 'jas', 'Jas.']) {
+    const markers = await studio.validate({...item, passages: [passage('a', {book})]})
+    assert.notDeepEqual(errorsAt(markers, 'passages[_key=="a"].book'), [], `${book}`)
+  }
+})
+
+test('every chapter must exist in its book, and the error says how many it has', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const {code, chapters} of canon) {
+    const passages = [
+      passage('last', {book: code, chapterStart: chapters}),
+      passage('next', {book: code, chapterStart: chapters + 1}),
+      passage('end', {book: code, chapterStart: 1, chapterEnd: chapters + 1}),
+    ]
+    const markers = await studio.validate({...item, passages})
+    assert.deepEqual(errorsIn(markers, 'last'), [], code)
+    assert.equal(errorsAt(markers, 'passages[_key=="next"].chapterStart').length, 1, code)
+    assert.equal(errorsAt(markers, 'passages[_key=="end"].chapterEnd').length, 1, code)
+  }
+
+  const messages = async (book: string, chapterStart: number) =>
+    errorsAt(
+      await studio.validate({...item, passages: [passage('a', {book, chapterStart})]}),
+      'passages[_key=="a"].chapterStart',
+    ).map(({message}) => message)
+  assert.deepEqual(await messages('Jas', 6), ['James has 5 chapters.'])
+  assert.deepEqual(await messages('Jude', 2), ['Jude has 1 chapter.'])
+})
+
+test('a passage needs a start chapter, a whole number from 1', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  const markers = async (chapterStart: unknown) =>
+    errorsAt(
+      await studio.validate({...item, passages: [passage('a', {chapterStart})]}),
+      'passages[_key=="a"].chapterStart',
+    )
+  assert.deepEqual(await markers(1), [])
+  for (const chapterStart of [undefined, 0, -1, 2.5]) {
+    assert.notDeepEqual(await markers(chapterStart), [], `${chapterStart}`)
+  }
+})
+
+test('verses run from 1 to 176', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  // Psalm 119, the longest chapter, has 176 verses.
+  const psalm119 = (verseStart: unknown, verseEnd: unknown) =>
+    passage('a', {book: 'Ps', chapterStart: 119, verseStart, verseEnd})
+  const errorsOn = async (field: string, verseStart: unknown, verseEnd: unknown) =>
+    errorsAt(
+      await studio.validate({...item, passages: [psalm119(verseStart, verseEnd)]}),
+      `passages[_key=="a"].${field}`,
+    )
+
+  assert.deepEqual(await errorsOn('verseStart', 1, 176), [])
+  assert.deepEqual(await errorsOn('verseEnd', 1, 176), [])
+  for (const verse of [0, 177, 1.5]) {
+    assert.notDeepEqual(await errorsOn('verseStart', verse, undefined), [], `start ${verse}`)
+    assert.notDeepEqual(await errorsOn('verseEnd', 1, verse), [], `end ${verse}`)
+  }
 })
