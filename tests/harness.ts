@@ -132,11 +132,18 @@ function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatc
 
 type ClientConfig = {apiVersion?: string; perspective?: unknown}
 
-// A Sanity client over the in-memory dataset that answers queries with groq-js. Studio's client
-// reads the raw perspective, every published, draft and release version. Add methods here as
-// Studio code starts to call them.
+// Content Lake's default perspective is published from API version 2025-02-19, and raw before
+// it. vX is the newest version.
+function defaultPerspective(apiVersion = '1') {
+  const version = apiVersion.replace(/^v/, '')
+  return version === 'X' || version >= '2025-02-19' ? 'published' : 'raw'
+}
+
+// A Sanity client over the in-memory dataset that answers queries with groq-js. Without a
+// perspective it uses Content Lake's default for its API version, so a rule that forgets to ask
+// for raw misses drafts and release versions here too. Add methods as Studio code needs them.
 function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): SanityClient {
-  const perspective = config.perspective ?? 'raw'
+  const perspective = config.perspective ?? defaultPerspective(config.apiVersion)
   const visible = () => {
     const documents = [...dataset.values()]
     if (perspective === 'raw') return documents
