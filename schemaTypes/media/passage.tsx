@@ -43,6 +43,28 @@ function chapterProblem(chapter: number | undefined, context: ValidationContext)
   return `${book.name} has ${book.chapters} ${book.chapters === 1 ? 'chapter' : 'chapters'}.`
 }
 
+// The end chapter can't come before the start chapter.
+function chapterEndProblem(chapterEnd: number | undefined, context: ValidationContext) {
+  const problem = chapterProblem(chapterEnd, context)
+  if (problem !== true || isMissing(chapterEnd)) return problem
+  const {chapterStart} = passageOf(context)
+  return isMissing(chapterStart) || chapterEnd >= chapterStart
+    ? true
+    : "The end chapter can't come before the start chapter."
+}
+
+// An end verse needs a start verse. In a passage within one chapter, it can't come before it.
+function verseEndProblem(verseEnd: number | undefined, context: ValidationContext) {
+  const problem = verseProblem(verseEnd)
+  if (problem !== true || isMissing(verseEnd)) return problem
+  const {chapterStart, verseStart, chapterEnd} = passageOf(context)
+  if (isMissing(verseStart)) return 'Add a start verse, or clear the end verse.'
+  const oneChapter = isMissing(chapterEnd) || chapterEnd === chapterStart
+  return !oneChapter || verseEnd >= verseStart
+    ? true
+    : "The end verse can't come before the start verse."
+}
+
 export default defineType({
   name: 'passage',
   title: 'Passage',
@@ -72,13 +94,13 @@ export default defineType({
       name: 'chapterEnd',
       title: 'End chapter',
       type: 'number',
-      validation: (rule) => rule.custom(chapterProblem),
+      validation: (rule) => rule.custom(chapterEndProblem),
     }),
     defineField({
       name: 'verseEnd',
       title: 'End verse',
       type: 'number',
-      validation: (rule) => rule.custom(verseProblem),
+      validation: (rule) => rule.custom(verseEndProblem),
     }),
     defineField({name: 'display', title: 'Display text', type: 'string'}),
   ],

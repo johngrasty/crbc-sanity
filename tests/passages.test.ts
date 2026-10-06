@@ -202,3 +202,48 @@ test('verses run from 1 to 176', async () => {
     assert.notDeepEqual(await errorsOn('verseEnd', 1, verse), [], `end ${verse}`)
   }
 })
+
+test('an end verse needs a start verse', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const fields of [{chapterEnd: undefined}, {chapterEnd: 2}]) {
+    const markers = await studio.validate({
+      ...item,
+      passages: [passage('a', {...fields, verseStart: undefined, verseEnd: 4})],
+    })
+    assert.deepEqual(
+      errorsAt(markers, 'passages[_key=="a"].verseEnd').map(({message}) => message),
+      ['Add a start verse, or clear the end verse.'],
+      `${fields.chapterEnd}`,
+    )
+  }
+})
+
+test("a passage's end can't come before its start", async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  const validate = async (fields: Record<string, unknown>) =>
+    errorsIn(
+      await studio.validate({
+        ...item,
+        passages: [passage('a', {book: 'John', chapterStart: 3, verseStart: 16, ...fields})],
+      }),
+      'a',
+    ).map(({path, message}) => `${path.replace('passages[_key=="a"].', '')}: ${message}`)
+
+  // John 3:16-18, 3:16 alone written as a range, 3:16-4:2 and chapters 3 to 4.
+  assert.deepEqual(await validate({verseEnd: 18}), [])
+  assert.deepEqual(await validate({chapterEnd: 3, verseEnd: 16}), [])
+  assert.deepEqual(await validate({chapterEnd: 4, verseEnd: 2}), [])
+  assert.deepEqual(await validate({verseStart: undefined, chapterEnd: 4, verseEnd: undefined}), [])
+
+  assert.deepEqual(await validate({verseEnd: 15}), [
+    "verseEnd: The end verse can't come before the start verse.",
+  ])
+  assert.deepEqual(await validate({chapterEnd: 3, verseEnd: 15}), [
+    "verseEnd: The end verse can't come before the start verse.",
+  ])
+  assert.deepEqual(await validate({chapterEnd: 2, verseEnd: 18}), [
+    "chapterEnd: The end chapter can't come before the start chapter.",
+  ])
+})
