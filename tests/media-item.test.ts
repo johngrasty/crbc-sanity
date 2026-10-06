@@ -14,6 +14,9 @@ const ULID = '01K6Z8Y4N3QJ5W2X7R9T0V1B2C'
 const OTHER_ULID = '01K6Z9A7H2MXW4Q8C5R3T6V0BD'
 const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
+const errors = (markers: Marker[]) => markers.filter((marker) => marker.level === 'error')
+const warningsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'warning' && marker.path === path)
 
 test('a new media item gets a well-formed content ID, and two new items differ', async () => {
   const studio = createHarness()
@@ -93,6 +96,68 @@ test('an item written without a content ID can get one in a draft', async () => 
   const studio = createHarness({documents: [{_id: 'item', _type: 'mediaItem'}]})
   const draft = await studio.edit('item', {set: {contentId: `mi_${ULID}`}})
   assert.deepEqual(errorsAt(await studio.validate(draft._id), 'contentId'), [])
+})
+
+test('a new media item starts as a full service in the church time zone', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  assert.equal(item.kind, 'service')
+  assert.equal(item.serviceTimezone, 'America/New_York')
+})
+
+test('kind is required and is one of the four kinds', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const kind of ['service', 'sermon', 'audio', 'other']) {
+    assert.deepEqual(errorsAt(await studio.validate({...item, kind}), 'kind'), [], kind)
+  }
+  for (const kind of [undefined, '', 'video', 'Service']) {
+    assert.notDeepEqual(errorsAt(await studio.validate({...item, kind}), 'kind'), [], `${kind}`)
+  }
+})
+
+test('the time zone is required and must be a zone name Intl knows', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const serviceTimezone of ['America/New_York', 'America/Chicago', 'Europe/London']) {
+    const markers = await studio.validate({...item, serviceTimezone})
+    assert.deepEqual(errorsAt(markers, 'serviceTimezone'), [], serviceTimezone)
+  }
+  for (const serviceTimezone of [undefined, '', 'Mars/Olympus', 'America/NewYork', '-04:00']) {
+    const markers = await studio.validate({...item, serviceTimezone})
+    assert.notDeepEqual(errorsAt(markers, 'serviceTimezone'), [], `${serviceTimezone}`)
+  }
+})
+
+test('a title holds up to 200 characters', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  // é is two UTF-8 bytes, so this also shows the limit counts characters, not bytes.
+  const atLimit = await studio.validate({...item, title: 'é'.repeat(200)})
+  assert.deepEqual(errorsAt(atLimit, 'title'), [])
+  const pastLimit = await studio.validate({...item, title: 'é'.repeat(201)})
+  assert.equal(errorsAt(pastLimit, 'title').length, 1)
+})
+
+test('a placeholder item with no title or service date has warnings, not errors', async () => {
+  const studio = createHarness()
+  const markers = await studio.validate(await studio.create('mediaItem'))
+  assert.deepEqual(errors(markers), [])
+  assert.equal(warningsAt(markers, 'title').length, 1)
+  assert.equal(warningsAt(markers, 'serviceDate').length, 1)
+})
+
+test('a service date is a calendar date, not an instant', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  assert.deepEqual(
+    errorsAt(await studio.validate({...item, serviceDate: '2026-10-04'}), 'serviceDate'),
+    [],
+  )
+  for (const serviceDate of ['10/04/2026', '2026-10-04T13:00:00Z', '2026-13-01']) {
+    const markers = await studio.validate({...item, serviceDate})
+    assert.notDeepEqual(errorsAt(markers, 'serviceDate'), [], serviceDate)
+  }
 })
 
 test('publishing keeps the content ID, and later versions share it', async () => {
