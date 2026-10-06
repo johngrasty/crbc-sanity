@@ -1,6 +1,7 @@
 import {defineField, defineType} from 'sanity'
 import {SlidersHorizontal} from 'lucide-react'
 import {utf8Bytes} from './bytes'
+import {labelLimit} from './limits'
 
 // The placeholders media-ops fills in when it renders a YouTube or Facebook title.
 const placeholders = ['{title}', '{series}', '{speaker}', '{date}']
@@ -48,7 +49,7 @@ export default defineType({
       initialValue: '{title}, {series}',
       validation: (rule) => [
         rule.required(),
-        rule.max(200),
+        labelLimit(rule),
         rule.custom((value) => {
           const unknown = value ? unknownPlaceholders(value) : []
           if (!unknown.length) return true
