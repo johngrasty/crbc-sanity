@@ -2,6 +2,7 @@ import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
 import {labelLimit} from './limits'
+import {slugFields} from './slug'
 
 // A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
 // That rejects aliases such as US/Eastern, other spellings such as america/new_york, and EST,
@@ -81,6 +82,7 @@ export default defineType({
       ],
       group: 'details',
     }),
+    ...slugFields('mediaItem').map((field) => ({...field, group: 'details'})),
     defineField({
       name: 'serviceDate',
       title: 'Service date',

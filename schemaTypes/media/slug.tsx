@@ -1,0 +1,153 @@
+// Slugs and slug history, shared by media items and series. Old links keep working: when a
+// published slug changes, the version being edited keeps the old slug in slugHistory, so it
+// survives the Publish button, a release or any other way of publishing.
+import {
+  defineField,
+  getPublishedId,
+  isPublishedId,
+  type SanityDocumentLike,
+  type SlugIsUniqueValidator,
+} from 'sanity'
+import type {FormFollowUp} from '../../structure/documentConfig'
+
+// One entry per document type with a slug. Each type is its own namespace.
+export const slugTypes = {
+  mediaItem: {noun: 'media item'},
+  series: {noun: 'series'},
+} as const
+
+export type SlugType = keyof typeof slugTypes
+
+type SlugEntry = {_type: 'slug'; _key: string; current: string}
+
+const apiVersion = '2025-02-19'
+
+// The slug text of a slug object, or nothing when it's missing or blank.
+function slugText(value: unknown): string | undefined {
+  const current = (value as {current?: unknown} | undefined)?.current
+  return typeof current === 'string' && current.trim() ? current : undefined
+}
+
+const currentSlug = (document: SanityDocumentLike | null) => slugText(document?.slug)
+
+const historyEntries = (document: SanityDocumentLike | null): unknown[] =>
+  Array.isArray(document?.slugHistory) ? document.slugHistory : []
+
+const historySlugs = (document: SanityDocumentLike | null) =>
+  historyEntries(document).flatMap((entry) => slugText(entry) ?? [])
+
+// The history a version should have: its own history, then the published history, then the
+// published slug when the version's slug differs. No repeats, and never the current slug.
+function expectedHistory(version: SanityDocumentLike, published: SanityDocumentLike | null) {
+  const current = currentSlug(version)
+  const slugs = [...historySlugs(version), ...historySlugs(published), currentSlug(published)]
+  return [...new Set(slugs)].filter((slug): slug is string => Boolean(slug) && slug !== current)
+}
+
+// The published slugs a version's history must keep: the published history and the published
+// slug, except the version's current slug.
+function owedHistory(version: SanityDocumentLike, published: SanityDocumentLike | null) {
+  return expectedHistory({...version, slugHistory: []}, published)
+}
+
+const quoted = (slugs: string[]) => slugs.map((slug) => `"${slug}"`).join(', ')
+
+// Sanity's own slug check refuses a slug that another document of the type has as its current
+// slug, leaving out this document's own versions. This extends it to their old slugs too, so
+// editors see Sanity's one message for both. History entries use it as well.
+const isUnique: SlugIsUniqueValidator = async (slug, context) => {
+  // Sanity's check reads the slug at the path it validates, which for a history entry is inside
+  // an array. Point it at the current slug.
+  if (!(await context.defaultIsUnique(slug, {...context, path: ['slug']}))) return false
+  const {document, getClient} = context
+  if (!document) return true
+  return getClient({apiVersion})
+    .withConfig({perspective: 'raw'})
+    .fetch(
+      `!defined(*[_type == $type && !sanity::versionOf($published) && $slug in slugHistory[].current][0]._id)`,
+      {type: document._type, published: getPublishedId(document._id), slug},
+    )
+}
+
+const isEntry = (entry: unknown): entry is SlugEntry => {
+  const {_type, _key, current} = (entry ?? {}) as Partial<SlugEntry>
+  return _type === 'slug' && typeof _key === 'string' && typeof current === 'string'
+}
+
+const newKey = () => crypto.randomUUID().replaceAll('-', '').slice(0, 12)
+
+// The patch that gives a draft or release version its expected history, or null when it already
+// has it. The form runs this after every change, and the harness's edit runs it too.
+export const slugHistoryPatch: FormFollowUp = ({version, published}) => {
+  // While there's no draft, the form shows the published document, and any patch there creates
+  // a draft. An unedited published document already has its history.
+  if (isPublishedId(version._id)) return null
+  const expected = expectedHistory(version, published)
+  const entries = historyEntries(version)
+  const keys = new Set(entries.filter(isEntry).map(({_key}) => _key))
+  const matches =
+    entries.length === expected.length &&
+    keys.size === entries.length &&
+    entries.every((entry, index) => isEntry(entry) && entry.current === expected[index])
+  if (matches) return null
+  if (!expected.length) return {unset: ['slugHistory']}
+  // Each slug keeps its key from the version, or else from the published history.
+  const known = new Map(
+    [...historyEntries(published), ...entries]
+      .filter(isEntry)
+      .map(({current, _key}) => [current, _key]),
+  )
+  const used = new Set<string>()
+  const slugHistory = expected.map((current): SlugEntry => {
+    const knownKey = known.get(current)
+    const _key = knownKey && !used.has(knownKey) ? knownKey : newKey()
+    used.add(_key)
+    return {_type: 'slug', _key, current}
+  })
+  return {set: {slugHistory}}
+}
+
+// The slug and slug history fields for one of the types in slugTypes, in that order.
+export function slugFields(type: SlugType) {
+  const {noun} = slugTypes[type]
+  return [
+    defineField({
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      description: `The end of the link to this ${noun}, made from the title.`,
+      options: {source: 'title', isUnique},
+    }),
+    defineField({
+      name: 'slugHistory',
+      title: 'Old slugs',
+      type: 'array',
+      of: [{type: 'slug', options: {isUnique}}],
+      readOnly: true,
+      // The form keeps the history right. These rules catch a version written some other way,
+      // such as through the API, before it can publish.
+      validation: (rule) => [
+        rule.custom((_value, {document}) => {
+          const current = document && currentSlug(document)
+          return current && historySlugs(document).includes(current)
+            ? `The slug history holds the current slug, ${quoted([current])}. Open this version of the ${noun} in Studio to fix it.`
+            : true
+        }),
+        rule.custom(async (_value, context) => {
+          const {document} = context
+          if (!document) return true
+          const published = await context
+            .getClient({apiVersion})
+            .withConfig({perspective: 'raw'})
+            .fetch(`*[_id == $id][0]{_id, _type, slug, slugHistory}`, {
+              id: getPublishedId(document._id),
+            })
+          const history = historySlugs(document)
+          const missing = owedHistory(document, published).filter((slug) => !history.includes(slug))
+          if (!missing.length) return true
+          return `The slug history is missing ${quoted(missing)}, which old links still use. Open this version of the ${noun} in Studio to add ${missing.length === 1 ? 'it' : 'them'} back.`
+        }),
+      ],
+    }),
+  ]
+}

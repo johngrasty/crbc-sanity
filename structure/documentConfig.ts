@@ -8,6 +8,7 @@ import type {
   TemplateResolver,
 } from 'sanity'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
@@ -68,4 +69,7 @@ export type FormFollowUp = (versions: {
   published: SanityDocumentLike | null
 }) => DocumentPatch | null
 
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = {}
+// Every type with a slug keeps its slug history this way.
+export const formFollowUps: Partial<Record<string, FormFollowUp>> = Object.fromEntries(
+  Object.keys(slugTypes).map((type) => [type, slugHistoryPatch]),
+)
