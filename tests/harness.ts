@@ -2,6 +2,7 @@
 // module, over an in-memory dataset. Tests talk to this module, never to validators, inputs or
 // actions directly.
 import {randomUUID} from 'node:crypto'
+import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
@@ -237,9 +238,27 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
 }
 
 // documents seeds the dataset. Give each its full _id: item, drafts.item or
-// versions.<release>.item.
-export function createHarness({documents = []}: {documents?: TestDocument[]} = {}) {
+// versions.<release>.item. now fixes the clock, as an ISO instant, for create and desk: templates
+// read it as the moment of creation, and desk lists read it as GROQ's now(). Without it, both use
+// the real clock.
+export function createHarness({
+  documents = [],
+  now,
+}: {documents?: TestDocument[]; now?: string} = {}) {
   const dataset = new Map<string, TestDocument>()
+  const fixedNow = now === undefined ? undefined : Date.parse(now)
+  if (fixedNow !== undefined && Number.isNaN(fixedNow)) throw new Error(`now isn't an instant`)
+
+  // Runs work with Date set to the fixed clock, when there is one.
+  async function atNow<T>(work: () => Promise<T>): Promise<T> {
+    if (fixedNow === undefined) return work()
+    mock.timers.enable({apis: ['Date'], now: fixedNow})
+    try {
+      return await work()
+    } finally {
+      mock.timers.reset()
+    }
+  }
 
   const getClient = (config: ClientConfig) => testClient(dataset, config)
   const configContext = {
@@ -334,19 +353,28 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       return source.document.resolveNewDocumentOptions(context).map(({templateId}) => templateId)
     },
 
+    // The templates of a type, in the Source's order, with the titles create menus show.
+    templates(schemaType: string): {id: string; title: string}[] {
+      return source.templates
+        .filter((template) => template.schemaType === schemaType)
+        .map(({id, title}) => ({id, title}))
+    },
+
     // A new document from a template, stored as a draft, as Studio stores it on the first edit.
     async create(templateId: string, params?: Record<string, unknown>): Promise<TestDocument> {
       const template = source.templates.find(({id}) => id === templateId)
       if (!template) throw new Error(`No template named "${templateId}"`)
-      const value = await resolveInitialValue(schema, template, params, configContext)
-      const document = touch({
-        ...value,
-        _id: `drafts.${randomUUID()}`,
-        _type: template.schemaType,
-        _createdAt: new Date().toISOString(),
+      return atNow(async () => {
+        const value = await resolveInitialValue(schema, template, params, configContext)
+        const document = touch({
+          ...value,
+          _id: `drafts.${randomUUID()}`,
+          _type: template.schemaType,
+          _createdAt: new Date().toISOString(),
+        })
+        store(document)
+        return structuredClone(document)
       })
-      store(document)
-      return structuredClone(document)
     },
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
@@ -466,7 +494,11 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         : [{field: '_updatedAt', direction: 'desc'}]
       const query = `*[${options.filter}] | order(${ordering.map(({field, direction}) => `${field} ${direction}`).join(', ')})`
       const params = options.params ?? {}
-      const result = await evaluate(parse(query, {params}), {dataset: [...rows.values()], params})
+      const result = await evaluate(parse(query, {params}), {
+        dataset: [...rows.values()],
+        params,
+        timestamp: fixedNow === undefined ? new Date() : new Date(fixedNow),
+      })
       return {type, title, documents: structuredClone(await result.get())}
     },
 

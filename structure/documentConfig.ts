@@ -7,7 +7,9 @@ import type {
   Template,
   TemplateResolver,
 } from 'sanity'
+import {CalendarClock} from 'lucide-react'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {nextOccurrence, standingSlots} from '../schemaTypes/media/standingSchedule'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
@@ -40,14 +42,30 @@ function withFreshId(template: Template): Template {
   }
 }
 
+// One service event template per standing slot, named by the slot's label. It starts at the
+// slot's next occurrence after the moment the editor creates it, with the slot's length. The
+// event's other fields take their defaults.
+const standingSlotTemplates: Template[] = standingSlots.map((slot) => ({
+  id: `serviceEvent-${slot.slot}`,
+  title: slot.label,
+  description: `The next ${slot.label.toLowerCase()} service, at ${slot.localStart} for ${slot.expectedDurationMinutes} minutes`,
+  schemaType: 'serviceEvent',
+  icon: CalendarClock,
+  value: () => ({
+    scheduledStart: nextOccurrence(slot, Date.now()),
+    expectedDurationMinutes: slot.expectedDurationMinutes,
+  }),
+}))
+
 // Singletons have no template, except the ones whose fixed document opens with field defaults.
 // Sanity's document pane applies those only through the type's template.
 export const templates: TemplateResolver = (prev) =>
-  prev
-    .filter(
+  [
+    ...prev.filter(
       ({schemaType}) => !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
-    )
-    .map(withFreshId)
+    ),
+    ...standingSlotTemplates,
+  ].map(withFreshId)
 
 // No create menu offers a singleton that keeps its template: not the global create button, a
 // structure list's "+" or a reference field's "Create new". Sanity names a type's default
