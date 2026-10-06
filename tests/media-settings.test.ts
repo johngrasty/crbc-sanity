@@ -131,3 +131,17 @@ test('a description footer holds up to 1,000 UTF-8 bytes', async () => {
     )
   }
 })
+
+// The spec asks for no template and for a title template that starts as {title}, {series}.
+// Sanity's document pane applies field initial values only through a template, so with none the
+// form opens empty and the editor types the pattern. This stays a todo until the lead decides,
+// for example by keeping a template and hiding it from create menus with newDocumentOptions.
+test(
+  'the media settings form starts with the default title template',
+  {todo: 'with no template, Sanity opens a new media settings document empty'},
+  async () => {
+    const studio = createHarness()
+    const pane = await studio.desk('media', 'mediaSettings')
+    assert.equal(pane.initialValue?.socialTitleTemplate, '{title}, {series}')
+  },
+)

@@ -26,8 +26,11 @@ export default defineType({
   fields: [
     defineField({
       name: 'socialTitleTemplate',
-      title: 'YouTube and Facebook title',
+      title: 'Video title pattern',
       type: 'string',
+      description:
+        'The pattern for video titles on YouTube and Facebook. Use {title}, {series}, {speaker} and {date} for the media item\'s details. An empty placeholder drops out with its separator, and titles stop at 100 characters. For example, {title}, {series} becomes "The Good Shepherd, Psalms".',
+      initialValue: '{title}, {series}',
       validation: (rule) => [
         rule.required(),
         rule.max(200),
@@ -41,8 +44,10 @@ export default defineType({
     }),
     defineField({
       name: 'socialDescriptionFooter',
-      title: 'Description footer',
+      title: 'Video description footer',
       type: 'text',
+      description:
+        "Plain text added to the end of every YouTube and Facebook description. The item's link goes after it. Up to 1,000 bytes. Accented letters and emoji take 2 to 4 bytes each.",
       rows: 4,
       validation: (rule) =>
         rule.custom((value) => {
