@@ -110,14 +110,15 @@ async function copyFields(type: EditorialType): Promise<Record<string, unknown>>
   return copy
 }
 
-// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, with the
-// fresh-ID Duplicate where Sanity's Duplicate was. Tasks and canvas actions stay.
+// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1. The fresh-ID
+// Duplicate takes Sanity's action name, so it shows as duplicate in Sanity's place. Tasks and
+// canvas actions stay.
 const editorialActions = {
   draft: [
     'publish',
     'schedule',
     'unpublish',
-    'FreshIdDuplicateAction',
+    'duplicate',
     'restore',
     'discardChanges',
     'TaskCreateAction',
@@ -129,14 +130,14 @@ const editorialActions = {
   published: [
     'unpublish',
     'publish',
-    'FreshIdDuplicateAction',
+    'duplicate',
     'restore',
     'discardChanges',
     'delete',
     'TaskCreateAction',
   ],
   version: [
-    'FreshIdDuplicateAction',
+    'duplicate',
     'unpublishVersion',
     'linkToCanvas',
     'unlinkFromCanvas',
@@ -149,7 +150,7 @@ const editorialActions = {
     'publish',
     'schedule',
     'unpublish',
-    'FreshIdDuplicateAction',
+    'duplicate',
     'restore',
     'discardChanges',
     'delete',
@@ -168,8 +169,31 @@ test("the editorial types swap Sanity's Duplicate for the fresh-ID one in every 
         editorialActions[versionType],
         `${type} ${versionType}`,
       )
+      const duplicates = studio
+        .actionDetails(type, versionType)
+        .filter(({action}) => action === 'duplicate')
+        .map(({component}) => component)
+      const expected = versionType === 'scheduled-draft' ? [] : ['FreshIdDuplicateAction']
+      assert.deepEqual(duplicates, expected, `${type} ${versionType}`)
     }
   }
+})
+
+test('on a document linked to Canvas, the fresh-ID Duplicate stays available', () => {
+  const studio = createHarness()
+  for (const type of editorialTypes) {
+    for (const versionType of versionTypes.filter((name) => name !== 'scheduled-draft')) {
+      const duplicate = studio
+        .actionDetails(type, versionType)
+        .find(({component}) => component === 'FreshIdDuplicateAction')
+      assert.equal(duplicate?.keptWhenLinkedToCanvas, true, `${type} ${versionType}`)
+    }
+  }
+  // The guard is live in the harness. It disables the unnamed task action.
+  const task = studio
+    .actionDetails('mediaItem', 'draft')
+    .find(({component}) => component === 'TaskCreateAction')
+  assert.equal(task?.keptWhenLinkedToCanvas, false)
 })
 
 test('a copy is an unpublished draft with a fresh ID of its kind, and the original is unchanged', async () => {

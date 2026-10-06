@@ -2,6 +2,7 @@
 // module, over an in-memory dataset. Tests talk to this module, never to validators, inputs or
 // actions directly.
 import {randomUUID} from 'node:crypto'
+import {readFileSync} from 'node:fs'
 import {evaluate, parse} from 'groq-js'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
@@ -159,6 +160,39 @@ async function openChild(child: unknown, id: string, path: string[]): Promise<St
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
+// One document action as Studio resolves it. action is the name Sanity copies into the action's
+// state, component is the component's displayName or function name, and keptWhenLinkedToCanvas
+// says whether Sanity's Canvas guard leaves it enabled on a document linked to Canvas.
+export type ActionDetail = {
+  action: string | undefined
+  component: string
+  keptWhenLinkedToCanvas: boolean
+}
+
+// On a document linked to Canvas, Sanity's ActionsGuardWrapper disables every action whose state
+// has no action name, or a name off its list (sanity/lib/_chunks-es/pane.js:1914-1934). The
+// guard isn't exported, so the harness reads its list from the installed file and stops if the
+// guard's test no longer reads as it does here.
+const paneChunk = readFileSync(
+  new URL('./_chunks-es/pane.js', import.meta.resolve('sanity')),
+  'utf8',
+)
+const canvasList = /const SUPPORTED_LINKED_TO_CANVAS_ACTIONS = (\[[^\]]*\]);/.exec(paneChunk)
+const canvasTest =
+  'states.map((s) => !s.action || !SUPPORTED_LINKED_TO_CANVAS_ACTIONS.includes(s.action) ? {'
+if (!canvasList || !paneChunk.includes(canvasTest)) {
+  throw new Error(
+    "Sanity's Canvas guard changed. Read ActionsGuardWrapper in sanity/lib/_chunks-es/pane.js and update the harness.",
+  )
+}
+const canvasActions: string[] = JSON.parse(canvasList[1])
+
+const actionDetail = (action: DocumentActionComponent): ActionDetail => ({
+  action: action.action,
+  component: action.displayName ?? action.name,
+  keptWhenLinkedToCanvas: Boolean(action.action && canvasActions.includes(action.action)),
+})
+
 // Applies set, then unset, as Sanity does. Paths are dotted field names.
 function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatch): TestDocument {
   const next = structuredClone(document)
@@ -304,22 +338,31 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
   const versionId = (id: string, release?: string) =>
     release ? getVersionId(getPublishedId(id), release) : getDraftId(getPublishedId(id))
 
+  const resolveActions = (type: string, versionType: DocumentActionsVersionType) => {
+    const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
+    return source.document.actions({
+      schemaType: type,
+      documentId: type,
+      versionType,
+      releaseId: inRelease ? 'rHarness' : undefined,
+    })
+  }
+
   return {
     validate,
 
     // The names of the document actions Studio's document pane shows for this type, resolved
-    // through the whole plugin chain. Unnamed actions show their displayName. A version or a
-    // scheduled draft belongs to the release rHarness.
+    // through the whole plugin chain. Unnamed actions show their displayName. A replacement
+    // that sets a built-in's action name shows that name, so use actionDetails to tell the two
+    // apart. A version or a scheduled draft belongs to the release rHarness.
     actions(type: string, versionType: DocumentActionsVersionType): string[] {
-      const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
-      return source.document
-        .actions({
-          schemaType: type,
-          documentId: type,
-          versionType,
-          releaseId: inRelease ? 'rHarness' : undefined,
-        })
-        .map(actionName)
+      return resolveActions(type, versionType).map(actionName)
+    },
+
+    // The same actions, each with its action name, its component and what Sanity's Canvas guard
+    // does with it.
+    actionDetails(type: string, versionType: DocumentActionsVersionType): ActionDetail[] {
+      return resolveActions(type, versionType).map(actionDetail)
     },
 
     // The template IDs a create menu offers, resolved through the whole config chain: the
