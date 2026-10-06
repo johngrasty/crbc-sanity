@@ -13,6 +13,7 @@ import {
   getVersionFromId,
   getVersionId,
   isDraftId,
+  isPublishedId,
   isVersionId,
   pathToString,
   prepareConfig,
@@ -37,11 +38,16 @@ import {deskStructure} from '../structure/deskStructure'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {
   documentActions,
+  formFollowUpPatch,
   formFollowUps,
   newDocumentOptions,
   templates,
   type DocumentPatch,
+  type FormFollowUp,
 } from '../structure/documentConfig'
+import {FormFollowUpInput} from '../structure/FormFollowUpInput'
+
+export type {FormFollowUp}
 
 export type TestDocument = {_id: string; _type: string} & Record<string, unknown>
 
@@ -102,6 +108,7 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {types: schemaTypes, templates},
+  form: {components: {input: FormFollowUpInput}},
   document: {actions: documentActions, newDocumentOptions},
 })
 
@@ -233,9 +240,17 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
 }
 
 // documents seeds the dataset. Give each its full _id: item, drafts.item or
-// versions.<release>.item.
-export function createHarness({documents = []}: {documents?: TestDocument[]} = {}) {
+// versions.<release>.item. followUps adds form follow-up steps after the ones documentConfig.ts
+// registers, as a later ticket would register them there.
+export function createHarness({
+  documents = [],
+  followUps = {},
+}: {documents?: TestDocument[]; followUps?: Record<string, FormFollowUp[]>} = {}) {
   const dataset = new Map<string, TestDocument>()
+  const followUpSteps = (type: string) => [
+    ...(formFollowUps[type] ?? []),
+    ...(followUps[type] ?? []),
+  ]
 
   const getClient = (config: ClientConfig) => testClient(dataset, config)
   const configContext = {
@@ -347,7 +362,7 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
-    // draft when nothing is published. Then the type's form follow-up step runs.
+    // draft when nothing is published. Then the form applies the type's follow-up steps.
     async edit(
       id: string,
       patch: DocumentPatch,
@@ -360,9 +375,31 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         dataset.get(target) ?? published ?? (release ? dataset.get(getDraftId(publishedId)) : null)
       if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
       let version = applyPatch({...base, _id: target}, patch)
-      const followUp = formFollowUps[version._type]?.({version, published})
+      const followUp = formFollowUpPatch({version, published}, followUpSteps(version._type))
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
+      return structuredClone(dataset.get(target) as TestDocument)
+    },
+
+    // Opens the document's form, as an editor does, and returns the document it shows. Without
+    // release the form shows the draft, else the published document. With release it shows that
+    // release's version, else the draft or the published document, and then it's read-only.
+    // Once loaded, the form applies the type's follow-up steps unless it's read-only. Like
+    // Sanity, a patch on the published document writes a draft made from it.
+    async open(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
+      const publishedId = getPublishedId(id)
+      const published = dataset.get(publishedId) ?? null
+      const version = release ? dataset.get(getVersionId(publishedId, release)) : undefined
+      const shown = version ?? dataset.get(getDraftId(publishedId)) ?? published
+      if (!shown) throw new Error(`No document to open with _id "${publishedId}"`)
+      const readOnly = release !== undefined && !version
+      const followUp = formFollowUpPatch(
+        {version: shown, published, readOnly},
+        followUpSteps(shown._type),
+      )
+      if (!followUp) return structuredClone(shown)
+      const target = isPublishedId(shown._id) ? getDraftId(publishedId) : shown._id
+      store(touch(applyPatch({...shown, _id: target}, followUp)))
       return structuredClone(dataset.get(target) as TestDocument)
     },
 

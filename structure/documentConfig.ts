@@ -1,11 +1,12 @@
 // The document settings sanity.config.ts passes to Sanity. They live here, not in the config,
 // because the full config can't load in Node and the test harness builds from this module.
-import type {
-  DocumentActionsResolver,
-  NewDocumentOptionsResolver,
-  SanityDocumentLike,
-  Template,
-  TemplateResolver,
+import {
+  isPublishedId,
+  type DocumentActionsResolver,
+  type NewDocumentOptionsResolver,
+  type SanityDocumentLike,
+  type Template,
+  type TemplateResolver,
 } from 'sanity'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
 import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
@@ -60,16 +61,34 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 // title or editorHold.note.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
-// A form follow-up step runs after each edit to a draft or release version of its type. It gets
-// the edited version and the published document, and returns a patch for the version, or null
-// when the version needs nothing. The harness's edit runs it. The type's form must run the same
-// step, so the first ticket that registers one also wires it into the form.
+// A form follow-up step keeps fields of a draft or release version in step with the published
+// document. It gets the edited version and the published document, and returns a patch for the
+// version, or null when the version needs nothing. Each step owns its own fields, and a step
+// that has nothing left to change returns null, so the form doesn't patch forever.
 export type FormFollowUp = (versions: {
   version: SanityDocumentLike
   published: SanityDocumentLike | null
 }) => DocumentPatch | null
 
-// Every type with a slug keeps its slug history this way.
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = Object.fromEntries(
-  Object.keys(slugTypes).map((type) => [type, slugHistoryPatch]),
+// Each type's follow-up steps. Every type with a slug keeps its slug history.
+export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = Object.fromEntries(
+  Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]]),
 )
+
+// The one patch the form applies to the version it shows, from every step registered for the
+// type, or null when there's nothing to change. The form input and the harness both call this.
+// It's null while the form is read-only. It's null for a published document too, which the form
+// shows while there's no draft, because any patch there creates a draft.
+export function formFollowUpPatch(
+  {version, published, readOnly = false}: Parameters<FormFollowUp>[0] & {readOnly?: boolean},
+  steps: FormFollowUp[] = formFollowUps[version._type] ?? [],
+): DocumentPatch | null {
+  if (readOnly || isPublishedId(version._id)) return null
+  const patches = steps.flatMap((step) => step({version, published}) ?? [])
+  const merged: DocumentPatch = {}
+  const set = Object.assign({}, ...patches.map((patch) => patch.set))
+  const unset = patches.flatMap((patch) => patch.unset ?? [])
+  if (Object.keys(set).length) merged.set = set
+  if (unset.length) merged.unset = unset
+  return merged.set || merged.unset ? merged : null
+}

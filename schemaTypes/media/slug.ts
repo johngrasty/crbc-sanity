@@ -5,7 +5,6 @@ import {
   defineArrayMember,
   defineField,
   getPublishedId,
-  isPublishedId,
   type Rule,
   type SanityDocumentLike,
   type SlugIsUniqueValidator,
@@ -113,12 +112,9 @@ const isEntry = (entry: unknown): entry is SlugEntry => {
 
 const newKey = () => crypto.randomUUID().replaceAll('-', '').slice(0, 12)
 
-// The patch that gives a draft or release version its expected history, or null when it already
-// has it. The form runs this after every change, and the harness's edit runs it too.
+// The follow-up step that gives a draft or release version its expected history, or null when
+// it already has it.
 export const slugHistoryPatch: FormFollowUp = ({version, published}) => {
-  // While there's no draft, the form shows the published document, and any patch there creates
-  // a draft. An unedited published document already has its history.
-  if (isPublishedId(version._id)) return null
   const expected = expectedHistory(version, published)
   const entries = historyEntries(version)
   const keys = new Set(entries.filter(isEntry).map(({_key}) => _key))

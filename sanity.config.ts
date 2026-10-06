@@ -6,6 +6,7 @@ import {assist} from '@sanity/assist'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
 import {documentActions, newDocumentOptions, templates} from './structure/documentConfig'
+import {FormFollowUpInput} from './structure/FormFollowUpInput'
 import {previewOrigin, singletonPaths} from './structure/preview'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID
@@ -20,6 +21,9 @@ export default defineConfig({
   dataset,
   plugins: [structureTool({structure: deskStructure}), visionTool(), media(), assist()],
   schema: {types: schemaTypes, templates},
+  // Keeps each draft and release version in step with the published document, such as its slug
+  // history, as the editor works.
+  form: {components: {input: FormFollowUpInput}},
   document: {
     actions: documentActions,
     newDocumentOptions,
