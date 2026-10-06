@@ -1,4 +1,10 @@
-import {defineArrayMember, defineField, defineType} from 'sanity'
+import {
+  defineArrayMember,
+  defineField,
+  defineType,
+  getPublishedId,
+  type ValidationContext,
+} from 'sanity'
 import {CalendarClock} from 'lucide-react'
 import {isResourceId} from '../../media-contract/src/ids'
 import {editorialIdField} from './editorialId'
@@ -21,6 +27,39 @@ const titleOf = (list: {title: string; value: string}[], value: unknown) =>
   list.find((option) => option.value === value)?.title
 
 type Destination = {_key: string; platform?: string; accountLabel?: string}
+
+const apiVersion = '2025-02-19'
+
+// Other service events that aren't cancelled, in any of their published, draft or release
+// versions. sanity::versionOf leaves out this event's own versions.
+async function otherLiveEvents<T>(
+  context: ValidationContext,
+  filter: string,
+  projection: string,
+  params: Record<string, unknown>,
+): Promise<T[]> {
+  if (!context.document) return []
+  const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
+  return client.fetch(
+    `*[_type == "serviceEvent" && !sanity::versionOf($publishedId) && cancelled != true && ${filter}]${projection}`,
+    {...params, publishedId: getPublishedId(context.document._id)},
+  )
+}
+
+type ServiceEventValue = {
+  cancelled?: boolean
+  expectedDurationMinutes?: number
+  resourceId?: string
+  scheduledStart?: ZonedStart
+}
+
+// The minutes a stored start and length cover, as [start, end) in milliseconds, or null when the
+// start or length isn't usable.
+function runTime(utc: unknown, minutes: unknown): [number, number] | null {
+  const start = typeof utc === 'string' ? Date.parse(utc) : NaN
+  if (Number.isNaN(start) || typeof minutes !== 'number') return null
+  return [start, start + minutes * 60_000]
+}
 
 // The start a scheduledStart field's rule belongs to.
 const startOf = (context: {parent?: unknown}) => context.parent as ZonedStart | undefined
@@ -45,7 +84,21 @@ export default defineType({
       to: [{type: 'mediaItem'}],
       description:
         'The media item the recording goes into. You can pick an item that is still a draft, but publish the item before you publish this event.',
-      validation: (rule) => rule.required().error('Pick the media item the recording goes into.'),
+      validation: (rule) => [
+        rule.required().error('Pick the media item the recording goes into.'),
+        rule
+          .custom(async (reference: {_ref?: string} | undefined, context) => {
+            const event = context.document as ServiceEventValue | undefined
+            if (!reference?._ref || event?.cancelled) return true
+            const others = await otherLiveEvents(context, 'mediaItem._ref == $ref', '._id', {
+              ref: reference._ref,
+            })
+            return others.length
+              ? 'Another service event uses this media item too. Each service usually gets its own item.'
+              : true
+          })
+          .warning(),
+      ],
       group: 'details',
     }),
     defineField({
@@ -97,7 +150,34 @@ export default defineType({
       initialValue: {timeZone: CHURCH_TIME_ZONE},
       // required() here would make Sanity also run the field rules on a missing start, and
       // repeat this message there.
-      validation: (rule) => rule.custom((start) => (start ? true : startMessages.missing)),
+      validation: (rule) => [
+        rule.custom((start) => (start ? true : startMessages.missing)),
+        rule
+          .custom(async (start: ZonedStart | undefined, context) => {
+            const event = context.document as ServiceEventValue | undefined
+            if (!event || event.cancelled || !event.resourceId) return true
+            if (Object.keys(startProblems(start)).length) return true
+            const own = runTime(start?.utc, event.expectedDurationMinutes)
+            if (!own) return true
+            const others = await otherLiveEvents<{utc: unknown; minutes: unknown}>(
+              context,
+              'resourceId == $resourceId && defined(scheduledStart.utc)',
+              '{"utc": scheduledStart.utc, "minutes": expectedDurationMinutes}',
+              {resourceId: event.resourceId},
+            )
+            // An event without a length still takes up the moment it starts.
+            const overlaps = others.some(({utc, minutes}) => {
+              const other = runTime(utc, typeof minutes === 'number' ? minutes : 0)
+              if (!other) return false
+              const [otherStart, otherEnd] = other
+              return otherStart < own[1] && own[0] < Math.max(otherEnd, otherStart + 1)
+            })
+            return overlaps
+              ? 'Another service event on this live stream overlaps this one. Check both starts and lengths.'
+              : true
+          })
+          .warning(),
+      ],
       group: 'details',
     }),
     defineField({

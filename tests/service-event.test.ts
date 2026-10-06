@@ -186,3 +186,95 @@ test('the same platform and account label twice is an error', async () => {
   ])
   assert.deepEqual(await destinationErrors(requestedDestinations.slice(0, 3)), [])
 })
+
+const warningsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'warning' && marker.path === path)
+
+// A valid event on the main live stream: October 11, 2026 from 9:00 to 10:20 in New York, which
+// is 13:00 to 14:20 UTC.
+const event = (_id: string, fields: Record<string, unknown> = {}) => ({
+  _id,
+  _type: 'serviceEvent',
+  eventId: 'ev_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
+  mediaItem: {_type: 'reference', _ref: 'item'},
+  scheduledStart: {
+    local: '2026-10-11T09:00',
+    timeZone: 'America/New_York',
+    offset: '-04:00',
+    utc: '2026-10-11T13:00:00Z',
+  },
+  expectedDurationMinutes: 80,
+  resourceId: 'lr_main',
+  cancelled: false,
+  ...fields,
+})
+
+// The same service time on other days, so only the media item is shared.
+const nextWeek = {
+  eventId: 'ev_01K6Z9A7H2MXW4Q8C5R3T6V0BD',
+  scheduledStart: {
+    local: '2026-10-18T09:00',
+    timeZone: 'America/New_York',
+    offset: '-04:00',
+    utc: '2026-10-18T13:00:00Z',
+  },
+}
+
+test('another event that uses the same item is a warning, unless it is cancelled', async () => {
+  const sharedItemWarnings = async (...others: Record<string, unknown>[]) => {
+    const studio = createHarness({documents: [ITEM, ...(others as (typeof ITEM)[])]})
+    return warningsAt(await studio.validate(event('drafts.this')), 'mediaItem').length
+  }
+  assert.equal(await sharedItemWarnings(event('other', nextWeek)), 1)
+  assert.equal(await sharedItemWarnings(event('drafts.other', nextWeek)), 1)
+  assert.equal(await sharedItemWarnings(event('versions.rSpring.other', nextWeek)), 1)
+  assert.equal(await sharedItemWarnings(event('other', {...nextWeek, cancelled: true})), 0)
+  const otherItem = {mediaItem: {_type: 'reference', _ref: 'item2'}}
+  assert.equal(await sharedItemWarnings(event('other', {...nextWeek, ...otherItem})), 0)
+  // The event's own published and release versions don't count.
+  assert.equal(await sharedItemWarnings(event('this'), event('versions.rSpring.this')), 0)
+})
+
+test('another event on the same live stream that overlaps is a warning, unless it is cancelled', async () => {
+  // Another event on October 11, 2026, with its New York and UTC start times, both HH:mm.
+  const other = (local: string, utc: string, expectedDurationMinutes: number) => ({
+    eventId: 'ev_01K6Z9A7H2MXW4Q8C5R3T6V0BD',
+    mediaItem: {_type: 'reference', _ref: 'item2'},
+    scheduledStart: {
+      local: `2026-10-11T${local}`,
+      timeZone: 'America/New_York',
+      offset: '-04:00',
+      utc: `2026-10-11T${utc}:00Z`,
+    },
+    expectedDurationMinutes,
+  })
+  const overlapWarnings = async (fields: Record<string, unknown>, own = {}) => {
+    const studio = createHarness({documents: [ITEM, event('other', fields) as typeof ITEM]})
+    return warningsAt(await studio.validate(event('drafts.this', own)), 'scheduledStart').length
+  }
+  // This event runs from 9:00 to 10:20 in New York, 13:00 to 14:20 UTC.
+  assert.equal(await overlapWarnings(other('09:00', '13:00', 80)), 1)
+  assert.equal(await overlapWarnings(other('10:19', '14:19', 60)), 1)
+  assert.equal(await overlapWarnings(other('08:00', '12:00', 61)), 1)
+  assert.equal(await overlapWarnings(other('08:00', '12:00', 180)), 1)
+  assert.equal(await overlapWarnings(other('10:20', '14:20', 60)), 0)
+  assert.equal(await overlapWarnings(other('08:00', '12:00', 60)), 0)
+  const spare = {...other('09:30', '13:30', 60), resourceId: 'lr_spare'}
+  assert.equal(await overlapWarnings(spare), 0)
+  assert.equal(await overlapWarnings({...other('09:30', '13:30', 60), cancelled: true}), 0)
+  // A longer service runs into the next one.
+  assert.equal(await overlapWarnings(other('10:30', '14:30', 60)), 0)
+  assert.equal(
+    await overlapWarnings(other('10:30', '14:30', 60), {expectedDurationMinutes: 100}),
+    1,
+  )
+})
+
+test('a cancelled event gets neither warning', async () => {
+  const studio = createHarness({documents: [ITEM, event('other') as typeof ITEM]})
+  const markers = await studio.validate(event('drafts.this', {cancelled: true}))
+  assert.deepEqual(
+    markers.filter(({level}) => level === 'warning'),
+    [],
+  )
+})
