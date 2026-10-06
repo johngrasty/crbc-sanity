@@ -1,7 +1,14 @@
 // The five editorial ID fields (contract section 2). Each is the contract prefix plus a ULID,
 // set once when the document is created and never changed in Studio.
 import {Button, Card, Code, Stack, Text} from '@sanity/ui'
-import {defineField, getPublishedId, set, type StringInputProps} from 'sanity'
+import {
+  defineField,
+  getDraftId,
+  getPublishedId,
+  isVersionId,
+  set,
+  type StringInputProps,
+} from 'sanity'
 import {ID_PREFIXES, isId, type IdKind} from '../../media-contract/src/ids'
 
 type EditorialIdKind = Extract<IdKind, 'content' | 'series' | 'speaker' | 'topic' | 'event'>
@@ -48,6 +55,20 @@ function ulid(): string {
 }
 
 export const newEditorialId = (kind: EditorialIdKind): string => ID_PREFIXES[kind] + ulid()
+
+// The ID a draft or release version has to keep, and where it comes from, or undefined when the
+// version may carry any free ID. The published document's ID comes first. A release version of
+// a document with no published ID keeps its draft's.
+export function idToKeep(
+  documentId: string,
+  {published, draft}: {published?: unknown; draft?: unknown},
+): {id: string; from: 'published' | 'draft'} | undefined {
+  if (typeof published === 'string' && published) return {id: published, from: 'published'}
+  if (isVersionId(documentId) && typeof draft === 'string' && draft) {
+    return {id: draft, from: 'draft'}
+  }
+  return undefined
+}
 
 function idInput({kind, label, noun}: EditorialId) {
   function EditorialIdInput({value, onChange, readOnly}: StringInputProps) {
@@ -100,17 +121,22 @@ export function editorialIdField(type: EditorialType) {
         // sanity::versionOf leaves out this document's own versions.
         const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
         const others = `*[_type == $type && ${id.field} == $value && !sanity::versionOf($publishedId)]`
-        const {published, takenByPublished, takenByAny} = await client.fetch(
+        const publishedId = getPublishedId(context.document._id)
+        const {published, draft, takenByPublished, takenByAny} = await client.fetch(
           `{
             "published": *[_id == $publishedId][0].${id.field},
+            "draft": *[_id == $draftId][0].${id.field},
             "takenByPublished": ${others}[!(_id in path("drafts.**")) && !(_id in path("versions.**"))] | order(_id asc)[0]._id,
             "takenByAny": ${others} | order(_id asc)[0]._id
           }`,
-          {type, value, publishedId: getPublishedId(context.document._id)},
+          {type, value, publishedId, draftId: getDraftId(publishedId)},
         )
         // Catches an ID changed by paste or through the API before it can publish.
-        if (published && published !== value) {
-          return `The published ${id.noun} has the ${id.label} ${published}. IDs never change, so discard this change.`
+        const kept = idToKeep(context.document._id, {published, draft})
+        if (kept && kept.id !== value) {
+          const holder =
+            kept.from === 'published' ? `The published ${id.noun}` : `The draft of this ${id.noun}`
+          return `${holder} has the ${id.label} ${kept.id}. IDs never change, so discard this change.`
         }
         // A published document owns its ID, so only another published document can take it from
         // its owner. A draft that copies the ID is blocked, and doesn't block the owner.

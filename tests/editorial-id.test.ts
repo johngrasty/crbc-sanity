@@ -3,6 +3,7 @@ import {test} from 'node:test'
 import {createHarness, type Marker} from './harness.ts'
 
 const P = 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C'
+const Q = 'mi_01K6Z9A7H2MXW4Q8C5R3T6V0BD'
 const item = (_id: string, contentId?: string) => ({_id, _type: 'mediaItem', contentId})
 const idErrors = (markers: Marker[]) =>
   markers
@@ -65,5 +66,25 @@ test('two published items that share an ID both show an error that names the oth
       [`The media item ${other} already uses this content ID. Ask a developer to fix it.`],
       id,
     )
+  }
+})
+
+// /tmp/studio-spec/reviews/ids-fable-5.1.md, finding 6.
+test("a release version of an item that was never published must keep its draft's ID", async () => {
+  const studio = createHarness({documents: [item('drafts.n', P), item('versions.rSpring.n', Q)]})
+  assert.deepEqual(idErrors(await studio.validate('drafts.n')), [])
+  assert.deepEqual(idErrors(await studio.validate('versions.rSpring.n')), [
+    `The draft of this media item has the content ID ${P}. IDs never change, so discard this change.`,
+  ])
+  await assert.rejects(studio.publish('n', {release: 'rSpring'}), /contentId/)
+
+  // A version with the draft's ID is fine, and so is one with no draft to compare with.
+  for (const documents of [
+    [item('drafts.n', P), item('versions.rSpring.n', P)],
+    [item('drafts.n'), item('versions.rSpring.n', Q)],
+    [item('versions.rSpring.n', Q)],
+  ]) {
+    const other = createHarness({documents})
+    assert.deepEqual(idErrors(await other.validate('versions.rSpring.n')), [])
   }
 })
