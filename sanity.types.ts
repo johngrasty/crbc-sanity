@@ -195,6 +195,16 @@ export type Hero = {
   }
 }
 
+export type MediaSettings = {
+  _id: string
+  _type: 'mediaSettings'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  socialTitleTemplate: string
+  socialDescriptionFooter?: string
+}
+
 export type MediaItem = {
   _id: string
   _type: 'mediaItem'
@@ -1698,6 +1708,7 @@ export type AllSanitySchemaTypes =
   | RichText
   | LogoCloud
   | Hero
+  | MediaSettings
   | MediaItem
   | JobOpening
   | CustomSignUp
