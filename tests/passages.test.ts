@@ -321,3 +321,18 @@ test('without display text, a passage row shows the reference as Studio writes i
     assert.equal(reference(fields), 'Untitled passage', JSON.stringify(fields))
   }
 })
+
+test('speakers, topics and passages share the People and scripture tab, after Details', () => {
+  const studio = createHarness()
+  const groups = studio.groups('mediaItem')
+  const index = groups.findIndex(({title}) => title === 'People and scripture')
+  assert.equal(groups[index - 1]?.title, 'Details')
+  assert.deepEqual(
+    groups[index].fields.filter((field) => ['speakers', 'topics', 'passages'].includes(field)),
+    ['speakers', 'topics', 'passages'],
+  )
+  for (const field of ['speakers', 'topics', 'passages']) {
+    const tabs = groups.filter(({fields}) => fields.includes(field)).map(({title}) => title)
+    assert.deepEqual(tabs, ['People and scripture'], field)
+  }
+})

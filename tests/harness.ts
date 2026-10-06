@@ -624,6 +624,18 @@ export function createHarness({
         .map((document) => structuredClone(document))
     },
 
+    // The tabs of a document type's form, in order, each with the fields it holds in the order
+    // the form shows them. Studio adds an All fields tab of its own.
+    groups(type: string): {name: string; title?: string; fields: string[]}[] {
+      const schemaType = schema.get(type) as ObjectSchemaType | undefined
+      if (!schemaType) throw new Error(`No type named "${type}"`)
+      return (schemaType.groups ?? []).map(({name, title, fields = []}) => ({
+        name,
+        title,
+        fields: fields.map((field) => field.name),
+      }))
+    },
+
     // The values a list field offers, in order, each with the title its dropdown or radio
     // buttons show. A plain value shows as itself.
     choices(type: string, field: string): {title: string; value: unknown}[] {
