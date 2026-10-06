@@ -45,9 +45,11 @@ function withFreshId(template: Template): Template {
 }
 
 // Singletons have no template, except the ones whose fixed document opens with field defaults.
-// Sanity's document pane applies those only through the type's template.
+// Sanity's document pane applies those only through the type's template. The read-only types
+// have none, and every create menu starts from this list, so no menu offers them.
 export const templates: TemplateResolver = (prev) =>
   prev
+    .filter(({schemaType}) => !readOnlyTypeNames.has(schemaType))
     .filter(
       ({schemaType}) => !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
     )

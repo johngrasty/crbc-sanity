@@ -174,3 +174,22 @@ test('the read-only types have no document actions, in any version type', () => 
     }
   }
 })
+
+test('the read-only types have no template and no create menu offers them', async () => {
+  const studio = createHarness()
+  const global = studio.createMenu()
+  assert.ok(global.includes('mediaItem'), 'the global menu still offers media items')
+  for (const type of readOnlyTypes) {
+    await assert.rejects(studio.create(type), /No template/, type)
+    assert.ok(!global.includes(type), `global ${type}`)
+    assert.deepEqual(studio.createMenu({type: 'structure', schemaType: type}), [], `list ${type}`)
+    // A reference field's "Create new" starts from every template, then keeps its own types.
+    const reference = studio.createMenu({
+      type: 'document',
+      documentId: 'x',
+      schemaType: 'mediaItem',
+    })
+    assert.ok(!reference.includes(type), `reference field ${type}`)
+  }
+  assert.deepEqual(studio.documents(), [])
+})
