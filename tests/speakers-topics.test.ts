@@ -145,3 +145,72 @@ test("a speaker or topic's own versions, another type and another name don't cou
     assert.deepEqual(warningsAt(await studio.validate('versions.rSpring.self'), field), [], type)
   }
 })
+
+// What the importer writes (contract sections 2 and 3).
+const source = {
+  sourceId: 'subsplash:sp:+abc123',
+  sourceUrl: 'https://subsplash.com/crbc/media/sp/+abc123',
+  originalPublishedAt: '2024-03-31T13:00:00Z',
+}
+
+test('an imported speaker or topic keeps where it came from', async () => {
+  const studio = createHarness()
+  for (const type of types) {
+    const document = await studio.create(type)
+    const markers = await studio.validate({...document, source})
+    assert.deepEqual(
+      markers.filter(({path}) => path.startsWith('source')),
+      [],
+      type,
+    )
+  }
+})
+
+test('a source ID another document of the same type uses is an error, in any of its versions', async () => {
+  for (const type of types) {
+    for (const other of ['other', 'drafts.other', 'versions.rSpring.other']) {
+      const studio = createHarness({documents: [{_id: other, _type: type, source}]})
+      const created = await studio.create(type)
+      const edited = await studio.edit(created._id, {set: {source}})
+      const markers = await studio.validate(edited._id)
+      assert.equal(errorsAt(markers, 'source.sourceId').length, 1, `${type} taken by ${other}`)
+    }
+  }
+})
+
+test("a document's own versions and other types may share its source ID", async () => {
+  for (const type of types) {
+    const otherType = type === 'speaker' ? 'topic' : 'speaker'
+    const studio = createHarness({
+      documents: [
+        {_id: 'self', _type: type, source},
+        {_id: 'versions.rSpring.self', _type: type, source},
+        {_id: 'elsewhere', _type: otherType, source},
+        {_id: 'item', _type: 'mediaItem', source},
+      ],
+    })
+    const draft = await studio.edit('self', {set: {[nameFields[type]]: 'Grace'}})
+    for (const _id of [draft._id, 'self', 'versions.rSpring.self']) {
+      assert.deepEqual(
+        errorsAt(await studio.validate(_id), 'source.sourceId'),
+        [],
+        `${type} ${_id}`,
+      )
+    }
+  }
+})
+
+test('a source URL is an http or https address', async () => {
+  const studio = createHarness()
+  for (const type of types) {
+    const document = await studio.create(type)
+    for (const sourceUrl of ['http://subsplash.com/crbc', 'https://subsplash.com/crbc']) {
+      const markers = await studio.validate({...document, source: {...source, sourceUrl}})
+      assert.deepEqual(errorsAt(markers, 'source.sourceUrl'), [], `${type} ${sourceUrl}`)
+    }
+    for (const sourceUrl of ['ftp://subsplash.com/crbc', 'javascript:alert(1)', 'subsplash.com']) {
+      const markers = await studio.validate({...document, source: {...source, sourceUrl}})
+      assert.equal(errorsAt(markers, 'source.sourceUrl').length, 1, `${type} ${sourceUrl}`)
+    }
+  }
+})

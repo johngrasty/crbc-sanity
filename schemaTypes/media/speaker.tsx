@@ -4,6 +4,7 @@ import {editorialIdField} from './editorialId'
 import {aliasesField} from './aliases'
 import {labelLimit} from './limits'
 import {sameNameWarning} from './sameName'
+import {sourceField} from './source'
 
 export default defineType({
   name: 'speaker',
@@ -31,5 +32,6 @@ export default defineType({
     aliasesField(
       'Other names people know the speaker by, such as Pastor Sam. Search finds the speaker under any of them. Up to 20.',
     ),
+    sourceField('speaker'),
   ],
 })

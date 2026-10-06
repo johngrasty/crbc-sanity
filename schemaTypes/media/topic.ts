@@ -4,6 +4,7 @@ import {editorialIdField} from './editorialId'
 import {aliasesField} from './aliases'
 import {labelLimit} from './limits'
 import {sameNameWarning} from './sameName'
+import {sourceField} from './source'
 
 export default defineType({
   name: 'topic',
@@ -29,5 +30,6 @@ export default defineType({
       ],
     }),
     aliasesField('Other words editors might search for, such as Mercy for Grace. Up to 20.'),
+    sourceField('topic'),
   ],
 })
