@@ -327,3 +327,81 @@ test('a speaker or topic preview lists its aliases under the name or label', asy
   })
   assert.deepEqual(studio.preview({_id: 'new', _type: 'topic'}), {title: 'Unnamed topic'})
 })
+
+const reference = (_key: string, _ref: string) => ({_key, _type: 'reference', _ref})
+// What Studio stores when an editor picks a document that only has a draft.
+const weakReference = (_key: string, _ref: string, type: string) => ({
+  ...reference(_key, _ref),
+  _weak: true,
+  _strengthenOnPublish: {type},
+})
+
+// Published speakers s1 to s11 and topics t1 to t21, so every reference resolves.
+const tagged = Array.from({length: 21}, (_, index) => [
+  {_id: `s${index + 1}`, _type: 'speaker', name: `Speaker ${index + 1}`},
+  {_id: `t${index + 1}`, _type: 'topic', label: `Topic ${index + 1}`},
+]).flat()
+const references = (prefix: string, count: number) =>
+  Array.from({length: count}, (_, index) => reference(`k${index + 1}`, `${prefix}${index + 1}`))
+const markersUnder = (markers: Marker[], field: string) =>
+  markers.filter(({path}) => path === field || path.startsWith(`${field}[`))
+
+const lists = [
+  {field: 'speakers', prefix: 's', type: 'speaker', max: 10},
+  {field: 'topics', prefix: 't', type: 'topic', max: 20},
+]
+
+test('a media item lists up to 10 speakers and 20 topics', async () => {
+  const studio = createHarness({documents: tagged})
+  const item = await studio.create('mediaItem')
+  for (const {field, prefix, max} of lists) {
+    const atLimit = await studio.validate({...item, [field]: references(prefix, max)})
+    assert.deepEqual(markersUnder(atLimit, field), [], `${max} ${field}`)
+    const pastLimit = await studio.validate({...item, [field]: references(prefix, max + 1)})
+    assert.deepEqual(
+      markersUnder(pastLimit, field).map(({path, level}) => [path, level]),
+      [[field, 'error']],
+      `${max + 1} ${field}`,
+    )
+  }
+})
+
+test('a media item lists each speaker and topic once', async () => {
+  const studio = createHarness({documents: tagged})
+  const item = await studio.create('mediaItem')
+  for (const {field, prefix, type} of lists) {
+    const repeated = [
+      reference('a', `${prefix}1`),
+      reference('b', `${prefix}2`),
+      reference('c', `${prefix}1`),
+      // Sanity's unique() would miss this one, because _weak makes the items differ.
+      weakReference('d', `${prefix}2`, type),
+    ]
+    const markers = await studio.validate({...item, [field]: repeated})
+    assert.deepEqual(
+      markersUnder(markers, field).map(({path, level}) => [path, level]),
+      [
+        [`${field}[_key=="c"]`, 'error'],
+        [`${field}[_key=="d"]`, 'error'],
+      ],
+      field,
+    )
+  }
+})
+
+test('a media item refers only to published speakers and topics', async () => {
+  const studio = createHarness({
+    documents: [
+      {_id: 'drafts.new-speaker', _type: 'speaker', name: 'New speaker'},
+      {_id: 'drafts.new-topic', _type: 'topic', label: 'New topic'},
+    ],
+  })
+  const item = await studio.create('mediaItem')
+  const markers = await studio.validate({
+    ...item,
+    speakers: [weakReference('a', 'new-speaker', 'speaker')],
+    topics: [weakReference('a', 'new-topic', 'topic')],
+  })
+  assert.equal(errorsAt(markers, 'speakers[_key=="a"]').length, 1)
+  assert.equal(errorsAt(markers, 'topics[_key=="a"]').length, 1)
+})

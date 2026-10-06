@@ -28,3 +28,8 @@ export const noRepeats = <T>(rule: ArrayRule<T[]>, sameAs: (item: T) => unknown,
     })
     return repeats.length ? repeats : true
   })
+
+// The document a reference points at, so noRepeats counts two references to it as one, whatever
+// else they carry, such as _weak.
+export const referencedId = (item: unknown) =>
+  typeof item === 'object' && item !== null ? (item as {_ref?: unknown})._ref : undefined
