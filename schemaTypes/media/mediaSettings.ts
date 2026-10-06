@@ -1,7 +1,12 @@
-import {defineField, defineType} from 'sanity'
+import {defineField, defineType, getPublishedId} from 'sanity'
 import {SlidersHorizontal} from 'lucide-react'
 import {utf8Bytes} from './bytes'
 import {labelLimit} from './limits'
+
+// The one document media-ops reads, opened from Media settings in the Media section. A create
+// intent URL can still open a form for another one under a random ID, so any other ID is an
+// error and can't publish.
+const MEDIA_SETTINGS_ID = 'mediaSettings'
 
 // The placeholders media-ops fills in when it renders a YouTube or Facebook title.
 const placeholders = ['{title}', '{series}', '{speaker}', '{date}']
@@ -39,6 +44,12 @@ export default defineType({
   title: 'Media settings',
   type: 'document',
   icon: SlidersHorizontal,
+  validation: (rule) =>
+    rule.custom((document) =>
+      !document || getPublishedId(document._id) === MEDIA_SETTINGS_ID
+        ? true
+        : "This copy of the media settings isn't used. Edit Media settings in the Media section instead.",
+    ),
   fields: [
     defineField({
       name: 'socialTitleTemplate',

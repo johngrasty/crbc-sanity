@@ -207,3 +207,15 @@ test('Studio routes only the fixed ID to Media settings, and other intents to it
     assert.equal(created.initialValue?.socialTitleTemplate, '{title}, {series}')
   }
 })
+
+test('a media settings document under any other ID is an error, in every version', async () => {
+  const studio = createHarness({documents: [canonical]})
+  for (const _id of ['other', 'drafts.other', 'versions.rSpring.other']) {
+    const errors = errorsAt(await studio.validate({...canonical, _id}), '')
+    assert.equal(errors.length, 1, _id)
+    assert.match(errors[0].message, /Media settings in the Media section/, _id)
+  }
+  for (const _id of ['mediaSettings', 'drafts.mediaSettings', 'versions.rSpring.mediaSettings']) {
+    assert.deepEqual(errorsAt(await studio.validate({...canonical, _id}), ''), [], _id)
+  }
+})
