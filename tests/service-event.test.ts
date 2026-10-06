@@ -70,3 +70,50 @@ test('an event can be drafted against a draft-only item, but publishes only afte
   await studio.publish('item')
   assert.deepEqual(errorsAt(await studio.validate(`drafts.${id}`), 'mediaItem'), [])
 })
+
+test('the expected length is required, in whole minutes from 10 to 300', async () => {
+  const studio = createHarness()
+  const event = await studio.create('serviceEvent')
+  for (const expectedDurationMinutes of [10, 80, 300]) {
+    const markers = await studio.validate({...event, expectedDurationMinutes})
+    assert.deepEqual(errorsAt(markers, 'expectedDurationMinutes'), [], `${expectedDurationMinutes}`)
+  }
+  for (const expectedDurationMinutes of [undefined, 9, 301, 80.5]) {
+    const markers = await studio.validate({...event, expectedDurationMinutes})
+    assert.notDeepEqual(
+      errorsAt(markers, 'expectedDurationMinutes'),
+      [],
+      `${expectedDurationMinutes}`,
+    )
+  }
+})
+
+test("the live stream must be a resource ID in the contract's format", async () => {
+  const studio = createHarness()
+  const event = await studio.create('serviceEvent')
+  for (const resourceId of ['lr_main', 'lr_spare_2']) {
+    assert.deepEqual(errorsAt(await studio.validate({...event, resourceId}), 'resourceId'), [])
+  }
+  for (const resourceId of [undefined, '', 'main', 'lr_', 'lr_Main', `lr_${'a'.repeat(41)}`]) {
+    const markers = await studio.validate({...event, resourceId})
+    assert.equal(errorsAt(markers, 'resourceId').length, 1, `${resourceId}`)
+  }
+})
+
+test('the go-live lead is optional, in whole minutes from 0 to 60', async () => {
+  const studio = createHarness()
+  const event = await studio.create('serviceEvent')
+  // media-ops reads a missing lead as 5.
+  for (const socialGoLiveLeadMinutes of [undefined, 0, 5, 60]) {
+    const markers = await studio.validate({...event, socialGoLiveLeadMinutes})
+    assert.deepEqual(errorsAt(markers, 'socialGoLiveLeadMinutes'), [], `${socialGoLiveLeadMinutes}`)
+  }
+  for (const socialGoLiveLeadMinutes of [-1, 61, 2.5]) {
+    const markers = await studio.validate({...event, socialGoLiveLeadMinutes})
+    assert.notDeepEqual(
+      errorsAt(markers, 'socialGoLiveLeadMinutes'),
+      [],
+      `${socialGoLiveLeadMinutes}`,
+    )
+  }
+})
