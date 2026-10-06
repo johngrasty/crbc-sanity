@@ -3,6 +3,7 @@
 // actions directly.
 import {randomUUID} from 'node:crypto'
 import {evaluate, parse} from 'groq-js'
+import {isValidElement, type ReactNode} from 'react'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
@@ -16,12 +17,14 @@ import {
   isVersionId,
   pathToString,
   prepareConfig,
+  prepareForPreview,
   resolveInitialValue,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
   type NewDocumentCreationContext,
+  type PreviewableType,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -48,6 +51,18 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 // A validation marker. path is in Sanity's string form, for example passages[_key=="a"].book,
 // and is empty for a document-level rule.
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
+
+// What a document's preview shows in desk lists, search and reference fields. media is the
+// selected value, such as an image. When the media is a React element instead, such as a
+// speaker's initials, mediaText is the text it renders. Without either, Studio shows the type's
+// icon.
+export type Preview = {
+  title?: string
+  subtitle?: string
+  description?: string
+  media?: unknown
+  mediaText?: string
+}
 
 // A pane of the desk. A list has items, a document list has the documents it shows, and a
 // document pane has its fixed document and the value its form starts from while that document
@@ -154,6 +169,18 @@ const serializeNode = (node: unknown): StructureNode => {
 async function openChild(child: unknown, id: string, path: string[]): Promise<StructureNode> {
   if (typeof child !== 'function') return serializeNode(child)
   return serializeNode(await child(id, {index: 0, splitIndex: 0, path, params: {}, parent: null}))
+}
+
+// The text a React node renders. Function components are called directly, so a preview's media
+// component mustn't use hooks.
+function textOf(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(textOf).join('')
+  if (!isValidElement<{children?: ReactNode}>(node)) return ''
+  const {type, props} = node
+  return textOf(
+    typeof type === 'function' ? (type as (props: unknown) => ReactNode)(props) : props.children,
+  )
 }
 
 const actionName = (action: DocumentActionComponent) =>
@@ -434,6 +461,22 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       const params = options.params ?? {}
       const result = await evaluate(parse(query, {params}), {dataset: [...rows.values()], params})
       return {type, title, documents: structuredClone(await result.get())}
+    },
+
+    // The preview of a document, or of the _id of one in the dataset, from its type's preview
+    // config, as Sanity prepares it. Only the fields the preview selects reach it.
+    preview(document: TestDocument | string): Preview {
+      const value = typeof document === 'string' ? dataset.get(document) : document
+      if (!value) throw new Error(`No document with _id "${document}"`)
+      const type = schema.get(value._type) as PreviewableType
+      const {title, subtitle, description, media} = prepareForPreview(value, type)
+      const preview = Object.fromEntries(
+        Object.entries({title, subtitle, description}).filter(([, text]) => text !== undefined),
+      ) as Preview
+      if (isValidElement(media)) {
+        return {...preview, mediaText: textOf(media)}
+      }
+      return media === undefined ? preview : {...preview, media}
     },
 
     // Every document in the dataset, sorted by _id.
