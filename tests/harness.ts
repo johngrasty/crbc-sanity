@@ -3,6 +3,10 @@
 // actions directly.
 import {randomUUID} from 'node:crypto'
 import {evaluate, parse} from 'groq-js'
+import {createElement} from 'react'
+import {renderToStaticMarkup} from 'react-dom/server'
+import {ThemeProvider} from '@sanity/ui'
+import {buildTheme} from '@sanity/ui/theme'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
@@ -25,6 +29,7 @@ import {
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type InputProps,
   type NewDocumentCreationContext,
   type SanityClient,
   type SanityDocument,
@@ -173,6 +178,30 @@ const actionName = (action: DocumentActionComponent) =>
 function formAccepts(type: SchemaType, action: 'create' | 'update') {
   const actions = '__experimental_actions' in type ? type.__experimental_actions : undefined
   return actions === undefined || actions.includes(action)
+}
+
+// The text a document type's own input shows above the fields. The harness can't mount
+// Studio's form, so it renders the type's components.input to static HTML, inside the theme
+// Studio provides, with the fields Sanity renders through renderDefault stubbed out.
+const theme = buildTheme()
+const entities: Record<string, string> = {amp: '&', lt: '<', gt: '>', quot: '"', '#x27': "'"}
+function formNotice(schemaType: SchemaType): string | undefined {
+  const Input = schemaType.components?.input
+  if (!Input) return undefined
+  const fields = '[fields]'
+  const props = {schemaType, readOnly: true, renderDefault: () => fields} as unknown as InputProps
+  const html = renderToStaticMarkup(
+    createElement(ThemeProvider, {theme}, createElement(Input, props)),
+  )
+  if (!html.includes(fields))
+    throw new Error(`The ${schemaType.name} input doesn't render its fields`)
+  const text = html
+    .slice(0, html.indexOf(fields))
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(amp|lt|gt|quot|#x27);/g, (_: string, entity: string) => entities[entity])
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text || undefined
 }
 
 // A field a type declares, at any depth, as Sanity compiled it. path is dotted, with [] for an
@@ -379,11 +408,12 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     },
 
     // The document form for a type. readOnly is the type's own declared value, which locks every
-    // input in the form.
-    form(type: string): {readOnly: unknown} {
+    // input in the form. notice is the text the type's own input shows above the fields, or
+    // undefined when it shows none.
+    form(type: string): {readOnly: unknown; notice?: string} {
       const schemaType = schema.get(type)
       if (!schemaType) throw new Error(`No schema type named "${type}"`)
-      return {readOnly: schemaType.readOnly}
+      return {readOnly: schemaType.readOnly, notice: formNotice(schemaType)}
     },
 
     // The names of every registered document type, plugin types included.

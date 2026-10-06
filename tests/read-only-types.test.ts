@@ -293,3 +293,15 @@ test('no field of any document type refers to a read-only type', () => {
     for (const type of readOnlyTypes) assert.ok(!to.includes(type), `${path} refers to ${type}`)
   }
 })
+
+test('the form says who writes a read-only document, above its fields', () => {
+  const studio = createHarness()
+  const mirror = "media-ops writes this document. Editors can't change it."
+  assert.equal(studio.form('mediaRelease').notice, mirror)
+  assert.equal(studio.form('liveStatus').notice, mirror)
+  assert.equal(
+    studio.form('mediaOpsBinding').notice,
+    "An admin writes this document. Editors can't change it.",
+  )
+  assert.equal(studio.form('mediaItem').notice, undefined)
+})

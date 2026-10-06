@@ -2,6 +2,7 @@
 // writes mediaRelease and liveStatus, and an admin writes mediaOps.binding. No editor draft or
 // release version may ever replace what they wrote (decision D19).
 import {isPublishedId, type DocumentDefinition} from 'sanity'
+import {readOnlyNotice} from './readOnlyNotice'
 
 // The compiled type keeps __experimental_actions, but DocumentDefinition doesn't declare it.
 type ReadOnlyDefinition = DocumentDefinition & {__experimental_actions: []}
@@ -31,6 +32,11 @@ export function readOnlyType(writer: string, definition: DocumentDefinition): Re
     __experimental_actions: [],
     // AI Assist adds no inspector, field actions or presence to the document.
     options: {...definition.options, aiAssist: {exclude: true}},
+    // Someone who opens one by a link learns why nothing in it can change.
+    components: {
+      ...definition.components,
+      input: readOnlyNotice(`${writer} writes this document. Editors can't change it.`),
+    },
     // Global search leaves the type out, and so does the release tool's "Add document", which
     // is the same search.
     __experimental_omnisearch_visibility: false,
