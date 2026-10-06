@@ -116,15 +116,40 @@ test('kind is required and is one of the four kinds', async () => {
   }
 })
 
-test('the time zone is required and must be a canonical zone name Intl knows', async () => {
+test('the time zone is required and must be an Area/Location zone Intl knows', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
-  for (const serviceTimezone of ['America/New_York', 'America/Chicago', 'Europe/London', 'UTC']) {
+  // Node 22 resolves Asia/Kolkata to Asia/Calcutta, US/Eastern to America/New_York and Etc/UTC
+  // to UTC. Names that differ from the resolved one by more than letter case still pass.
+  const valid = [
+    'America/New_York',
+    'America/Chicago',
+    'America/Argentina/Buenos_Aires',
+    'Europe/London',
+    'Asia/Kolkata',
+    'US/Eastern',
+    'Etc/UTC',
+    'Etc/GMT+5',
+  ]
+  for (const serviceTimezone of valid) {
     const markers = await studio.validate({...item, serviceTimezone})
     assert.deepEqual(errorsAt(markers, 'serviceTimezone'), [], serviceTimezone)
   }
-  // Intl accepts the last four, as an offset, another spelling or aliases. EST is America/Panama.
-  const invalid = [undefined, '', 'Mars/Olympus', '-04:00', 'america/new_york', 'US/Eastern', 'EST']
+  // Intl accepts all but the first three: offsets, other letter cases and bare names.
+  const invalid = [
+    undefined,
+    '',
+    'Mars/Olympus',
+    '-04:00',
+    '+05:00',
+    'america/new_york',
+    'America/new_york',
+    'AMERICA/NEW_YORK',
+    'America/New_york',
+    'America/NEW_YORK',
+    'EST',
+    'UTC',
+  ]
   for (const serviceTimezone of invalid) {
     const markers = await studio.validate({...item, serviceTimezone})
     assert.notDeepEqual(errorsAt(markers, 'serviceTimezone'), [], `${serviceTimezone}`)

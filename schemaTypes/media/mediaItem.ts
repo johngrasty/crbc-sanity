@@ -1,24 +1,11 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
+import {itemLimit, noRepeats, referencedId} from './lists'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
 import {passagesField} from './passage'
 import {publicationPolicyField} from './publicationPolicy'
-
-// A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
-// That rejects aliases such as US/Eastern, other spellings such as america/new_york, and EST,
-// which Intl reads as America/Panama. Intl also accepts offsets such as +05:00, which aren't
-// zones, so a name must start with a letter.
-function isCanonicalTimeZone(value: string): boolean {
-  if (!/^[A-Za-z]/.test(value)) return false
-  try {
-    return (
-      new Intl.DateTimeFormat(undefined, {timeZone: value}).resolvedOptions().timeZone === value
-    )
-  } catch {
-    return false
-  }
-}
+import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
 
 // A real day written as YYYY-MM-DD, the way Sanity stores a date field. setUTCFullYear, unlike
 // Date.UTC, doesn't read years 0 to 99 as 1900 to 1999.
@@ -155,20 +142,42 @@ export default defineType({
       ],
       group: 'details',
     }),
+    // Contract section 10.2 allows 10 speakers and 20 topics on an item.
+    defineField({
+      name: 'speakers',
+      title: 'Speakers',
+      type: 'array',
+      description:
+        'Who preached or spoke, up to 10. Put the main speaker first, because YouTube and Facebook titles use the first one.',
+      of: [{type: 'reference', to: [{type: 'speaker'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 10, 'speakers'),
+        noRepeats(rule, referencedId, 'This speaker is already on the item.'),
+      ],
+      group: 'details',
+    }),
+    defineField({
+      name: 'topics',
+      title: 'Topics',
+      type: 'array',
+      description: 'What the message is about, up to 20. Viewers can browse recordings by topic.',
+      of: [{type: 'reference', to: [{type: 'topic'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 20, 'topics'),
+        noRepeats(rule, referencedId, 'This topic is already on the item.'),
+      ],
+      group: 'details',
+    }),
     defineField({
       name: 'serviceTimezone',
       title: 'Time zone',
       type: 'string',
       description:
         'Leave this as America/New_York unless the service took place in another time zone. Use a name like America/Chicago.',
-      initialValue: 'America/New_York',
+      initialValue: CHURCH_TIME_ZONE,
       validation: (rule) => [
         rule.required(),
-        rule.custom((value) =>
-          !value || isCanonicalTimeZone(value)
-            ? true
-            : 'Use the standard time zone name, such as America/New_York or America/Chicago.',
-        ),
+        rule.custom((value) => (!value || isTimeZone(value) ? true : timeZoneMessage)),
       ],
       group: 'details',
     }),

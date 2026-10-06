@@ -269,10 +269,9 @@ test('the display text is required and holds up to 200 characters', async () => 
 
 test('a passage row shows the display text, and the reference under it when they differ', () => {
   const studio = createHarness()
-  assert.deepEqual(studio.preview('passage', passage('a')), {title: 'James 1:2-4'})
+  assert.deepEqual(studio.preview(passage('a')), {title: 'James 1:2-4'})
   assert.deepEqual(
     studio.preview(
-      'passage',
       passage('a', {
         book: 'Matt',
         chapterStart: 5,
@@ -284,7 +283,7 @@ test('a passage row shows the display text, and the reference under it when they
     ),
     {title: 'The Sermon on the Mount', subtitle: 'Matthew 5:1-7:29'},
   )
-  assert.deepEqual(studio.preview('passage', {_type: 'passage', _key: 'a'}), {
+  assert.deepEqual(studio.preview({_type: 'passage', _key: 'a'}), {
     title: 'Untitled passage',
   })
 })
@@ -292,7 +291,7 @@ test('a passage row shows the display text, and the reference under it when they
 test('without display text, a passage row shows the reference as Studio writes it', () => {
   const studio = createHarness()
   const reference = (fields: Record<string, unknown>) =>
-    studio.preview('passage', {_type: 'passage', _key: 'a', ...fields}).title
+    studio.preview({_type: 'passage', _key: 'a', ...fields}).title
   const cases: [Record<string, unknown>, string][] = [
     [{book: 'Jas', chapterStart: 1, verseStart: 2, verseEnd: 4}, 'James 1:2-4'],
     // As the contract's fixtures store it, with the end chapter repeated.

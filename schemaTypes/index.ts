@@ -29,6 +29,9 @@ import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
 import mediaItem from './media/mediaItem'
+import serviceEvent from './media/serviceEvent'
+import speaker from './media/speaker'
+import topic from './media/topic'
 import mediaSettings from './media/mediaSettings'
 import passage from './media/passage'
 
@@ -60,6 +63,9 @@ export const schemaTypes = [
   customSignUp,
   jobOpening,
   mediaItem,
+  serviceEvent,
+  speaker,
+  topic,
   mediaSettings,
   // Objects (Sections)
   hero,
