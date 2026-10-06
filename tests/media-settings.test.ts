@@ -219,3 +219,22 @@ test('a media settings document under any other ID is an error, in every version
     assert.deepEqual(errorsAt(await studio.validate({...canonical, _id}), ''), [], _id)
   }
 })
+
+test('a media settings document under any other ID has no actions, in every version type', () => {
+  const studio = createHarness()
+  for (const versionType of [
+    'draft',
+    'published',
+    'version',
+    'scheduled-draft',
+    'revision',
+  ] as const) {
+    for (const documentId of ['other', '0b6f3c2e-5d4a-4e8b-9f1c-2a7d6e5b4c3a']) {
+      assert.deepEqual(
+        studio.actions('mediaSettings', versionType, {documentId}),
+        [],
+        `${documentId} ${versionType}`,
+      )
+    }
+  }
+})

@@ -333,13 +333,18 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
 
     // The names of the document actions Studio's document pane shows for this type, resolved
     // through the whole plugin chain. Unnamed actions show their displayName. A version or a
-    // scheduled draft belongs to the release rHarness.
-    actions(type: string, versionType: DocumentActionsVersionType): string[] {
+    // scheduled draft belongs to the release rHarness. documentId is the published ID the pane
+    // passes, and defaults to the type name, a singleton's fixed ID.
+    actions(
+      type: string,
+      versionType: DocumentActionsVersionType,
+      {documentId = type}: {documentId?: string} = {},
+    ): string[] {
       const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
       return source.document
         .actions({
           schemaType: type,
-          documentId: type,
+          documentId,
           versionType,
           releaseId: inRelease ? 'rHarness' : undefined,
         })

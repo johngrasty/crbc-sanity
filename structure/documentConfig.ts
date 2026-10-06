@@ -1,11 +1,12 @@
 // The document settings sanity.config.ts passes to Sanity. They live here, not in the config,
 // because the full config can't load in Node and the test harness builds from this module.
-import type {
-  DocumentActionsResolver,
-  NewDocumentOptionsResolver,
-  SanityDocumentLike,
-  Template,
-  TemplateResolver,
+import {
+  getPublishedId,
+  type DocumentActionsResolver,
+  type NewDocumentOptionsResolver,
+  type SanityDocumentLike,
+  type Template,
+  type TemplateResolver,
 } from 'sanity'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
@@ -14,6 +15,10 @@ import {singletonActions, singletonsWithTemplates, singletonTypes} from './singl
 
 export const documentActions: DocumentActionsResolver = (prev, context) => {
   if (singletonTypes.has(context.schemaType)) {
+    // A create intent URL can open a singleton that keeps its template under a random ID. Only
+    // its fixed document, whose ID is the type name, gets actions.
+    const fixed = context.documentId && getPublishedId(context.documentId) === context.schemaType
+    if (singletonsWithTemplates.has(context.schemaType) && !fixed) return []
     return prev.filter(({action}) => action && singletonActions.has(action))
   }
   // Sanity's Duplicate copies every field, the editorial ID too. The editorial types get the
