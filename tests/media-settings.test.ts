@@ -176,3 +176,107 @@ test('the media settings form starts with the default title template', async () 
   assert.ok(initialValue)
   assert.deepEqual(errorsAt(await studio.validate(initialValue), 'socialTitleTemplate'), [])
 })
+
+const canonical = {_id: 'mediaSettings', _type: 'mediaSettings', socialTitleTemplate: '{title}'}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+// What Studio's structure tool opens for an intent URL, as the review's probe of Sanity's own
+// resolveIntent found: /tmp/review-t20-22-probes/intent.log.
+test('Studio routes only the fixed ID to Media settings, and other intents to its plain editor', async () => {
+  const studio = createHarness({documents: [canonical, {...canonical, _id: 'drafts.other'}]})
+
+  const fixed = await studio.intent('edit', {id: 'mediaSettings', type: 'mediaSettings'})
+  assert.deepEqual(fixed.path, ['media', 'mediaSettings'])
+  assert.equal(fixed.documentId, 'mediaSettings')
+  assert.equal(fixed.initialValue, undefined, 'the saved document opens, not the defaults')
+
+  const other = await studio.intent('edit', {id: 'other', type: 'mediaSettings'})
+  assert.deepEqual(other.path, ['__edit__other'])
+  assert.equal(other.documentId, 'other')
+
+  // A create intent gets a random ID before Studio routes it, so it never reaches the fixed
+  // document, with or without the template.
+  for (const params of [
+    {type: 'mediaSettings'},
+    {type: 'mediaSettings', template: 'mediaSettings'},
+  ]) {
+    const created = await studio.intent('create', params)
+    assert.match(created.documentId, UUID)
+    assert.deepEqual(created.path, [`__edit__${created.documentId}`])
+    assert.equal(created.schemaType, 'mediaSettings')
+    assert.equal(created.initialValue?.socialTitleTemplate, '{title}, {series}')
+  }
+})
+
+test('a media settings document under any other ID is an error, in every version', async () => {
+  const studio = createHarness({documents: [canonical]})
+  for (const _id of ['other', 'drafts.other', 'versions.rSpring.other']) {
+    const errors = errorsAt(await studio.validate({...canonical, _id}), '')
+    assert.equal(errors.length, 1, _id)
+    assert.match(errors[0].message, /Media settings in the Media section/, _id)
+  }
+  for (const _id of ['mediaSettings', 'drafts.mediaSettings', 'versions.rSpring.mediaSettings']) {
+    assert.deepEqual(errorsAt(await studio.validate({...canonical, _id}), ''), [], _id)
+  }
+})
+
+// A media settings document under any other ID keeps only delete, so an editor can remove it.
+// Sanity's lists have delete for drafts, published documents and revisions, and none for a
+// release version or a scheduled draft. Source: /tmp/studio-spec/notes/01-sanity-research.md,
+// question 1.
+const strayActions = {
+  draft: ['delete'],
+  published: ['delete'],
+  version: [],
+  'scheduled-draft': [],
+  revision: ['delete'],
+}
+const versionTypes = Object.keys(strayActions) as (keyof typeof strayActions)[]
+
+test('a media settings document under any other ID has only delete, in every version type', () => {
+  const studio = createHarness()
+  for (const versionType of versionTypes) {
+    for (const documentId of ['other', '0b6f3c2e-5d4a-4e8b-9f1c-2a7d6e5b4c3a']) {
+      assert.deepEqual(
+        studio.actions('mediaSettings', versionType, {documentId}),
+        strayActions[versionType],
+        `${documentId} ${versionType}`,
+      )
+    }
+  }
+})
+
+// What follows an intent: the editor's first edit stores the form's value as a draft. The draft
+// can't publish, by the Publish button or with a release, and it can only be deleted.
+async function assertStrayCantPublish(studio: ReturnType<typeof createHarness>, id: string) {
+  const errors = errorsAt(await studio.validate(`drafts.${id}`), '')
+  assert.match(errors[0]?.message ?? '', /Media settings in the Media section/, id)
+  for (const versionType of versionTypes) {
+    assert.deepEqual(
+      studio.actions('mediaSettings', versionType, {documentId: id}),
+      strayActions[versionType],
+      versionType,
+    )
+  }
+  await assert.rejects(studio.publish(id), /Media settings in the Media section/)
+  assert.equal(studio.documents().filter(({_id}) => !_id.startsWith('drafts.')).length, 1)
+}
+
+test("a settings document from a create intent can't publish, with or without the template", async () => {
+  for (const params of [
+    {type: 'mediaSettings'},
+    {type: 'mediaSettings', template: 'mediaSettings'},
+  ]) {
+    const pane = await createHarness({documents: [canonical]}).intent('create', params)
+    assert.ok(pane.initialValue)
+    const draft = {...pane.initialValue, _id: `drafts.${pane.documentId}`}
+    await assertStrayCantPublish(createHarness({documents: [canonical, draft]}), pane.documentId)
+  }
+})
+
+test("a settings document from an edit URL for another ID can't publish", async () => {
+  const studio = createHarness({documents: [canonical, {...canonical, _id: 'drafts.other'}]})
+  const pane = await studio.intent('edit', {id: 'other', type: 'mediaSettings'})
+  assert.equal(pane.documentId, 'other')
+  await assertStrayCantPublish(studio, 'other')
+})

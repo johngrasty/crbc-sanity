@@ -193,6 +193,23 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     .defaultOrdering([{field: 'serviceDate', direction: 'desc'}]),
                 ),
               S.divider(),
+              S.documentTypeListItem('speaker')
+                .id('speakers')
+                .title('Speakers')
+                .child(
+                  S.documentTypeList('speaker')
+                    .title('Speakers')
+                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
+                ),
+              S.documentTypeListItem('topic')
+                .id('topics')
+                .title('Topics')
+                .child(
+                  S.documentTypeList('topic')
+                    .title('Topics')
+                    .defaultOrdering([{field: 'label', direction: 'asc'}]),
+                ),
+              S.divider(),
               S.listItem()
                 .title('Media settings')
                 .id('mediaSettings')
