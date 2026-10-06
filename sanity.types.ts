@@ -205,6 +205,67 @@ export type MediaSettings = {
   socialDescriptionFooter?: string
 }
 
+export type Topic = {
+  _id: string
+  _type: 'topic'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  topicId: string
+  label: string
+  aliases?: Array<string>
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
+export type Speaker = {
+  _id: string
+  _type: 'speaker'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  speakerId: string
+  name: string
+  aliases?: Array<string>
+  photo?: {
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt?: string
+    _type: 'image'
+  }
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
+export type SanityImageCrop = {
+  _type: 'sanity.imageCrop'
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+export type SanityImageHotspot = {
+  _type: 'sanity.imageHotspot'
+  x: number
+  y: number
+  height: number
+  width: number
+}
+
 export type ServiceEvent = {
   _id: string
   _type: 'serviceEvent'
@@ -248,6 +309,20 @@ export type MediaItem = {
   title?: string
   description?: string
   serviceDate?: string
+  speakers?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'speaker'
+  }>
+  topics?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'topic'
+  }>
   serviceTimezone: string
   publicationPolicy: 'auto' | 'manual'
   publishAt?: string
@@ -313,22 +388,6 @@ export type CustomSignUp = {
   registrationUrl: string
   active?: boolean
   featured?: boolean
-}
-
-export type SanityImageCrop = {
-  _type: 'sanity.imageCrop'
-  top: number
-  bottom: number
-  left: number
-  right: number
-}
-
-export type SanityImageHotspot = {
-  _type: 'sanity.imageHotspot'
-  x: number
-  y: number
-  height: number
-  width: number
 }
 
 export type Ministry = {
@@ -1752,12 +1811,14 @@ export type AllSanitySchemaTypes =
   | LogoCloud
   | Hero
   | MediaSettings
+  | Topic
+  | Speaker
+  | SanityImageCrop
+  | SanityImageHotspot
   | ServiceEvent
   | MediaItem
   | JobOpening
   | CustomSignUp
-  | SanityImageCrop
-  | SanityImageHotspot
   | Ministry
   | Slug
   | Resource
