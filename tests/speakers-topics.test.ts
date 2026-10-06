@@ -438,3 +438,20 @@ test('the Media section lists speakers and topics after media items, A to Z', as
     ['Faith', 'Grace'],
   )
 })
+
+// A reference field's picker searches its target type the same way.
+test("Studio's search finds a speaker or topic under any of its aliases", async () => {
+  const studio = createHarness({
+    documents: [
+      {_id: 'pastor', _type: 'speaker', name: 'Sam Jones', aliases: ['Pastor Sam', 'Samuel Jones']},
+      {_id: 'guest', _type: 'speaker', name: 'Ann Lee'},
+      {_id: 'grace', _type: 'topic', label: 'Grace', aliases: ['Mercy']},
+      {_id: 'faith', _type: 'topic', label: 'Faith'},
+    ],
+  })
+  assert.deepEqual(await studio.search('pastor', ['speaker']), ['pastor'])
+  assert.deepEqual(await studio.search('samuel', ['speaker']), ['pastor'])
+  assert.deepEqual(await studio.search('ann', ['speaker']), ['guest'])
+  assert.deepEqual(await studio.search('mercy', ['topic']), ['grace'])
+  assert.deepEqual(await studio.search('mercy', ['speaker', 'topic']), ['grace'])
+})
