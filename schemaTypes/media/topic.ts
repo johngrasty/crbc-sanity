@@ -32,4 +32,11 @@ export default defineType({
     aliasesField('Other words editors might search for, such as Mercy for Grace. Up to 20.'),
     sourceField('topic'),
   ],
+  preview: {
+    select: {label: 'label', aliases: 'aliases'},
+    prepare: ({label, aliases}) => ({
+      title: label || 'Unnamed topic',
+      subtitle: aliases?.length ? aliases.join(', ') : undefined,
+    }),
+  },
 })

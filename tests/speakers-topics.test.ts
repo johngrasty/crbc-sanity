@@ -289,3 +289,41 @@ test('a duplicated speaker or topic drops its import source, keeps the rest, and
     assert.equal(warningsAt(await studio.validate(copy._id), nameFields[type]).length, 1, type)
   }
 })
+
+test("a speaker's preview shows the photo, or the speaker's initials when there's none", async () => {
+  const studio = createHarness()
+  const speaker = await studio.create('speaker')
+  const withPhoto = studio.preview({...speaker, name: 'Sam Jones', photo})
+  assert.deepEqual(withPhoto.media, photo)
+  assert.equal(withPhoto.mediaText, undefined)
+  for (const [name, initials] of [
+    ['Sam Jones', 'SJ'],
+    ['Pastor Sam Jones', 'PJ'],
+    ['Dr. Ann Lee', 'DL'],
+    ['Sam', 'S'],
+    ['émile zola', 'ÉZ'],
+  ]) {
+    const preview = studio.preview({...speaker, name})
+    assert.equal(preview.title, name)
+    assert.equal(preview.mediaText, initials, name)
+  }
+  // With no name either, the list shows the speaker icon.
+  const unnamed = studio.preview(speaker)
+  assert.equal(unnamed.title, 'Unnamed speaker')
+  assert.equal(unnamed.media, undefined)
+  assert.equal(unnamed.mediaText, undefined)
+})
+
+test('a speaker or topic preview lists its aliases under the name or label', async () => {
+  const studio = createHarness()
+  assert.deepEqual(studio.preview({...originals.speaker, photo: undefined}), {
+    title: 'Sam Jones',
+    subtitle: 'Pastor Sam',
+    mediaText: 'SJ',
+  })
+  assert.deepEqual(studio.preview({...originals.topic, aliases: ['Mercy', 'Favor']}), {
+    title: 'Grace',
+    subtitle: 'Mercy, Favor',
+  })
+  assert.deepEqual(studio.preview({_id: 'new', _type: 'topic'}), {title: 'Unnamed topic'})
+})
