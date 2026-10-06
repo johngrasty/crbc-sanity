@@ -200,3 +200,39 @@ test("global search and the release tool's Add document leave out the read-only 
   assert.ok(searched.includes('mediaItem'), 'search still covers media items')
   for (const type of readOnlyTypes) assert.ok(!searched.includes(type), type)
 })
+
+// A patch to one field of each read-only type.
+const patches = {
+  mediaRelease: {set: {public: true}},
+  liveStatus: {set: {takenDown: true}},
+  mediaOpsBinding: {set: {environments: ['production']}},
+}
+
+test('the form refuses every patch to a read-only document, so it writes no draft or version', async () => {
+  for (const sample of samples) {
+    const studio = createHarness({documents: [sample]})
+    const patch = patches[sample._type as keyof typeof patches]
+    await assert.rejects(
+      studio.edit(sample._id, patch),
+      /^Error: Attempted to patch a read-only document$/,
+    )
+    await assert.rejects(studio.edit(sample._id, patch, {release: 'rSpring'}), /read-only/)
+    assert.deepEqual(studio.documents(), [sample], sample._id)
+  }
+})
+
+test('a crafted create URL opens a form that refuses its first patch', async () => {
+  // With no template, /intent/create/type=mediaRelease still opens an empty form. Its first
+  // patch would create the document.
+  for (const type of readOnlyTypes) {
+    const studio = createHarness()
+    const patch = patches[type as keyof typeof patches]
+    await assert.rejects(studio.edit(`${type}.new`, patch, {type}), /read-only/, type)
+    assert.deepEqual(studio.documents(), [], type)
+  }
+  // An editorial type's new document takes the same patch path.
+  const studio = createHarness()
+  const item = await studio.edit('item', {set: {title: 'Spring'}}, {type: 'mediaItem'})
+  assert.equal(item._id, 'drafts.item')
+  assert.equal(item.title, 'Spring')
+})

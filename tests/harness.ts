@@ -164,6 +164,17 @@ async function openChild(child: unknown, id: string, path: string[]): Promise<St
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
+// Whether Studio's document form accepts a patch. The form locks itself, throws "Attempted to
+// patch a read-only document" and sends nothing when the type's __experimental_actions leave
+// out update, or leave out create for a document that doesn't exist yet (lib/index.js:58356
+// and 58498). A type without the flag allows every action. This copies isActionEnabled from
+// @sanity/schema/_internal (lib/_internal.js:504-519), which isn't one of the Studio's
+// dependencies.
+function formAccepts(type: SchemaType, action: 'create' | 'update') {
+  const actions = '__experimental_actions' in type ? type.__experimental_actions : undefined
+  return actions === undefined || actions.includes(action)
+}
+
 // A field a type declares, at any depth, as Sanity compiled it. path is dotted, with [] for an
 // array's members, for example captions[].label. readOnly is the declared value, so a callback
 // stays a function. A reference lists the types it can point to.
@@ -399,19 +410,26 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
-    // draft when nothing is published. Then the type's form follow-up step runs.
+    // draft when nothing is published. With type, a document that doesn't exist at all starts
+    // empty, as the form a create URL opens does. Like that form, edit refuses a patch the
+    // type's __experimental_actions don't allow. Then the type's form follow-up step runs.
     async edit(
       id: string,
       patch: DocumentPatch,
-      {release}: {release?: string} = {},
+      {release, type}: {release?: string; type?: string} = {},
     ): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const target = versionId(id, release)
       const published = dataset.get(publishedId) ?? null
       const base =
         dataset.get(target) ?? published ?? (release ? dataset.get(getDraftId(publishedId)) : null)
-      if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
-      let version = applyPatch({...base, _id: target}, patch)
+      const start = base ?? (type ? {_id: publishedId, _type: type} : null)
+      if (!start) throw new Error(`No document to edit with _id "${publishedId}"`)
+      const schemaType = schema.get(start._type)
+      if (schemaType && !formAccepts(schemaType, base ? 'update' : 'create')) {
+        throw new Error('Attempted to patch a read-only document')
+      }
+      let version = applyPatch({...start, _id: target}, patch)
       const followUp = formFollowUps[version._type]?.({version, published})
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
