@@ -35,12 +35,14 @@
     "react-is": "^19.1.1",
     "sanity": "^4.14.2",
     "sanity-plugin-media": "^4.0.0",
+    "speakingurl": "^14.0.1",
     "styled-components": "^6.1.19"
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^5.0.2",
     "@sanity/runtime-cli": "12.4.0",
     "@types/react": "^19.1.12",
+    "@types/speakingurl": "^13.0.6",
     "esbuild": "^0.27.0",
     "eslint": "^9.35.0",
     "groq-js": "^1.30.3",

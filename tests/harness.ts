@@ -4,6 +4,7 @@
 import {randomUUID} from 'node:crypto'
 import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
+import speakingurl from 'speakingurl'
 import type {ClientPerspective} from '@sanity/client'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
@@ -33,6 +34,8 @@ import {
   type ObjectSchemaType,
   type SanityClient,
   type SanityDocument,
+  type SlugSchemaType,
+  type SlugSourceContext,
   type Source,
   type Workspace,
 } from 'sanity'
@@ -504,6 +507,33 @@ export function createHarness({
         configContext,
       )
       return structuredClone({...item, ...(initial as object)})
+    },
+
+    // The slug a slug field's Generate button makes, as Sanity's slug input makes it: the field's
+    // source run through its slugify, or through speakingurl when it has none. Takes a document,
+    // or the _id of one in the dataset. Nothing is stored.
+    async generateSlug(
+      document: TestDocument | string,
+      field = 'slug',
+    ): Promise<string | undefined> {
+      const value = typeof document === 'string' ? dataset.get(document) : document
+      if (!value) throw new Error(`No document with _id "${document}"`)
+      const slugType = (schema.get(value._type) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type as SlugSchemaType | undefined
+      const {source, slugify, maxLength} = slugType?.options ?? {}
+      if (!slugType || !source) throw new Error(`${value._type}.${field} has no slug source`)
+      const context = {...configContext, parentPath: [], parent: value} as SlugSourceContext
+      const sourceValue =
+        typeof source === 'function'
+          ? await source(value as SanityDocument, context)
+          : (typeof source === 'string' ? source.split('.') : source).reduce<unknown>(
+              (parent, key) => (parent as Record<string, unknown> | undefined)?.[String(key)],
+              value,
+            )
+      if (!sourceValue) return undefined
+      if (slugify) return slugify(String(sourceValue), slugType, context)
+      return speakingurl(String(sourceValue), {truncate: maxLength ?? 200, symbols: true})
     },
 
     // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is

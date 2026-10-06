@@ -232,3 +232,22 @@ test('a media item without a slug has a warning, not an error, so a placeholder 
   )
   await studio.publish(_id)
 })
+
+test("Generate makes a slug from the title that matches the contract's pattern", async () => {
+  const studio = createHarness()
+  const generated = [
+    ['Easter Sunday', 'easter-sunday'],
+    ["Week 3: The Good Shepherd's Psalm", 'week-3-the-good-shepherd-s-psalm'],
+    ['Rock & Roll', 'rock-and-roll'],
+    ['Señor, ¿qué?', 'senor-que'],
+    ['snake_case_title', 'snake-case-title'],
+    ['🙏 Prayer night', 'prayer-night'],
+  ]
+  for (const [title, expected] of generated) {
+    assert.equal(await studio.generateSlug(item({title})), expected, title)
+  }
+  const long = await studio.generateSlug(item({title: 'Sermon '.repeat(40)}))
+  assert.ok(long && long.length <= 200, `${long?.length}`)
+  const markers = await studio.validate(item({slug: slug(String(long))}))
+  assert.deepEqual(errorsAt(markers, 'slug'), [])
+})

@@ -10,6 +10,7 @@ import {
   type SlugIsUniqueValidator,
   type SlugRule,
 } from 'sanity'
+import speakingurl from 'speakingurl'
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import type {FormFollowUp} from '../../structure/documentConfig'
 import {checkCharacters, SLUG_MAX_LENGTH} from './limits'
@@ -76,6 +77,14 @@ const isUnique: SlugIsUniqueValidator = async (slug, context) => {
 
 // The contract's slug: lower-case letters and digits, in words joined by single hyphens.
 const SLUG_PATTERN = new RegExp(contract.$defs.Slug.pattern)
+
+// What Generate makes from the title: Sanity's own slugify, speakingurl, which writes Rock & Roll
+// as rock-and-roll, then a hyphen for anything the contract's pattern doesn't allow, such as an
+// underscore.
+const slugify = (title: string) =>
+  speakingurl(title, {truncate: SLUG_MAX_LENGTH, symbols: true})
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 
 // The shape rules for a slug and for each history entry, as one rule. Sanity adds its own slug
 // check to every rule it hands a slug field, so a second rule would report a taken slug twice.
@@ -149,7 +158,7 @@ export function slugFields(type: SlugType) {
       title: 'Slug',
       type: 'slug',
       description: `The end of the link to this ${noun}, made from the title.`,
-      options: {source: 'title', isUnique},
+      options: {source: 'title', slugify, isUnique},
       validation: (rule) => [slugShape(rule), missingSlug(withoutSlugCheck(rule), type)],
     }),
     defineField({
