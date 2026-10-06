@@ -2,13 +2,17 @@
 // published slug changes, the version being edited keeps the old slug in slugHistory, so it
 // survives the Publish button, a release or any other way of publishing.
 import {
+  defineArrayMember,
   defineField,
   getPublishedId,
   isPublishedId,
   type SanityDocumentLike,
   type SlugIsUniqueValidator,
+  type SlugRule,
 } from 'sanity'
+import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import type {FormFollowUp} from '../../structure/documentConfig'
+import {checkCharacters, SLUG_MAX_LENGTH} from './limits'
 
 // One entry per document type with a slug. Each type is its own namespace.
 export const slugTypes = {
@@ -69,6 +73,22 @@ const isUnique: SlugIsUniqueValidator = async (slug, context) => {
     )
 }
 
+// The contract's slug: lower-case letters and digits, in words joined by single hyphens.
+const SLUG_PATTERN = new RegExp(contract.$defs.Slug.pattern)
+
+// The shape rules for a slug and for each history entry, as one rule. Sanity adds its own slug
+// check to every rule it hands a slug field, so a second rule would report a taken slug twice.
+// Sanity's check already reports a slug with blank text.
+const slugShape = (rule: SlugRule) =>
+  rule
+    .custom((value) => {
+      const current = slugText(value)
+      return !current || SLUG_PATTERN.test(current)
+        ? true
+        : 'Use lower-case letters and numbers, with single hyphens between words, like easter-sunday.'
+    })
+    .custom((value) => checkCharacters(slugText(value), SLUG_MAX_LENGTH))
+
 const isEntry = (entry: unknown): entry is SlugEntry => {
   const {_type, _key, current} = (entry ?? {}) as Partial<SlugEntry>
   return _type === 'slug' && typeof _key === 'string' && typeof current === 'string'
@@ -117,12 +137,19 @@ export function slugFields(type: SlugType) {
       type: 'slug',
       description: `The end of the link to this ${noun}, made from the title.`,
       options: {source: 'title', isUnique},
+      validation: (rule) => slugShape(rule),
     }),
     defineField({
       name: 'slugHistory',
       title: 'Old slugs',
       type: 'array',
-      of: [{type: 'slug', options: {isUnique}}],
+      of: [
+        defineArrayMember({
+          type: 'slug',
+          options: {isUnique},
+          validation: (rule) => slugShape(rule),
+        }),
+      ],
       readOnly: true,
       // The form keeps the history right. These rules catch a version written some other way,
       // such as through the API, before it can publish.

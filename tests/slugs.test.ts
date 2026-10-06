@@ -181,3 +181,41 @@ test('a history entry another item uses now or used before is an error, which ca
     ['lent', 'Slug is already in use'],
   ])
 })
+
+test("slugs and history entries match the contract's pattern of lower-case words and hyphens", async () => {
+  const studio = createHarness()
+  const atEntry = 'slugHistory[_key=="h0"]'
+  for (const valid of ['easter', 'easter-sunday-2026', '1-john']) {
+    const markers = await studio.validate(item({slug: slug(valid), slugHistory: entries(valid)}))
+    assert.deepEqual([...errorsAt(markers, 'slug'), ...errorsAt(markers, atEntry)], [], valid)
+  }
+  const invalid = [
+    'Easter',
+    'easter_sunday',
+    '-easter',
+    'easter-',
+    'easter--sunday',
+    'easter sunday',
+    'pâques',
+  ]
+  for (const value of invalid) {
+    const markers = await studio.validate(item({slug: slug(value), slugHistory: entries(value)}))
+    assert.equal(errorsAt(markers, 'slug').length, 1, value)
+    assert.equal(errorsAt(markers, atEntry).length, 1, value)
+  }
+})
+
+test('slugs and history entries hold up to 200 characters, counted as code points', async () => {
+  const studio = createHarness()
+  const atEntry = 'slugHistory[_key=="h0"]'
+  const errorCounts = async (value: string) => {
+    const markers = await studio.validate(item({slug: slug(value), slugHistory: entries(value)}))
+    return [errorsAt(markers, 'slug').length, errorsAt(markers, atEntry).length]
+  }
+  assert.deepEqual(await errorCounts('a'.repeat(200)), [0, 0])
+  assert.deepEqual(await errorCounts('a'.repeat(201)), [1, 1])
+  // An emoji is one code point and two UTF-16 units. The pattern refuses it, so the limit adds
+  // a second error only past 200 code points.
+  assert.deepEqual(await errorCounts('😀'.repeat(200)), [1, 1])
+  assert.deepEqual(await errorCounts('😀'.repeat(201)), [2, 2])
+})
