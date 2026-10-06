@@ -28,6 +28,7 @@ import footerSettings from './singletons/footer'
 import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
+import mediaItem from './media/mediaItem'
 
 export const schemaTypes = [
   // Documents
@@ -56,6 +57,7 @@ export const schemaTypes = [
   ministry,
   customSignUp,
   jobOpening,
+  mediaItem,
   // Objects (Sections)
   hero,
   logoCloud,
