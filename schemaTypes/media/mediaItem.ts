@@ -2,13 +2,16 @@ import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
 
-// A time zone name Intl knows, such as America/New_York. Intl also accepts offsets such as
-// +05:00, which aren't IANA zones, so a name must start with a letter.
-function isTimeZone(value: string): boolean {
+// A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
+// That rejects aliases such as US/Eastern, other spellings such as america/new_york, and EST,
+// which Intl reads as America/Panama. Intl also accepts offsets such as +05:00, which aren't
+// zones, so a name must start with a letter.
+function isCanonicalTimeZone(value: string): boolean {
   if (!/^[A-Za-z]/.test(value)) return false
   try {
-    new Intl.DateTimeFormat('en-US', {timeZone: value})
-    return true
+    return (
+      new Intl.DateTimeFormat(undefined, {timeZone: value}).resolvedOptions().timeZone === value
+    )
   } catch {
     return false
   }
@@ -104,7 +107,9 @@ export default defineType({
       validation: (rule) => [
         rule.required(),
         rule.custom((value) =>
-          !value || isTimeZone(value) ? true : 'Use a time zone name like America/New_York.',
+          !value || isCanonicalTimeZone(value)
+            ? true
+            : 'Use the standard time zone name, such as America/New_York or America/Chicago.',
         ),
       ],
       group: 'details',

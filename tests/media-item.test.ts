@@ -116,14 +116,16 @@ test('kind is required and is one of the four kinds', async () => {
   }
 })
 
-test('the time zone is required and must be a zone name Intl knows', async () => {
+test('the time zone is required and must be a canonical zone name Intl knows', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
-  for (const serviceTimezone of ['America/New_York', 'America/Chicago', 'Europe/London']) {
+  for (const serviceTimezone of ['America/New_York', 'America/Chicago', 'Europe/London', 'UTC']) {
     const markers = await studio.validate({...item, serviceTimezone})
     assert.deepEqual(errorsAt(markers, 'serviceTimezone'), [], serviceTimezone)
   }
-  for (const serviceTimezone of [undefined, '', 'Mars/Olympus', 'America/NewYork', '-04:00']) {
+  // Intl accepts the last four, as an offset, another spelling or aliases. EST is America/Panama.
+  const invalid = [undefined, '', 'Mars/Olympus', '-04:00', 'america/new_york', 'US/Eastern', 'EST']
+  for (const serviceTimezone of invalid) {
     const markers = await studio.validate({...item, serviceTimezone})
     assert.notDeepEqual(errorsAt(markers, 'serviceTimezone'), [], `${serviceTimezone}`)
   }
