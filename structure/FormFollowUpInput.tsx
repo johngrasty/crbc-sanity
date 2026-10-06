@@ -1,6 +1,7 @@
 // Runs a type's form follow-up step in Studio's form, as the harness's edit does after each patch.
 // It wraps the document's root input, watches the form value, and after each change calls the
-// step with the value before the change, the value after it and the published document.
+// step with the value before the change, the value after it, the published document and the
+// draft.
 import {useEffect, useRef} from 'react'
 import {
   getPublishedId,
@@ -23,7 +24,10 @@ const formPatches = ({set: values = {}, unset: paths = []}: DocumentPatch) => [
 function FollowUp({followUp, ...props}: ObjectInputProps & {followUp: FormFollowUp}) {
   const {onChange, readOnly, schemaType} = props
   const version = props.value as SanityDocumentLike | undefined
-  const {published, ready} = useEditState(getPublishedId(version?._id ?? ''), schemaType.name)
+  const {draft, published, ready} = useEditState(
+    getPublishedId(version?._id ?? ''),
+    schemaType.name,
+  )
   const previous = useRef(version)
 
   // Patching during render throws, so the step runs in an effect. It skips a read-only form,
@@ -38,9 +42,14 @@ function FollowUp({followUp, ...props}: ObjectInputProps & {followUp: FormFollow
     if (!isDraftId(version._id) && !isVersionId(version._id)) return
     // A new document's first patch turns its ID into a draft ID, so compare published IDs.
     if (getPublishedId(before._id) !== getPublishedId(version._id)) return
-    const patch = followUp({previous: before, version, published: published ?? null})
+    const patch = followUp({
+      previous: before,
+      version,
+      published: published ?? null,
+      draft: draft ?? null,
+    })
     if (patch) onChange(formPatches(patch))
-  }, [followUp, onChange, published, readOnly, ready, version])
+  }, [draft, followUp, onChange, published, readOnly, ready, version])
 
   return props.renderDefault(props)
 }

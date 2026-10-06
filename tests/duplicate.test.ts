@@ -305,26 +305,27 @@ test("a media item's copy passes the ID rules next to its original", async () =>
 })
 
 // Studio's "Paste document" writes every field of the copied document, read-only ones included,
-// so the content ID comes along. The ID rules are the guard (research question 4).
-test("a whole-document paste of another item's fields is caught by the ID rules", async () => {
+// so the content ID comes along (research question 4).
+test("a whole-document paste of another item's fields keeps a published item's ID, and is caught on a new item", async () => {
   const other = {...originals.mediaItem, _id: 'other', contentId: `mi_${OTHER_ULID}`}
   const pasted = {
     set: Object.fromEntries(Object.entries(other).filter(([key]) => !key.startsWith('_'))),
   }
   const studio = createHarness({documents: [originals.mediaItem, other]})
-  const created = await studio.create('mediaItem')
-  // Pasted into a published item's draft or release version, the ID differs from the published
-  // one. Pasted into a new item, it's the other item's ID.
-  const pastes: [TestDocument, string | undefined][] = [
-    [await studio.edit('item', pasted), undefined],
-    [await studio.edit('item', pasted, {release: 'rSpring'}), 'rSpring'],
-    [await studio.edit(created._id, pasted), undefined],
-  ]
-  for (const [{_id, contentId}, release] of pastes) {
-    assert.equal(contentId, other.contentId, _id)
-    assert.equal(errorsAt(await studio.validate(_id), 'contentId').length, 1, _id)
-    await assert.rejects(studio.publish(_id, {release}), /contentId/, _id)
+
+  // In a published item's draft or release version, the form sets the published ID back.
+  for (const release of [undefined, 'rSpring']) {
+    const version = await studio.edit('item', pasted, {release})
+    assert.equal(version.contentId, originals.mediaItem.contentId, version._id)
+    assert.deepEqual(errorsAt(await studio.validate(version._id), 'contentId'), [], version._id)
   }
+
+  // A new item has no ID to keep, so the ID rules catch the other item's.
+  const created = await studio.create('mediaItem')
+  const pastedNew = await studio.edit(created._id, pasted)
+  assert.equal(pastedNew.contentId, other.contentId)
+  assert.equal(errorsAt(await studio.validate(pastedNew._id), 'contentId').length, 1)
+  await assert.rejects(studio.publish(pastedNew._id), /contentId/)
 })
 
 test("Duplicate leaves its source as it was, and the copy shares none of the source's objects or arrays", async () => {

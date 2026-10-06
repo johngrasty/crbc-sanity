@@ -9,7 +9,12 @@ import type {
   TemplateResolver,
 } from 'sanity'
 import {CalendarClock} from 'lucide-react'
-import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {
+  editorialIdFor,
+  editorialIds,
+  idToKeep,
+  newEditorialId,
+} from '../schemaTypes/media/editorialId'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
 import type {ZonedStart} from '../schemaTypes/media/zonedStart'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
@@ -84,14 +89,15 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step runs after each edit to a draft or release version of its type. It gets
-// the version as it was before the edit, the edited version and the published document, and
-// returns a patch for the version, or null when the version needs nothing. The harness's edit
-// runs it. The type's form must run the same step, so the first ticket that registers one also
-// wires it into the form.
+// the version as it was before the edit, the edited version, the published document and the
+// stored draft, and returns a patch for the version, or null when the version needs nothing.
+// When the draft is the version being edited, draft is the stored copy, which may lag the edit.
+// The harness's edit runs it, and FormFollowUpInput runs it in Studio's form.
 export type FormFollowUp = (versions: {
   previous: SanityDocumentLike
   version: SanityDocumentLike
   published: SanityDocumentLike | null
+  draft: SanityDocumentLike | null
 }) => DocumentPatch | null
 
 // When an edit moves a service event's start onto a standing slot, the length becomes the slot's,
@@ -109,9 +115,41 @@ const fillSlotLength: FormFollowUp = ({previous, version}) => {
   return untouched ? {set: {expectedDurationMinutes: slot.expectedDurationMinutes}} : null
 }
 
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = {
-  serviceEvent: fillSlotLength,
+// A draft or release version keeps its document's ID. A paste, a history restore or an API write
+// that changes it goes back on the next edit, so Unpublish can't carry a changed ID to the next
+// publish. Before the first publish, a release version keeps its draft's ID.
+const keepId: FormFollowUp = ({version, published, draft}) => {
+  const id = editorialIdFor(version._type)
+  if (!id) return null
+  const kept = idToKeep(version._id, {published: published?.[id.field], draft: draft?.[id.field]})
+  return kept && version[id.field] !== kept.id ? {set: {[id.field]: kept.id}} : null
 }
+
+// Each step with the types it runs on. A ticket that adds a step adds a line here.
+const followUpSteps: [types: string[], step: FormFollowUp][] = [
+  [Object.keys(editorialIds), keepId],
+  [['serviceEvent'], fillSlotLength],
+]
+
+// A type with several steps runs them all on the same versions and applies their patches
+// together, so each step must patch its own fields.
+const allSteps =
+  (steps: FormFollowUp[]): FormFollowUp =>
+  (versions) => {
+    const patches = steps.flatMap((step) => step(versions) ?? [])
+    if (patches.length < 2) return patches[0] ?? null
+    return {
+      set: Object.assign({}, ...patches.map((patch) => patch.set)),
+      unset: patches.flatMap((patch) => patch.unset ?? []),
+    }
+  }
+
+export const formFollowUps: Partial<Record<string, FormFollowUp>> = Object.fromEntries(
+  [...new Set(followUpSteps.flatMap(([types]) => types))].map((type) => [
+    type,
+    allSteps(followUpSteps.filter(([types]) => types.includes(type)).map(([, step]) => step)),
+  ]),
+)
 
 // The form components sanity.config.ts passes to Sanity. They run each type's follow-up step in
 // the form after every change.

@@ -506,7 +506,7 @@ export function createHarness({
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
     // draft when nothing is published. Then the type's form follow-up step runs, with the version
-    // as it was before the patch.
+    // as it was before the patch and the stored draft.
     async edit(
       id: string,
       patch: DocumentPatch,
@@ -515,12 +515,12 @@ export function createHarness({
       const publishedId = getPublishedId(id)
       const target = versionId(id, release)
       const published = dataset.get(publishedId) ?? null
-      const base =
-        dataset.get(target) ?? published ?? (release ? dataset.get(getDraftId(publishedId)) : null)
+      const draft = dataset.get(getDraftId(publishedId)) ?? null
+      const base = dataset.get(target) ?? published ?? (release ? draft : null)
       if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
       const previous = {...base, _id: target}
       let version = applyPatch(previous, patch)
-      const followUp = formFollowUps[version._type]?.({previous, version, published})
+      const followUp = formFollowUps[version._type]?.({previous, version, published, draft})
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
       return structuredClone(dataset.get(target) as TestDocument)
@@ -602,6 +602,18 @@ export function createHarness({
       dataset.delete(pending._id)
       store(touch({...pending, _id: publishedId}))
       return structuredClone(dataset.get(publishedId) as TestDocument)
+    },
+
+    // Unpublishes the document as Sanity's Unpublish does, with no validation first: the
+    // published document goes and the draft stays. With no draft, the published document becomes
+    // the draft.
+    async unpublish(id: string): Promise<void> {
+      const publishedId = getPublishedId(id)
+      const published = dataset.get(publishedId)
+      if (!published) throw new Error(`No published document with _id "${publishedId}"`)
+      const draftId = getDraftId(publishedId)
+      if (!dataset.has(draftId)) store(touch({...published, _id: draftId}))
+      dataset.delete(publishedId)
     },
 
     // Opens the desk at a path of item IDs, such as desk('media', 'mediaItems'), and returns
