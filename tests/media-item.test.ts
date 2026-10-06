@@ -183,7 +183,7 @@ test('publishing keeps the content ID, and later versions share it', async () =>
 test('a version with errors does not publish', async () => {
   const draft = {_id: 'drafts.item', _type: 'mediaItem', kind: 'service'}
   const studio = createHarness({documents: [{...draft, serviceTimezone: 'America/New_York'}]})
-  await assert.rejects(studio.publish('item'), /content ID/)
+  await assert.rejects(studio.publish('item'), /contentId/)
   assert.deepEqual(
     studio.documents().map(({_id}) => _id),
     ['drafts.item'],

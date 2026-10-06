@@ -8,7 +8,7 @@ type EditorialIdKind = Extract<IdKind, 'content' | 'series' | 'speaker' | 'topic
 
 type EditorialId = {field: string; kind: EditorialIdKind; label: string; noun: string}
 
-// One entry per document type. Templates, Duplicate and validation all read this table.
+// One entry per document type. Templates and validation read this table.
 export const editorialIds = {
   mediaItem: {field: 'contentId', kind: 'content', label: 'content ID', noun: 'media item'},
   series: {field: 'seriesId', kind: 'series', label: 'series ID', noun: 'series'},
@@ -65,7 +65,7 @@ function idInput({kind, label, noun}: EditorialId) {
         </Text>
         <Button
           mode="ghost"
-          text={`Assign a ${label}`}
+          text="Assign an ID"
           disabled={readOnly}
           onClick={() => onChange(set(newEditorialId(kind)))}
         />
@@ -86,9 +86,7 @@ export function editorialIdField(type: EditorialType) {
     readOnly: ({value}) => Boolean(value),
     components: {input: idInput(id)},
     validation: (rule) => [
-      rule
-        .required()
-        .error(`Assign a ${id.label}. Apps and links can't find this ${id.noun} without one.`),
+      rule.required().error(`Assign an ID. Apps and links can't find this ${id.noun} without one.`),
       rule.custom(async (value, context) => {
         if (!value) return true
         if (!isId(id.kind, value)) {
@@ -107,7 +105,7 @@ export function editorialIdField(type: EditorialType) {
         )
         // Catches an ID changed by paste or through the API before it can publish.
         if (published && published !== value) {
-          return `The published ${id.noun} has the ${id.label} ${published}. A ${id.label} never changes, so discard this change.`
+          return `The published ${id.noun} has the ${id.label} ${published}. IDs never change, so discard this change.`
         }
         if (taken) {
           return `Another ${id.noun} already uses this ${id.label}. Ask a developer to fix it.`

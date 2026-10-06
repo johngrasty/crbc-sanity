@@ -14,7 +14,7 @@ export const documentActions: DocumentActionsResolver = (prev, context) => {
 }
 
 // Every template for an editorial type sets a fresh ID when the document is created, including
-// "Create new" from a reference field. The template value runs once per new document.
+// "Create new" from a reference field. Sanity calls the value for each new document.
 function withFreshId(template: Template): Template {
   const id = editorialIdFor(template.schemaType)
   if (!id) return template
