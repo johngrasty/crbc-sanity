@@ -7,6 +7,9 @@ import {isPublishedId, type DocumentDefinition} from 'sanity'
 export function readOnlyType(writer: string, definition: DocumentDefinition): DocumentDefinition {
   return {
     ...definition,
+    // Global search leaves the type out, and so does the release tool's "Add document", which
+    // is the same search.
+    __experimental_omnisearch_visibility: false,
     // Releases and the API can make a version of any document without asking the schema or
     // the document actions. This error stops Studio from publishing one, or a release that
     // holds one. A mirror's ID has dots in it, but only drafts. and versions. make it

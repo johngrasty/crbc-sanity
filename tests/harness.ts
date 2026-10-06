@@ -10,6 +10,7 @@ import {
   definePlugin,
   getDraftId,
   getPublishedId,
+  getSearchableTypes,
   getVersionFromId,
   getVersionId,
   isArraySchemaType,
@@ -354,6 +355,16 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
           releaseId: inRelease ? 'rHarness' : undefined,
         })
         .map(actionName)
+    },
+
+    // The document types global search covers, as Sanity selects them. The type filter, recent
+    // searches and the release tool's "Add document" use the same list. getSearchableTypes is
+    // Sanity's export, and the omnisearch flag filter copies getSearchableOmnisearchTypes,
+    // which isn't exported (lib/index.js:50487-50489).
+    search(): string[] {
+      return getSearchableTypes(schema)
+        .filter((type) => type.__experimental_omnisearch_visibility !== false)
+        .map(({name}) => name)
     },
 
     // Every field the registered type declares, at any depth. See SchemaField.

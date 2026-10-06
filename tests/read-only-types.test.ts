@@ -193,3 +193,10 @@ test('the read-only types have no template and no create menu offers them', asyn
   }
   assert.deepEqual(studio.documents(), [])
 })
+
+test("global search and the release tool's Add document leave out the read-only types", () => {
+  const studio = createHarness()
+  const searched = studio.search()
+  assert.ok(searched.includes('mediaItem'), 'search still covers media items')
+  for (const type of readOnlyTypes) assert.ok(!searched.includes(type), type)
+})
