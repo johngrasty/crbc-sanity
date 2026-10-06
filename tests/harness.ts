@@ -386,6 +386,14 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       return {readOnly: schemaType.readOnly}
     },
 
+    // The names of every registered document type, plugin types included.
+    documentTypes(): string[] {
+      return schema
+        .getTypeNames()
+        .filter((name) => schema.get(name)?.type?.name === 'document')
+        .sort()
+    },
+
     // Every field the registered type declares, at any depth. See SchemaField.
     fields(type: string): SchemaField[] {
       const schemaType = schema.get(type)

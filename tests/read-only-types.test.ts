@@ -276,3 +276,20 @@ test('no pane of the desk lists or opens a read-only document', async () => {
   await walk([])
   assert.ok(opened.includes('media > mediaItems'), 'the walk reached the Media section')
 })
+
+test('no field of any document type refers to a read-only type', () => {
+  const studio = createHarness()
+  const references = studio
+    .documentTypes()
+    .flatMap((type) =>
+      studio.fields(type).map((field) => ({...field, path: `${type}.${field.path}`})),
+    )
+    .filter(({to}) => to)
+  assert.ok(
+    references.some(({path, to}) => path === 'article.author' && to?.includes('staff')),
+    'the walk finds references',
+  )
+  for (const {path, to = []} of references) {
+    for (const type of readOnlyTypes) assert.ok(!to.includes(type), `${path} refers to ${type}`)
+  }
+})
