@@ -28,9 +28,20 @@ import {
   Clapperboard,
   Video,
   SlidersHorizontal,
+  CalendarClock,
+  CalendarCheck,
+  CalendarX,
+  History,
 } from 'lucide-react'
 import {AnnouncementHelp} from '../schemaTypes/components/AnnouncementHelp'
 import {SignUpHelp} from '../schemaTypes/components/SignUpHelp'
+
+// A service event that isn't cancelled, and whether it has ended: its UTC start plus its
+// expected length is past. A service still running counts as upcoming, and so does a draft
+// without a UTC start yet.
+const liveEvent = '_type == "serviceEvent" && cancelled != true'
+const eventEnded =
+  'defined(dateTime(scheduledStart.utc)) && dateTime(scheduledStart.utc) + coalesce(expectedDurationMinutes, 0) * 60 <= dateTime(now())'
 
 export const deskStructure = (S: StructureBuilder, context: StructureResolverContext) =>
   S.list()
@@ -117,6 +128,46 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
           S.list()
             .title('Media')
             .items([
+              S.listItem()
+                .title('Service events')
+                .id('serviceEvents')
+                .icon(CalendarClock)
+                .child(
+                  S.list()
+                    .title('Service events')
+                    .items([
+                      S.listItem()
+                        .title('Upcoming')
+                        .id('upcomingEvents')
+                        .icon(CalendarCheck)
+                        .child(
+                          S.documentTypeList('serviceEvent')
+                            .title('Upcoming services')
+                            .filter(`${liveEvent} && !(${eventEnded})`)
+                            .defaultOrdering([{field: 'scheduledStart.utc', direction: 'asc'}]),
+                        ),
+                      S.listItem()
+                        .title('Past')
+                        .id('pastEvents')
+                        .icon(History)
+                        .child(
+                          S.documentTypeList('serviceEvent')
+                            .title('Past services')
+                            .filter(`${liveEvent} && ${eventEnded}`)
+                            .defaultOrdering([{field: 'scheduledStart.utc', direction: 'desc'}]),
+                        ),
+                      S.listItem()
+                        .title('Cancelled')
+                        .id('cancelledEvents')
+                        .icon(CalendarX)
+                        .child(
+                          S.documentTypeList('serviceEvent')
+                            .title('Cancelled services')
+                            .filter('_type == "serviceEvent" && cancelled == true')
+                            .defaultOrdering([{field: 'scheduledStart.utc', direction: 'desc'}]),
+                        ),
+                    ]),
+                ),
               S.listItem()
                 .title('Media items')
                 .id('mediaItems')
