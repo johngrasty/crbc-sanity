@@ -9,10 +9,12 @@ const ids = {
 }
 
 // The field each type is named by.
-const nameFields = {speaker: 'name', topic: 'label'}
+const nameFields: Record<string, string> = {speaker: 'name', topic: 'label'}
 
 const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
+const warningsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'warning' && marker.path === path)
 
 // é is one UTF-16 unit and two UTF-8 bytes. 😀 is one code point and two UTF-16 units. The
 // contract's JSON Schema counts code points, so both count as one character.
@@ -105,5 +107,41 @@ test('an alias that repeats an earlier one is an error, whatever its case', asyn
       [],
       type,
     )
+  }
+})
+
+test('a second speaker with the same name, or a second topic with the same label, is a warning', async () => {
+  for (const [type, field] of Object.entries(nameFields)) {
+    // Another document's published, draft or release version, in any case.
+    for (const [_id, value] of [
+      ['other', 'Sam Jones'],
+      ['drafts.other', 'Sam Jones'],
+      ['versions.rSpring.other', 'Sam Jones'],
+      ['other', 'SAM JONES'],
+    ]) {
+      const studio = createHarness({documents: [{_id, _type: type, [field]: value}]})
+      const created = await studio.create(type)
+      const edited = await studio.edit(created._id, {set: {[field]: 'Sam Jones'}})
+      const markers = await studio.validate(edited._id)
+      assert.equal(warningsAt(markers, field).length, 1, `${type} named like ${_id} ${value}`)
+      assert.deepEqual(errorsAt(markers, field), [], `${type} named like ${_id} ${value}`)
+    }
+  }
+})
+
+test("a speaker or topic's own versions, another type and another name don't count as a second one", async () => {
+  for (const [type, field] of Object.entries(nameFields)) {
+    const otherType = type === 'speaker' ? 'topic' : 'speaker'
+    const studio = createHarness({
+      documents: [
+        {_id: 'self', _type: type, [field]: 'Sam Jones'},
+        {_id: 'versions.rSpring.self', _type: type, [field]: 'Sam Jones'},
+        {_id: 'other', _type: type, [field]: 'Ann Lee'},
+        {_id: 'elsewhere', _type: otherType, [nameFields[otherType]]: 'Sam Jones'},
+      ],
+    })
+    const draft = await studio.edit('self', {set: {[field]: 'Sam Jones'}})
+    assert.deepEqual(warningsAt(await studio.validate(draft._id), field), [], type)
+    assert.deepEqual(warningsAt(await studio.validate('versions.rSpring.self'), field), [], type)
   }
 })

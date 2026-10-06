@@ -3,6 +3,7 @@ import {Tag} from 'lucide-react'
 import {editorialIdField} from './editorialId'
 import {aliasesField} from './aliases'
 import {labelLimit} from './limits'
+import {sameNameWarning} from './sameName'
 
 export default defineType({
   name: 'topic',
@@ -16,7 +17,16 @@ export default defineType({
       title: 'Label',
       type: 'string',
       description: 'The topic as viewers see it when they browse, such as Grace.',
-      validation: (rule) => [rule.required().error('Add a label for the topic.'), labelLimit(rule)],
+      validation: (rule) => [
+        rule.required().error('Add a label for the topic.'),
+        labelLimit(rule),
+        sameNameWarning(rule, {
+          type: 'topic',
+          field: 'label',
+          message: (name) =>
+            `Another topic already has the label ${name}. Check that it isn't the same topic.`,
+        }),
+      ],
     }),
     aliasesField('Other words editors might search for, such as Mercy for Grace. Up to 20.'),
   ],
