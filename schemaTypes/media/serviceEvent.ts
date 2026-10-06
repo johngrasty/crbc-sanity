@@ -10,7 +10,8 @@ import {isResourceId} from '../../media-contract/src/ids'
 import {editorialIdField} from './editorialId'
 import {labelLimit} from './limits'
 import {CHURCH_TIME_ZONE} from './timeZone'
-import {startMessages, startProblems, type ZonedStart} from './zonedStart'
+import {isLocalTime, startMessages, startProblems, type ZonedStart} from './zonedStart'
+import {ZonedStartInput} from './ZonedStartInput'
 
 const platforms = [
   {title: 'YouTube', value: 'youtube'},
@@ -27,6 +28,19 @@ const titleOf = (list: {title: string; value: string}[], value: unknown) =>
   list.find((option) => option.value === value)?.title
 
 type Destination = {_key: string; platform?: string; accountLabel?: string}
+
+// A wall time such as Sun, Oct 11, 2026, 9:00 AM. It's formatted in UTC so the shown time is the
+// one entered, whatever zone the editor's computer is in.
+const formatLocal = (local: string) =>
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(`${local}:00Z`))
 
 const apiVersion = '2025-02-19'
 
@@ -106,7 +120,8 @@ export default defineType({
       title: 'Start',
       type: 'object',
       description:
-        'The local date and time the service starts, in the time zone it takes place in.',
+        'The local date and time the service starts, in the time zone it takes place in. When the clocks go back and the time happens twice, choose which one you mean.',
+      components: {input: ZonedStartInput},
       fields: [
         defineField({
           name: 'local',
@@ -197,6 +212,8 @@ export default defineType({
       name: 'cancelled',
       title: 'Cancelled',
       type: 'boolean',
+      description:
+        "Turn this on when the service won't happen. Cancelling works only before the service starts. Once it has started, put an editor hold on the media item instead.",
       initialValue: false,
       group: 'details',
     }),
@@ -302,4 +319,34 @@ export default defineType({
       group: 'advanced',
     }),
   ],
+  orderings: [
+    {
+      title: 'Start, soonest first',
+      name: 'startAsc',
+      by: [{field: 'scheduledStart.utc', direction: 'asc'}],
+    },
+    {
+      title: 'Start, newest first',
+      name: 'startDesc',
+      by: [{field: 'scheduledStart.utc', direction: 'desc'}],
+    },
+  ],
+  preview: {
+    select: {
+      local: 'scheduledStart.local',
+      timeZone: 'scheduledStart.timeZone',
+      itemTitle: 'mediaItem.title',
+      cancelled: 'cancelled',
+    },
+    prepare({local, timeZone, itemTitle, cancelled}) {
+      const start = local && isLocalTime(local) ? formatLocal(local) : 'No start yet'
+      const zone = timeZone && timeZone !== CHURCH_TIME_ZONE ? ` ${timeZone}` : ''
+      return {
+        title: `${start}${zone}`,
+        subtitle: [cancelled ? 'Cancelled' : undefined, itemTitle || 'No media item']
+          .filter(Boolean)
+          .join(' · '),
+      }
+    },
+  },
 })

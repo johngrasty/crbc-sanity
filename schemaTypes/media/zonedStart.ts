@@ -75,6 +75,20 @@ export function resolveWallTime(local: string, timeZone: string): ZonedInstant[]
     .map(({at, offset}) => ({offset: formatOffset(offset), utc: formatUtc(at)}))
 }
 
+// The start to store for a local time and zone. It has the offset and UTC time when the time
+// has one reading, or when offset picks one of its two. Otherwise it has neither, so a time the
+// clocks skip stores no instant, and a time that happens twice waits for the editor to choose.
+export function storedStart(local?: string, timeZone?: string, offset?: string): ZonedStart {
+  const start: ZonedStart = {}
+  if (local) start.local = local
+  if (timeZone) start.timeZone = timeZone
+  if (!local || !timeZone || !isLocalTime(local) || !isTimeZone(timeZone)) return start
+  const instants = resolveWallTime(local, timeZone)
+  const instant =
+    instants.length === 1 ? instants[0] : instants.find((candidate) => candidate.offset === offset)
+  return instant ? {...start, ...instant} : start
+}
+
 export type StartField = keyof ZonedStart
 
 export const startMessages = {
