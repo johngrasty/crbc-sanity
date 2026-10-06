@@ -110,13 +110,12 @@ async function copyFields(type: EditorialType): Promise<Record<string, unknown>>
   return copy
 }
 
-// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1. The fresh-ID
-// Duplicate takes Sanity's action name, so it shows as duplicate in Sanity's place. Tasks and
-// canvas actions stay.
+// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, without
+// schedule. The fresh-ID Duplicate takes Sanity's action name, so it shows as duplicate in
+// Sanity's place. Tasks and canvas actions stay.
 const editorialActions = {
   draft: [
     'publish',
-    'schedule',
     'unpublish',
     'duplicate',
     'restore',
@@ -145,10 +144,9 @@ const editorialActions = {
     'discardVersion',
   ],
   // Sanity offers no Duplicate on a scheduled draft, so there's nothing to replace.
-  'scheduled-draft': ['publish', 'schedule', 'discardVersion'],
+  'scheduled-draft': ['publish', 'discardVersion'],
   revision: [
     'publish',
-    'schedule',
     'unpublish',
     'duplicate',
     'restore',
@@ -175,6 +173,18 @@ test("the editorial types swap Sanity's Duplicate for the fresh-ID one in every 
         .map(({component}) => component)
       const expected = versionType === 'scheduled-draft' ? [] : ['FreshIdDuplicateAction']
       assert.deepEqual(duplicates, expected, `${type} ${versionType}`)
+    }
+  }
+})
+
+// A scheduled draft is validated only when Schedule is clicked, and then publishes on the server
+// without another check (/tmp/studio-spec/reviews/ids-fable-5.1.md, finding 2). Media items
+// have their own publish time.
+test('the editorial types offer no scheduling in any version type', () => {
+  const studio = createHarness()
+  for (const type of editorialTypes) {
+    for (const versionType of versionTypes) {
+      assert.ok(!studio.actions(type, versionType).includes('schedule'), `${type} ${versionType}`)
     }
   }
 })
