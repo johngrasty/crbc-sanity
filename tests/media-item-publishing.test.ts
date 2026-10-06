@@ -127,3 +127,39 @@ test('a placeholder item with no title or service date publishes, with warnings 
   assert.equal(warningsAt(markers, 'title').length, 1)
   assert.equal(warningsAt(markers, 'serviceDate').length, 1)
 })
+
+test('the Media section lists held items, newest service date first', async () => {
+  const item = (_id: string, title: string, serviceDate: string, holds = {}) => ({
+    _id,
+    _type: 'mediaItem',
+    title,
+    serviceDate,
+    ...holds,
+  })
+  const on = {active: true, note: 'Waiting on music rights'}
+  const studio = createHarness({
+    documents: [
+      item('editor', 'Editor hold', '2026-09-20', {editorHold: on}),
+      item('rights', 'Rights hold', '2026-10-04', {rightsHold: on}),
+      item('both', 'Both holds', '2026-09-27', {editorHold: on, rightsHold: on}),
+      item('off', 'Holds off', '2026-10-11', {
+        editorHold: {active: false},
+        rightsHold: {active: false},
+      }),
+      item('none', 'No hold objects', '2026-10-11'),
+      item('noted', 'A note but no active flag', '2026-10-11', {editorHold: {note: 'Old note'}}),
+      item('added', 'Published without a hold', '2026-08-30'),
+      item('drafts.added', 'Draft adds a hold', '2026-09-06', {editorHold: on}),
+      item('cleared', 'Published with a hold', '2026-08-16', {rightsHold: on}),
+      item('drafts.cleared', 'Draft clears the hold', '2026-08-16', {rightsHold: {active: false}}),
+      item('versions.rSpring.release', 'Held only in a release', '2026-12-25', {editorHold: on}),
+      {_id: 'news', _type: 'article', title: 'Not a media item', editorHold: on},
+    ],
+  })
+  const {title, documents} = await studio.desk('media', 'heldItems')
+  assert.equal(title, 'Held items')
+  assert.deepEqual(
+    documents?.map((document) => document.title),
+    ['Rights hold', 'Both holds', 'Editor hold', 'Draft adds a hold'],
+  )
+})
