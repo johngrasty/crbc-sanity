@@ -32,6 +32,20 @@ test('a new speaker or topic gets a well-formed ID of its kind, and two new ones
   }
 })
 
+// "Create new" in a media item's speakers or topics field uses the same templates.
+test('the create menus offer speakers and topics', () => {
+  const studio = createHarness()
+  const fromItem = {type: 'document', documentId: 'item', schemaType: 'mediaItem'} as const
+  for (const type of Object.keys(ids)) {
+    assert.ok(studio.createMenu().includes(type), `${type} global`)
+    assert.ok(studio.createMenu(fromItem).includes(type), `${type} from a media item`)
+    assert.ok(
+      studio.createMenu({type: 'structure', schemaType: type}).includes(type),
+      `${type} list`,
+    )
+  }
+})
+
 test("a speaker's name and a topic's label are required", async () => {
   const studio = createHarness()
   for (const [type, field] of Object.entries(nameFields)) {
