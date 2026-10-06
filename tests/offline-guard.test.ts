@@ -1,0 +1,137 @@
+// The offline guard in tests/loader/offline.mjs, checked from outside. Each case runs a child
+// process that makes one network attempt and catches the error, as Sanity's getCurrentUser does.
+// Without the guard, the attempt reaches a receiver in this process, which shows the receiver
+// works. With the guard, the child exits nonzero and nothing arrives. The receivers listen on
+// 127.0.0.1, and DNS cases point the resolver at the UDP receiver, so nothing leaves the machine.
+import assert from 'node:assert/strict'
+import {spawn} from 'node:child_process'
+import dgram from 'node:dgram'
+import net from 'node:net'
+import process from 'node:process'
+import {after, before, test} from 'node:test'
+import {setTimeout as wait} from 'node:timers/promises'
+import {fileURLToPath} from 'node:url'
+
+const guard = fileURLToPath(new URL('./loader/offline.mjs', import.meta.url))
+
+let tcpPort = 0
+let udpPort = 0
+let tcpHits = 0
+let udpHits = 0
+const tcp = net.createServer((socket) => {
+  tcpHits++
+  socket.destroy()
+})
+const udp = dgram.createSocket('udp4').on('message', () => udpHits++)
+
+before(async () => {
+  await new Promise<void>((resolve) => tcp.listen(0, '127.0.0.1', resolve))
+  await new Promise<void>((resolve) => udp.bind(0, '127.0.0.1', resolve))
+  tcpPort = (tcp.address() as net.AddressInfo).port
+  udpPort = udp.address().port
+})
+after(() => {
+  tcp.close()
+  udp.close()
+})
+
+// Runs code in a child process, with or without the guard, and reports its exit status and how
+// many connections and packets the receivers saw. The child exits after half a second at most,
+// so a DNS query nobody answers doesn't hang it.
+async function attempt(code: string, {guarded}: {guarded: boolean}) {
+  tcpHits = 0
+  udpHits = 0
+  const source = `
+    import dgram from 'node:dgram'
+    import dns from 'node:dns'
+    import net from 'node:net'
+    import tls from 'node:tls'
+    const servers = ['127.0.0.1:${udpPort}']
+    setTimeout(() => process.exit(), 500).unref()
+    ${code}
+  `
+  const args = [...(guarded ? ['--import', guard] : []), '--input-type=module', '-e', source]
+  const child = spawn(process.execPath, args, {stdio: ['ignore', 'ignore', 'pipe']})
+  let stderr = ''
+  child.stderr.on('data', (chunk) => (stderr += chunk))
+  const status = await new Promise<number | null>((resolve) => child.on('close', resolve))
+  await wait(100)
+  return {status, stderr, hits: tcpHits + udpHits}
+}
+
+const ignore = '() => {}'
+const cases: {name: string; code: string; observable: boolean}[] = [
+  {name: 'TCP', code: `net.connect(PORT, '127.0.0.1').on('error', ${ignore})`, observable: true},
+  {
+    name: 'TLS',
+    code: `tls.connect(PORT, '127.0.0.1', {rejectUnauthorized: false}).on('error', ${ignore})`,
+    observable: true,
+  },
+  {name: 'fetch', code: `fetch('http://127.0.0.1:PORT').catch(${ignore})`, observable: true},
+  {
+    name: 'UDP',
+    code: `try { dgram.createSocket('udp4').send('x', UDP, '127.0.0.1') } catch {}`,
+    observable: true,
+  },
+  {name: 'lookup', code: `dns.lookup('localhost', ${ignore})`, observable: false},
+  {
+    name: 'promise lookup',
+    code: `dns.promises.lookup('localhost').catch(${ignore})`,
+    observable: false,
+  },
+  {
+    name: 'lookupService',
+    code: `dns.lookupService('127.0.0.1', 22, ${ignore})`,
+    observable: false,
+  },
+  {
+    name: 'resolve4',
+    code: `dns.setServers(servers); dns.resolve4('guard.invalid', ${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'resolve',
+    code: `dns.setServers(servers); dns.resolve('guard.invalid', 'TXT', ${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'promise resolve',
+    code: `dns.promises.setServers(servers); dns.promises.resolve4('guard.invalid').catch(${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'Resolver',
+    code: `const r = new dns.Resolver(); r.setServers(servers); r.resolve4('guard.invalid', ${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'promise Resolver',
+    code: `const r = new dns.promises.Resolver(); r.setServers(servers); r.resolveTxt('guard.invalid').catch(${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'reverse',
+    code: `dns.setServers(servers); dns.reverse('192.0.2.1', ${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'promise reverse',
+    code: `dns.promises.setServers(servers); dns.promises.reverse('192.0.2.1').catch(${ignore})`,
+    observable: true,
+  },
+]
+
+for (const {name, code, observable} of cases) {
+  test(`the offline guard fails a caught ${name} attempt and sends nothing`, async () => {
+    const withPorts = () =>
+      code.replaceAll('PORT', String(tcpPort)).replaceAll('UDP', String(udpPort))
+    if (observable) {
+      const open = await attempt(withPorts(), {guarded: false})
+      assert.ok(open.hits > 0, `without the guard, ${name} should reach the receiver`)
+    }
+    const guarded = await attempt(withPorts(), {guarded: true})
+    assert.notEqual(guarded.status, 0, `the child should fail. stderr: ${guarded.stderr}`)
+    assert.match(guarded.stderr, /Tests run offline/)
+    assert.equal(guarded.hits, 0, `${name} reached the receiver through the guard`)
+  })
+}

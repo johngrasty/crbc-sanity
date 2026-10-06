@@ -2,7 +2,9 @@
 // module, over an in-memory dataset. Tests talk to this module, never to validators, inputs or
 // actions directly.
 import {randomUUID} from 'node:crypto'
+import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
+import type {ClientPerspective} from '@sanity/client'
 import {isValidElement, type ReactNode} from 'react'
 import {defer, firstValueFrom} from 'rxjs'
 import {assist} from '@sanity/assist'
@@ -10,22 +12,28 @@ import {visionTool} from '@sanity/vision'
 import {
   createMockAuthStore,
   createSearch,
+  DEFAULT_MAX_RECURSION_DEPTH,
+  defineField,
   definePlugin,
+  defineType,
   getDraftId,
   getPublishedId,
   getVersionFromId,
   getVersionId,
+  isArraySchemaType,
   isDraftId,
   isVersionId,
   pathToString,
   prepareConfig,
   prepareForPreview,
   resolveInitialValue,
+  resolveInitialValueForType,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
   type NewDocumentCreationContext,
+  type ObjectSchemaType,
   type PreviewableType,
   type SanityClient,
   type SanityDocument,
@@ -43,6 +51,7 @@ import {deskStructure} from '../structure/deskStructure'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {
   documentActions,
+  formComponents,
   formFollowUps,
   newDocumentOptions,
   templates,
@@ -96,6 +105,38 @@ const sourceClient = {
   observable: {},
 }
 
+// A document type only the harness registers, never the Studio, and it has no template, so no
+// create menu offers it. Its rule queries through ValidationContext.getClient, as Studio's rules
+// do, and reports the media item _id values it saw as an info marker. tests/harness-client.test.ts
+// uses it to pin what the harness client shows at each API version and perspective.
+const clientProbe = defineType({
+  name: 'harnessClientProbe',
+  type: 'document',
+  fields: [
+    defineField({
+      name: 'query',
+      type: 'object',
+      fields: [
+        defineField({name: 'apiVersion', type: 'string'}),
+        defineField({name: 'perspective', type: 'string'}),
+      ],
+      validation: (rule) =>
+        rule
+          .custom(async (value, context) => {
+            if (!value) return true
+            const {apiVersion, perspective} = value as {
+              apiVersion: string
+              perspective?: ClientPerspective
+            }
+            const client = context.getClient({apiVersion})
+            const scoped = perspective ? client.withConfig({perspective}) : client
+            return JSON.stringify(await scoped.fetch('*[_type == "mediaItem"] | order(_id)._id'))
+          })
+          .info(),
+    }),
+  ],
+})
+
 // Sanity's own config resolution, with the plugins sanity.config.ts uses. sanity-plugin-media
 // can't load in Node, so an inert plugin stands in for it. It adds no document actions,
 // templates or create-menu options. Keep this list in step with sanity.config.ts.
@@ -119,7 +160,12 @@ const prepared = prepareConfig({
     definePlugin({name: 'media'})(),
     assist(),
   ],
-  schema: {types: schemaTypes, templates},
+  schema: {
+    types: [...schemaTypes, clientProbe],
+    templates: (prev, context) =>
+      templates(prev, context).filter(({schemaType}) => schemaType !== clientProbe.name),
+  },
+  form: {components: formComponents},
   document: {actions: documentActions, newDocumentOptions},
 })
 
@@ -274,9 +320,27 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
 }
 
 // documents seeds the dataset. Give each its full _id: item, drafts.item or
-// versions.<release>.item.
-export function createHarness({documents = []}: {documents?: TestDocument[]} = {}) {
+// versions.<release>.item. now fixes the clock, as an ISO instant, for create and desk: templates
+// read it as the moment of creation, and desk lists read it as GROQ's now(). Without it, both use
+// the real clock.
+export function createHarness({
+  documents = [],
+  now,
+}: {documents?: TestDocument[]; now?: string} = {}) {
   const dataset = new Map<string, TestDocument>()
+  const fixedNow = now === undefined ? undefined : Date.parse(now)
+  if (fixedNow !== undefined && Number.isNaN(fixedNow)) throw new Error(`now isn't an instant`)
+
+  // Runs work with Date set to the fixed clock, when there is one.
+  async function atNow<T>(work: () => Promise<T>): Promise<T> {
+    if (fixedNow === undefined) return work()
+    mock.timers.enable({apis: ['Date'], now: fixedNow})
+    try {
+      return await work()
+    } finally {
+      mock.timers.reset()
+    }
+  }
 
   const getClient = (config: ClientConfig) => testClient(dataset, config)
   const configContext = {
@@ -371,24 +435,34 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       return source.document.resolveNewDocumentOptions(context).map(({templateId}) => templateId)
     },
 
+    // The templates of a type, in the Source's order, with the titles create menus show.
+    templates(schemaType: string): {id: string; title: string}[] {
+      return source.templates
+        .filter((template) => template.schemaType === schemaType)
+        .map(({id, title}) => ({id, title}))
+    },
+
     // A new document from a template, stored as a draft, as Studio stores it on the first edit.
     async create(templateId: string, params?: Record<string, unknown>): Promise<TestDocument> {
       const template = source.templates.find(({id}) => id === templateId)
       if (!template) throw new Error(`No template named "${templateId}"`)
-      const value = await resolveInitialValue(schema, template, params, configContext)
-      const document = touch({
-        ...value,
-        _id: `drafts.${randomUUID()}`,
-        _type: template.schemaType,
-        _createdAt: new Date().toISOString(),
+      return atNow(async () => {
+        const value = await resolveInitialValue(schema, template, params, configContext)
+        const document = touch({
+          ...value,
+          _id: `drafts.${randomUUID()}`,
+          _type: template.schemaType,
+          _createdAt: new Date().toISOString(),
+        })
+        store(document)
+        return structuredClone(document)
       })
-      store(document)
-      return structuredClone(document)
     },
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
-    // draft when nothing is published. Then the type's form follow-up step runs.
+    // draft when nothing is published. Then the type's form follow-up step runs, with the version
+    // as it was before the patch.
     async edit(
       id: string,
       patch: DocumentPatch,
@@ -400,11 +474,42 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       const base =
         dataset.get(target) ?? published ?? (release ? dataset.get(getDraftId(publishedId)) : null)
       if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
-      let version = applyPatch({...base, _id: target}, patch)
-      const followUp = formFollowUps[version._type]?.({version, published})
+      const previous = {...base, _id: target}
+      let version = applyPatch(previous, patch)
+      const followUp = formFollowUps[version._type]?.({previous, version, published})
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
       return structuredClone(dataset.get(target) as TestDocument)
+    },
+
+    // The item an array field's "Add item" inserts, as the form builds it: a _type and a fresh
+    // _key, then the member type's initial values. Name memberType when the array holds more
+    // than one type. Nothing is stored.
+    async newArrayItem(
+      documentType: string,
+      field: string,
+      memberType?: string,
+    ): Promise<Record<string, unknown>> {
+      const fieldType = (schema.get(documentType) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type
+      if (!fieldType || !isArraySchemaType(fieldType)) {
+        throw new Error(`${documentType} has no array field "${field}"`)
+      }
+      const member = memberType
+        ? fieldType.of.find(({name}) => name === memberType)
+        : fieldType.of.length === 1
+          ? fieldType.of[0]
+          : undefined
+      if (!member) throw new Error(`Name one of the member types of ${documentType}.${field}`)
+      const item = {_type: member.name, _key: randomUUID().slice(0, 12).replace('-', '')}
+      const initial = await resolveInitialValueForType(
+        member,
+        item,
+        DEFAULT_MAX_RECURSION_DEPTH,
+        configContext,
+      )
+      return structuredClone({...item, ...(initial as object)})
     },
 
     // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is
@@ -473,7 +578,11 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         : [{field: '_updatedAt', direction: 'desc'}]
       const query = `*[${options.filter}] | order(${ordering.map(({field, direction}) => `${field} ${direction}`).join(', ')})`
       const params = options.params ?? {}
-      const result = await evaluate(parse(query, {params}), {dataset: [...rows.values()], params})
+      const result = await evaluate(parse(query, {params}), {
+        dataset: [...rows.values()],
+        params,
+        timestamp: fixedNow === undefined ? new Date() : new Date(fixedNow),
+      })
       return {type, title, documents: structuredClone(await result.get())}
     },
 

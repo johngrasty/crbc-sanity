@@ -29,6 +29,7 @@ import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
 import mediaItem from './media/mediaItem'
+import serviceEvent from './media/serviceEvent'
 import mediaSettings from './media/mediaSettings'
 import speaker from './media/speaker'
 import topic from './media/topic'
@@ -61,6 +62,7 @@ export const schemaTypes = [
   customSignUp,
   jobOpening,
   mediaItem,
+  serviceEvent,
   mediaSettings,
   speaker,
   topic,
