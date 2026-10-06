@@ -16,6 +16,7 @@ import {
   isVersionId,
   pathToString,
   prepareConfig,
+  prepareForPreview,
   resolveInitialValue,
   validateDocument,
   type ConfigContext,
@@ -23,6 +24,8 @@ import {
   type DocumentActionsVersionType,
   type NewDocumentCreationContext,
   type ObjectSchemaType,
+  type PreviewableType,
+  type PreviewValue,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -49,6 +52,9 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 // A validation marker. path is in Sanity's string form, for example passages[_key=="a"].book,
 // and is empty for a document-level rule.
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
+
+// The text parts of a preview that are set.
+export type PreviewText = Partial<Pick<PreviewValue, 'title' | 'subtitle' | 'description'>>
 
 // A pane of the desk. A list has items, a document list has the documents it shows, and a
 // document pane has its fixed document and the value its form starts from while that document
@@ -460,6 +466,20 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
             }
           : {title: String(option), value: option},
       )
+    },
+
+    // What Studio shows for a value of this type, such as an array item's row, from the type's
+    // preview select and prepare, run by Sanity's prepareForPreview. It reads the selected paths
+    // from the value itself, so it can't follow a reference. Only the parts that are set appear.
+    preview(type: string, value: Record<string, unknown>): PreviewText {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No type named "${type}"`)
+      const prepared = prepareForPreview(value, schemaType as PreviewableType)
+      const text: PreviewText = {}
+      for (const part of ['title', 'subtitle', 'description'] as const) {
+        if (prepared[part] !== undefined) text[part] = prepared[part]
+      }
+      return text
     },
   }
 }

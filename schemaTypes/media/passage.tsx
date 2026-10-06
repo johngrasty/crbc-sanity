@@ -27,6 +27,32 @@ const isMissing = (value: unknown): value is undefined | null =>
 // The passage that a rule on one of its fields checks.
 const passageOf = (context: ValidationContext) => (context.parent ?? {}) as PassageValue
 
+const isCount = (value: unknown): value is number => Number.isInteger(value) && Number(value) >= 1
+
+// The reference as Studio writes it, such as James 1:2-4, John 3:16-4:2 or Psalm 23. There is
+// none without a known book and start chapter. There is none either for a passage that starts at
+// a verse and runs to the end of a later chapter, which would need that chapter's last verse.
+export function referenceText(passage: PassageValue | undefined): string | undefined {
+  const {chapterStart, verseStart, chapterEnd, verseEnd} = passage ?? {}
+  const book = bookFor(passage?.book)
+  if (!book || !isCount(chapterStart)) return undefined
+  const endChapter = isCount(chapterEnd) && chapterEnd !== chapterStart ? chapterEnd : undefined
+  const start = isCount(verseStart) ? `${chapterStart}:${verseStart}` : `${chapterStart}`
+  let end = ''
+  if (endChapter === undefined) {
+    if (isCount(verseStart) && isCount(verseEnd) && verseEnd !== verseStart) end = `-${verseEnd}`
+  } else if (!isCount(verseStart)) {
+    end = `-${endChapter}`
+  } else if (isCount(verseEnd)) {
+    end = `-${endChapter}:${verseEnd}`
+  } else {
+    return undefined
+  }
+  // One psalm is Psalm 23. More than one are Psalms 1-2.
+  const name = book.code === 'Ps' && endChapter === undefined ? 'Psalm' : book.name
+  return `${name} ${start}${end}`
+}
+
 // A verse is a whole number from 1 to 176.
 function verseProblem(verse: number | undefined) {
   if (isMissing(verse)) return true
@@ -110,6 +136,22 @@ export default defineType({
       validation: (rule) => [rule.required(), labelLimit(rule)],
     }),
   ],
+  // The row shows what viewers read, with the reference under it when the wording differs.
+  preview: {
+    select: {
+      book: 'book',
+      chapterStart: 'chapterStart',
+      verseStart: 'verseStart',
+      chapterEnd: 'chapterEnd',
+      verseEnd: 'verseEnd',
+      display: 'display',
+    },
+    prepare(passage: PassageValue) {
+      const reference = referenceText(passage)
+      const title = passage.display?.trim() || reference || 'Untitled passage'
+      return {title, subtitle: reference === title ? undefined : reference}
+    },
+  },
 })
 
 export const passagesField = defineField({

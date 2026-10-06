@@ -266,3 +266,59 @@ test('the display text is required and holds up to 200 characters', async () => 
     assert.equal((await errorsOn(character.repeat(201))).length, 1, character)
   }
 })
+
+test('a passage row shows the display text, and the reference under it when they differ', () => {
+  const studio = createHarness()
+  assert.deepEqual(studio.preview('passage', passage('a')), {title: 'James 1:2-4'})
+  assert.deepEqual(
+    studio.preview(
+      'passage',
+      passage('a', {
+        book: 'Matt',
+        chapterStart: 5,
+        verseStart: 1,
+        chapterEnd: 7,
+        verseEnd: 29,
+        display: 'The Sermon on the Mount',
+      }),
+    ),
+    {title: 'The Sermon on the Mount', subtitle: 'Matthew 5:1-7:29'},
+  )
+  assert.deepEqual(studio.preview('passage', {_type: 'passage', _key: 'a'}), {
+    title: 'Untitled passage',
+  })
+})
+
+test('without display text, a passage row shows the reference as Studio writes it', () => {
+  const studio = createHarness()
+  const reference = (fields: Record<string, unknown>) =>
+    studio.preview('passage', {_type: 'passage', _key: 'a', ...fields}).title
+  const cases: [Record<string, unknown>, string][] = [
+    [{book: 'Jas', chapterStart: 1, verseStart: 2, verseEnd: 4}, 'James 1:2-4'],
+    // As the contract's fixtures store it, with the end chapter repeated.
+    [{book: 'Jas', chapterStart: 2, verseStart: 14, chapterEnd: 2, verseEnd: 26}, 'James 2:14-26'],
+    [{book: 'Gen', chapterStart: 15, verseStart: 6}, 'Genesis 15:6'],
+    [{book: 'Rom', chapterStart: 4}, 'Romans 4'],
+    [{book: 'John', chapterStart: 3, verseStart: 16, verseEnd: 16}, 'John 3:16'],
+    [{book: 'John', chapterStart: 3, verseStart: 16, chapterEnd: 4, verseEnd: 2}, 'John 3:16-4:2'],
+    [{book: 'John', chapterStart: 3, chapterEnd: 4}, 'John 3-4'],
+    [{book: '1Cor', chapterStart: 13}, '1 Corinthians 13'],
+    [{book: 'Jude', chapterStart: 1, verseStart: 24, verseEnd: 25}, 'Jude 1:24-25'],
+    // One psalm is a Psalm, and more than one are Psalms.
+    [{book: 'Ps', chapterStart: 23}, 'Psalm 23'],
+    [{book: 'Ps', chapterStart: 119, verseStart: 105}, 'Psalm 119:105'],
+    [{book: 'Ps', chapterStart: 1, chapterEnd: 2}, 'Psalms 1-2'],
+  ]
+  for (const [fields, text] of cases) assert.equal(reference(fields), text, text)
+
+  // Without the last verse of chapter 4, "from 3:16 to the end of chapter 4" has no short
+  // form, so the editor writes it. A reference without a known book or start chapter has none.
+  for (const fields of [
+    {book: 'John', chapterStart: 3, verseStart: 16, chapterEnd: 4},
+    {book: 'Jas'},
+    {chapterStart: 1},
+    {book: 'Xyz', chapterStart: 1},
+  ]) {
+    assert.equal(reference(fields), 'Untitled passage', JSON.stringify(fields))
+  }
+})
