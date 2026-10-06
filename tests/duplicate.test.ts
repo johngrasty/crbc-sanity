@@ -316,3 +316,17 @@ test("a whole-document paste of another item's fields is caught by the ID rules"
     await assert.rejects(studio.publish(_id, {release}), /contentId/, _id)
   }
 })
+
+test("Duplicate leaves its source as it was, and the copy shares none of the source's objects or arrays", async () => {
+  for (const type of editorialTypes) {
+    const original = originals[type]
+    const studio = createHarness({documents: [original]})
+    await studio.duplicate(original._id)
+    assert.deepEqual(
+      studio.documents().find(({_id}) => _id === original._id),
+      original,
+      type,
+    )
+    assert.deepEqual(studio.sharedWithSource(), [], type)
+  }
+})

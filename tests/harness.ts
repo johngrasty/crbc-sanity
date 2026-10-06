@@ -215,6 +215,28 @@ function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatc
   return next
 }
 
+// The paths in written of objects and arrays that are source's own objects, not copies, in
+// Sanity's path form, such as requestedDestinations[0]. The document itself is ''.
+function sharedObjects(source: object, written: unknown): string[] {
+  const own = new Set<unknown>()
+  const collect = (value: unknown) => {
+    if (!value || typeof value !== 'object' || own.has(value)) return
+    own.add(value)
+    Object.values(value).forEach(collect)
+  }
+  collect(source)
+  const shared: string[] = []
+  const walk = (value: unknown, path: (string | number)[]) => {
+    if (!value || typeof value !== 'object') return
+    if (own.has(value)) shared.push(pathToString(path))
+    for (const [key, child] of Object.entries(value)) {
+      walk(child, [...path, Array.isArray(value) ? Number(key) : key])
+    }
+  }
+  walk(written, [])
+  return shared
+}
+
 type ClientConfig = {apiVersion?: string; perspective?: unknown}
 
 // API version 2025-02-19 brought content releases. From then on Content Lake's default
@@ -338,6 +360,8 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
   const versionId = (id: string, release?: string) =>
     release ? getVersionId(getPublishedId(id), release) : getDraftId(getPublishedId(id))
 
+  let lastShared: string[] = []
+
   const resolveActions = (type: string, versionType: DocumentActionsVersionType) => {
     const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
     return source.document.actions({
@@ -412,6 +436,8 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is
     // what the document pane shows: with release, that release's version if it has one, else
     // the draft, else the published document. The action gets Studio's client, which reads raw.
+    // Like the action, it hands over the stored snapshot itself, so a change the operation makes
+    // to its source shows in the dataset.
     async duplicate(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const source =
@@ -420,8 +446,22 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         dataset.get(publishedId)
       if (!source) throw new Error(`No document to duplicate with _id "${publishedId}"`)
       const client = getClient({apiVersion: '2025-02-19', perspective: 'raw'})
-      const copy = await duplicateWithFreshIds(client, structuredClone(source))
+      const watched = {
+        ...client,
+        create: async (document: TestDocument) => {
+          lastShared = sharedObjects(source, document)
+          return client.create(document)
+        },
+      } as unknown as SanityClient
+      const copy = await duplicateWithFreshIds(watched, source)
       return structuredClone(copy) as TestDocument
+    },
+
+    // The paths of objects and arrays that the last duplicate's copy still shared with its
+    // source when the operation handed it to create, before the client serialized it. Empty when
+    // the copy is independent.
+    sharedWithSource(): string[] {
+      return [...lastShared]
     },
 
     // Makes the draft, or with release the version in that release, the published document, as
