@@ -15,7 +15,7 @@
     "typegen": "sanity schema extract --enforce-required-fields && sanity typegen generate",
     "verify": "npm run check && npm run lint && npm test && npm run schema:check && npm run build",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --import ./tests/loader/register.mjs --test 'tests/*.test.mjs' 'tests/*.test.ts'"
   },
   "keywords": [
     "sanity"
@@ -39,7 +39,9 @@
     "@sanity/eslint-config-studio": "^5.0.2",
     "@sanity/runtime-cli": "12.4.0",
     "@types/react": "^19.1.12",
+    "esbuild": "^0.27.0",
     "eslint": "^9.35.0",
+    "groq-js": "^1.30.3",
     "lexorank": "1.0.5",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
