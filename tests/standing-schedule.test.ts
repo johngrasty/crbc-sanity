@@ -75,3 +75,58 @@ test('a slot template sets the same defaults as the plain template', async () =>
   assert.equal(first.socialGoLiveLeadMinutes, 5)
   assert.equal(first.cancelled, false)
 })
+
+// Starts in New York in October 2026, during daylight saving time.
+const start = (local: string, utc: string, timeZone = 'America/New_York', offset = '-04:00') => ({
+  scheduledStart: {local, timeZone, offset, utc},
+})
+const sunday = start('2026-10-11T09:00', '2026-10-11T13:00:00Z')
+const nextSunday = start('2026-10-18T09:00', '2026-10-18T13:00:00Z')
+const wednesday = start('2026-10-14T18:30', '2026-10-14T22:30:00Z')
+const sundayEvening = start('2026-10-11T18:00', '2026-10-11T22:00:00Z')
+
+// Creates an event from the plain template and returns a function that applies one edit and
+// reports the length afterwards.
+async function editor() {
+  const studio = createHarness()
+  const {_id} = await studio.create('serviceEvent')
+  return async (set: Record<string, unknown>) =>
+    (await studio.edit(_id, {set})).expectedDurationMinutes
+}
+
+test("a start on a standing slot fills an empty length with the slot's", async () => {
+  const edit = await editor()
+  assert.equal(await edit(sunday), 80)
+  const other = await editor()
+  assert.equal(await other(wednesday), 50)
+})
+
+test("moving the start to another slot replaces the previous slot's length", async () => {
+  const edit = await editor()
+  assert.equal(await edit(sunday), 80)
+  assert.equal(await edit(wednesday), 50)
+  assert.equal(await edit(nextSunday), 80)
+})
+
+test('a length the editor chose stays when the start moves', async () => {
+  const edit = await editor()
+  await edit(sunday)
+  assert.equal(await edit({expectedDurationMinutes: 95}), 95)
+  assert.equal(await edit(wednesday), 95)
+  // 50 is Wednesday's length, but it was chosen while the start was a Sunday.
+  const other = await editor()
+  await other(sunday)
+  assert.equal(await other({expectedDurationMinutes: 50}), 50)
+  assert.equal(await other(nextSunday), 50)
+})
+
+test('a start off the standing schedule leaves the length alone', async () => {
+  const edit = await editor()
+  assert.equal(await edit(sundayEvening), undefined)
+  assert.equal(await edit({expectedDurationMinutes: 70}), 70)
+  assert.equal(await edit(sunday), 70)
+  // The slot's time in another zone isn't the slot.
+  const other = await editor()
+  const chicago = start('2026-10-11T09:00', '2026-10-11T14:00:00Z', 'America/Chicago', '-05:00')
+  assert.equal(await other(chicago), undefined)
+})

@@ -2,6 +2,7 @@
 // because the full config can't load in Node and the test harness builds from this module.
 import type {
   DocumentActionsResolver,
+  FormComponents,
   NewDocumentOptionsResolver,
   SanityDocumentLike,
   Template,
@@ -9,8 +10,10 @@ import type {
 } from 'sanity'
 import {CalendarClock} from 'lucide-react'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
-import {nextOccurrence, standingSlots} from '../schemaTypes/media/standingSchedule'
+import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
+import type {ZonedStart} from '../schemaTypes/media/zonedStart'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
+import {formFollowUpInput} from './FormFollowUpInput'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
@@ -78,12 +81,35 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step runs after each edit to a draft or release version of its type. It gets
-// the edited version and the published document, and returns a patch for the version, or null
-// when the version needs nothing. The harness's edit runs it. The type's form must run the same
-// step, so the first ticket that registers one also wires it into the form.
+// the version as it was before the edit, the edited version and the published document, and
+// returns a patch for the version, or null when the version needs nothing. The harness's edit
+// runs it. The type's form must run the same step, so the first ticket that registers one also
+// wires it into the form.
 export type FormFollowUp = (versions: {
+  previous: SanityDocumentLike
   version: SanityDocumentLike
   published: SanityDocumentLike | null
 }) => DocumentPatch | null
 
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = {}
+// When an edit moves a service event's start onto a standing slot, the length becomes the slot's,
+// if it's empty or still holds the length of the slot the start was on before. A length the
+// editor chose stays.
+const fillSlotLength: FormFollowUp = ({previous, version}) => {
+  const before = previous.scheduledStart as ZonedStart | undefined
+  const after = version.scheduledStart as ZonedStart | undefined
+  if (before?.local === after?.local && before?.timeZone === after?.timeZone) return null
+  const slot = slotAt(after)
+  const length = version.expectedDurationMinutes
+  if (!slot || length === slot.expectedDurationMinutes) return null
+  const untouched =
+    length === undefined || length === null || length === slotAt(before)?.expectedDurationMinutes
+  return untouched ? {set: {expectedDurationMinutes: slot.expectedDurationMinutes}} : null
+}
+
+export const formFollowUps: Partial<Record<string, FormFollowUp>> = {
+  serviceEvent: fillSlotLength,
+}
+
+// The form components sanity.config.ts passes to Sanity. They run each type's follow-up step in
+// the form after every change.
+export const formComponents: FormComponents = {input: formFollowUpInput(formFollowUps)}

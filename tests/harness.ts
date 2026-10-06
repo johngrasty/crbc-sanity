@@ -42,6 +42,7 @@ import {deskStructure} from '../structure/deskStructure'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {
   documentActions,
+  formComponents,
   formFollowUps,
   newDocumentOptions,
   templates,
@@ -107,6 +108,7 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {types: schemaTypes, templates},
+  form: {components: formComponents},
   document: {actions: documentActions, newDocumentOptions},
 })
 
@@ -379,7 +381,8 @@ export function createHarness({
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
-    // draft when nothing is published. Then the type's form follow-up step runs.
+    // draft when nothing is published. Then the type's form follow-up step runs, with the version
+    // as it was before the patch.
     async edit(
       id: string,
       patch: DocumentPatch,
@@ -391,8 +394,9 @@ export function createHarness({
       const base =
         dataset.get(target) ?? published ?? (release ? dataset.get(getDraftId(publishedId)) : null)
       if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
-      let version = applyPatch({...base, _id: target}, patch)
-      const followUp = formFollowUps[version._type]?.({version, published})
+      const previous = {...base, _id: target}
+      let version = applyPatch(previous, patch)
+      const followUp = formFollowUps[version._type]?.({previous, version, published})
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
       return structuredClone(dataset.get(target) as TestDocument)

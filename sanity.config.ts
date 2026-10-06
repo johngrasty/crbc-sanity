@@ -5,7 +5,12 @@ import {media} from 'sanity-plugin-media'
 import {assist} from '@sanity/assist'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
-import {documentActions, newDocumentOptions, templates} from './structure/documentConfig'
+import {
+  documentActions,
+  formComponents,
+  newDocumentOptions,
+  templates,
+} from './structure/documentConfig'
 import {previewOrigin, singletonPaths} from './structure/preview'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID
@@ -20,6 +25,7 @@ export default defineConfig({
   dataset,
   plugins: [structureTool({structure: deskStructure}), visionTool(), media(), assist()],
   schema: {types: schemaTypes, templates},
+  form: {components: formComponents},
   document: {
     actions: documentActions,
     newDocumentOptions,
