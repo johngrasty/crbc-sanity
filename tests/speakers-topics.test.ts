@@ -53,3 +53,57 @@ test('a name or label holds up to 200 characters, counted as Unicode code points
     }
   }
 })
+
+const types = Object.keys(nameFields)
+const aliasList = (count: number) => Array.from({length: count}, (_, index) => `Alias ${index + 1}`)
+
+test('aliases hold up to 20 names', async () => {
+  const studio = createHarness()
+  for (const type of types) {
+    const document = await studio.create(type)
+    const atLimit = await studio.validate({...document, aliases: aliasList(20)})
+    assert.deepEqual(errorsAt(atLimit, 'aliases'), [], `${type} 20 aliases`)
+    const pastLimit = await studio.validate({...document, aliases: aliasList(21)})
+    assert.equal(errorsAt(pastLimit, 'aliases').length, 1, `${type} 21 aliases`)
+  }
+})
+
+test('an alias holds up to 200 characters, counted as Unicode code points', async () => {
+  const studio = createHarness()
+  for (const type of types) {
+    const document = await studio.create(type)
+    for (const character of characters) {
+      const aliases = ['Short', character.repeat(200), character.repeat(201)]
+      const markers = await studio.validate({...document, aliases})
+      assert.deepEqual(errorsAt(markers, 'aliases[1]'), [], `${type} 200 × ${character}`)
+      assert.equal(errorsAt(markers, 'aliases[2]').length, 1, `${type} 201 × ${character}`)
+    }
+  }
+})
+
+// Search ignores case, so an alias that differs only in case finds nothing new.
+test('an alias that repeats an earlier one is an error, whatever its case', async () => {
+  const studio = createHarness()
+  for (const type of types) {
+    const document = await studio.create(type)
+    const markers = await studio.validate({
+      ...document,
+      aliases: ['Pastor Sam', 'Sam', 'pastor sam', 'Sam'],
+    })
+    const repeated = markers.filter(({path}) => path.startsWith('aliases'))
+    assert.deepEqual(
+      repeated.map(({path, level}) => [path, level]),
+      [
+        ['aliases[2]', 'error'],
+        ['aliases[3]', 'error'],
+      ],
+      type,
+    )
+    const distinct = await studio.validate({...document, aliases: ['Pastor Sam', 'Sam']})
+    assert.deepEqual(
+      distinct.filter(({path}) => path.startsWith('aliases')),
+      [],
+      type,
+    )
+  }
+})
