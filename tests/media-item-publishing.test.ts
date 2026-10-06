@@ -18,3 +18,22 @@ test('a description is plain text of up to 5,000 characters', async () => {
   const markers = await studio.validate({...item, description: richText})
   assert.notDeepEqual(errorsAt(markers, 'description'), [])
 })
+
+test('a new media item publishes automatically', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  assert.equal(item.publicationPolicy, 'auto')
+})
+
+test('publication policy is required and is auto or manual', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const publicationPolicy of ['auto', 'manual']) {
+    const markers = await studio.validate({...item, publicationPolicy})
+    assert.deepEqual(errorsAt(markers, 'publicationPolicy'), [], publicationPolicy)
+  }
+  for (const publicationPolicy of [undefined, '', 'automatic', 'Manual']) {
+    const markers = await studio.validate({...item, publicationPolicy})
+    assert.notDeepEqual(errorsAt(markers, 'publicationPolicy'), [], `${publicationPolicy}`)
+  }
+})

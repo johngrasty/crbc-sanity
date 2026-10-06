@@ -1,6 +1,7 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
+import {publicationPolicyField} from './publicationPolicy'
 
 // A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
 // That rejects aliases such as US/Eastern, other spellings such as america/new_york, and EST,
@@ -44,7 +45,10 @@ export default defineType({
   title: 'Media item',
   type: 'document',
   icon: Video,
-  groups: [{name: 'details', title: 'Details', default: true}],
+  groups: [
+    {name: 'details', title: 'Details', default: true},
+    {name: 'publishing', title: 'Publishing'},
+  ],
   fields: [
     {...editorialIdField('mediaItem'), group: 'details'},
     defineField({
@@ -124,6 +128,7 @@ export default defineType({
       ],
       group: 'details',
     }),
+    {...publicationPolicyField, group: 'publishing'},
   ],
   orderings: [
     {
