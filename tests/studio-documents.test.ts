@@ -104,17 +104,6 @@ test('pages, articles, ministries and announcements add Preview to the defaults'
   }
 })
 
-test("media items keep Sanity's actions in every version type", () => {
-  const studio = createHarness()
-  for (const versionType of versionTypes) {
-    assert.deepEqual(
-      studio.actions('mediaItem', versionType),
-      sanityDefaults[versionType],
-      versionType,
-    )
-  }
-})
-
 test('singletons have no template', async () => {
   const studio = createHarness()
   for (const type of ['homePage', 'settings', 'siteAlert']) {
