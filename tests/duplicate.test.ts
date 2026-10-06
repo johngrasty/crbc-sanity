@@ -97,6 +97,16 @@ const originals: Record<EditorialType, TestDocument> = {
   },
 }
 
+// The copy's fields, without the ones Sanity or the editorial ID set.
+async function copyFields(type: EditorialType): Promise<Record<string, unknown>> {
+  const studio = createHarness({documents: [originals[type]]})
+  const copy: Record<string, unknown> = await studio.duplicate(originals[type]._id)
+  for (const field of ['_id', '_rev', '_createdAt', '_updatedAt', ids[type].field]) {
+    delete copy[field]
+  }
+  return copy
+}
+
 // Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, with the
 // fresh-ID Duplicate where Sanity's Duplicate was. Tasks and canvas actions stay.
 const editorialActions = {
@@ -175,4 +185,56 @@ test('a copy is a new draft with a fresh ID of its kind, and nothing else change
       [copy, original].sort((a, b) => a._id.localeCompare(b._id)),
     )
   }
+})
+
+test('a copy drops the slug, the slug history and the import source', async () => {
+  for (const type of editorialTypes) {
+    const studio = createHarness({documents: [originals[type]]})
+    const copy = await studio.duplicate(originals[type]._id)
+    for (const field of ['slug', 'slugHistory', 'source']) {
+      assert.equal(copy[field], undefined, `${type} ${field}`)
+    }
+  }
+})
+
+test('a media item copy also drops the podcast enclosure, whose GUID names the original episode', async () => {
+  assert.deepEqual(await copyFields('mediaItem'), {
+    _type: 'mediaItem',
+    kind: 'sermon',
+    title: 'Easter Sunday',
+    serviceDate: '2026-04-05',
+    serviceTimezone: 'America/New_York',
+    speakers: [reference('s1', 'pastor')],
+    series: [reference('r1', 'gospel')],
+  })
+})
+
+test('a series copy also drops its manual order, because those items list the original', async () => {
+  assert.deepEqual(await copyFields('series'), {
+    _type: 'series',
+    title: 'The Gospel of John',
+    description: 'A year in John.',
+    ordering: 'manual',
+  })
+})
+
+test('a service event copy keeps its destinations and duration, and clears the item, the start and the cancellation', async () => {
+  assert.deepEqual(await copyFields('serviceEvent'), {
+    _type: 'serviceEvent',
+    scheduledStart: {timeZone: 'America/New_York'},
+    expectedDurationMinutes: 80,
+    resourceId: 'lr_main',
+    cancelled: false,
+    requestedDestinations: originals.serviceEvent.requestedDestinations,
+    socialGoLiveLeadMinutes: 10,
+  })
+})
+
+test('a speaker or topic copy keeps everything else', async () => {
+  assert.deepEqual(await copyFields('speaker'), {
+    _type: 'speaker',
+    name: 'Sam Jones',
+    aliases: ['Pastor Sam'],
+  })
+  assert.deepEqual(await copyFields('topic'), {_type: 'topic', label: 'Grace', aliases: ['Mercy']})
 })
