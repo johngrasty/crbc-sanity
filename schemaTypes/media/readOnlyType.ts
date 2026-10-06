@@ -6,10 +6,25 @@ import {isPublishedId, type DocumentDefinition} from 'sanity'
 // The compiled type keeps __experimental_actions, but DocumentDefinition doesn't declare it.
 type ReadOnlyDefinition = DocumentDefinition & {__experimental_actions: []}
 
+// A field or array member and everything in it, each set to a literal readOnly: true. AI Assist
+// skips only a literal true, and paste refuses a target whose own type or an ancestor is
+// read-only.
+type Member = {readOnly?: unknown; fields?: Member[]; of?: Member[]}
+function readOnlyMember<T extends Member>(member: T): T {
+  return {
+    ...member,
+    readOnly: true,
+    ...(member.fields && {fields: member.fields.map(readOnlyMember)}),
+    ...(member.of && {of: member.of.map(readOnlyMember)}),
+  }
+}
+
 // writer names who writes the documents, as the start of a sentence, such as media-ops.
 export function readOnlyType(writer: string, definition: DocumentDefinition): ReadOnlyDefinition {
   return {
     ...definition,
+    readOnly: true,
+    fields: definition.fields.map(readOnlyMember),
     // Schema readOnly only locks the inputs. Without update and create here, the document form
     // itself refuses every patch: a paste, a custom input, or the first edit to a form a create
     // URL opens.

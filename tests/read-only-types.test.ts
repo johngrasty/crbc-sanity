@@ -236,3 +236,15 @@ test('a crafted create URL opens a form that refuses its first patch', async () 
   assert.equal(item._id, 'drafts.item')
   assert.equal(item.title, 'Spring')
 })
+
+test('each read-only type, and every field and array member in it, is read-only', () => {
+  // Literal true, not a callback. AI Assist skips only a literal true, and paste refuses a field
+  // whose own type or ancestor is read-only.
+  const studio = createHarness()
+  for (const type of readOnlyTypes) {
+    assert.equal(studio.form(type).readOnly, true, type)
+    const fields = studio.fields(type)
+    assert.ok(fields.length > 0, type)
+    for (const {path, readOnly} of fields) assert.equal(readOnly, true, `${type} ${path}`)
+  }
+})

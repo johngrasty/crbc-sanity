@@ -378,6 +378,14 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         .map(({name}) => name)
     },
 
+    // The document form for a type. readOnly is the type's own declared value, which locks every
+    // input in the form.
+    form(type: string): {readOnly: unknown} {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No schema type named "${type}"`)
+      return {readOnly: schemaType.readOnly}
+    },
+
     // Every field the registered type declares, at any depth. See SchemaField.
     fields(type: string): SchemaField[] {
       const schemaType = schema.get(type)
