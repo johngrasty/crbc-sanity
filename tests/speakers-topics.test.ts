@@ -405,3 +405,36 @@ test('a media item refers only to published speakers and topics', async () => {
   assert.equal(errorsAt(markers, 'speakers[_key=="a"]').length, 1)
   assert.equal(errorsAt(markers, 'topics[_key=="a"]').length, 1)
 })
+
+test('the Media section lists speakers and topics after media items, A to Z', async () => {
+  const studio = createHarness({
+    documents: [
+      {_id: 'b', _type: 'speaker', name: 'Ben Ortiz'},
+      {_id: 'drafts.a', _type: 'speaker', name: 'Ann Lee'},
+      {_id: 'c', _type: 'speaker', name: 'Cal Young'},
+      {_id: 'drafts.c', _type: 'speaker', name: 'Cara Young'},
+      {_id: 'versions.rSpring.d', _type: 'speaker', name: 'Only in a release'},
+      {_id: 'grace', _type: 'topic', label: 'Grace'},
+      {_id: 'drafts.faith', _type: 'topic', label: 'Faith'},
+      {_id: 'news', _type: 'article', title: 'Not a speaker or topic'},
+    ],
+  })
+  const ids = (await studio.desk('media')).items?.map(({id}) => id) ?? []
+  const at = (id: string) => ids.indexOf(id)
+  assert.ok(at('mediaItems') >= 0 && at('mediaItems') < at('speakers'), ids.join(', '))
+  assert.equal(at('topics'), at('speakers') + 1, ids.join(', '))
+  assert.ok(at('topics') < at('mediaSettings'), ids.join(', '))
+
+  const speakers = await studio.desk('media', 'speakers')
+  assert.equal(speakers.title, 'Speakers')
+  assert.deepEqual(
+    speakers.documents?.map(({name}) => name),
+    ['Ann Lee', 'Ben Ortiz', 'Cara Young'],
+  )
+  const topics = await studio.desk('media', 'topics')
+  assert.equal(topics.title, 'Topics')
+  assert.deepEqual(
+    topics.documents?.map(({label}) => label),
+    ['Faith', 'Grace'],
+  )
+})
