@@ -99,10 +99,12 @@ export function editorialIdField(type: EditorialType) {
         // The raw perspective sees every published, draft and release version.
         // sanity::versionOf leaves out this document's own versions.
         const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
-        const {published, taken} = await client.fetch(
+        const others = `*[_type == $type && ${id.field} == $value && !sanity::versionOf($publishedId)]`
+        const {published, takenByPublished, takenByAny} = await client.fetch(
           `{
             "published": *[_id == $publishedId][0].${id.field},
-            "taken": count(*[_type == $type && ${id.field} == $value && !sanity::versionOf($publishedId)]) > 0
+            "takenByPublished": ${others}[!(_id in path("drafts.**")) && !(_id in path("versions.**"))] | order(_id asc)[0]._id,
+            "takenByAny": ${others} | order(_id asc)[0]._id
           }`,
           {type, value, publishedId: getPublishedId(context.document._id)},
         )
@@ -110,8 +112,11 @@ export function editorialIdField(type: EditorialType) {
         if (published && published !== value) {
           return `The published ${id.noun} has the ${id.label} ${published}. IDs never change, so discard this change.`
         }
+        // A published document owns its ID, so only another published document can take it from
+        // its owner. A draft that copies the ID is blocked, and doesn't block the owner.
+        const taken = published === value ? takenByPublished : takenByAny
         if (taken) {
-          return `Another ${id.noun} already uses this ${id.label}. Ask a developer to fix it.`
+          return `The ${id.noun} ${taken} already uses this ${id.label}. Ask a developer to fix it.`
         }
         return true
       }),
