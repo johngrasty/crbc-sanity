@@ -26,7 +26,11 @@ import {
   type Source,
   type Workspace,
 } from 'sanity'
-import {structureTool} from 'sanity/structure'
+import {
+  createStructureBuilder,
+  structureTool,
+  type StructureResolverContext,
+} from 'sanity/structure'
 import {schemaTypes} from '../schemaTypes'
 import {deskStructure} from '../structure/deskStructure'
 import {
@@ -41,6 +45,17 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 // A validation marker. path is in Sanity's string form, for example passages[_key=="a"].book,
 // and is empty for a document-level rule.
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
+
+// A pane of the desk. A list has items, a document list has the documents it shows, and a
+// document pane has its fixed document. Other panes, such as components, have only a type.
+export type DeskPane = {
+  type: string
+  title?: string
+  items?: {id: string; title?: string}[]
+  documents?: TestDocument[]
+  documentId?: string
+  schemaType?: string
+}
 
 // The client behind the mock auth store. Sanity needs config().url to build a Source. Nothing
 // should query it: the harness's own client answers from the dataset.
@@ -105,6 +120,34 @@ const source = await new Promise<Source>((resolve, reject) =>
   prepared.workspaces[0].__internal.sources[0].source.subscribe({next: resolve, error: reject}),
 )
 const schema = source.schema
+
+// The desk, built by Sanity's structure builder from the same Source, as the structure tool
+// builds it.
+type Ordering = {field: string; direction: 'asc' | 'desc'}
+type StructureNode = {
+  type: string
+  id?: string
+  title?: string
+  items?: StructureNode[]
+  child?: unknown
+  options?: {
+    filter?: string
+    params?: Record<string, unknown>
+    defaultOrdering?: Ordering[]
+    id?: string
+    type?: string
+  }
+}
+const structureBuilder = createStructureBuilder({source, perspectiveStack: []})
+const structureContext = {...source, perspectiveStack: []} as unknown as StructureResolverContext
+const serializeNode = (node: unknown): StructureNode => {
+  const builder = node as {serialize?: () => StructureNode}
+  return typeof builder.serialize === 'function' ? builder.serialize() : (node as StructureNode)
+}
+async function openChild(child: unknown, id: string, path: string[]): Promise<StructureNode> {
+  if (typeof child !== 'function') return serializeNode(child)
+  return serializeNode(await child(id, {index: 0, splitIndex: 0, path, params: {}, parent: null}))
+}
 
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
@@ -283,6 +326,41 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       dataset.delete(pending._id)
       store(touch({...pending, _id: publishedId}))
       return structuredClone(dataset.get(publishedId) as TestDocument)
+    },
+
+    // Opens the desk at a path of item IDs, such as desk('media', 'mediaItems'), and returns
+    // that pane. A document list shows what the default perspective shows: each document's
+    // draft if it has one, else its published version, in the list's default order. Release
+    // versions are left out.
+    async desk(...path: string[]): Promise<DeskPane> {
+      let node = serializeNode(deskStructure(structureBuilder, structureContext))
+      for (const [index, id] of path.entries()) {
+        const item = node.items?.find((candidate) => candidate.id === id)
+        if (!item) throw new Error(`The desk has no item "${id}" at ${path.slice(0, index)}`)
+        node = await openChild(item.child, id, path.slice(0, index + 1))
+      }
+      const {type, title, options = {}} = node
+      if (type === 'list') {
+        const items = (node.items ?? []).filter((item) => item.type !== 'divider')
+        return {type, title, items: items.map((item) => ({id: item.id ?? '', title: item.title}))}
+      }
+      if (type === 'document')
+        return {type, title, documentId: options.id, schemaType: options.type}
+      if (type !== 'documentList') return {type, title}
+
+      const rows = new Map<string, TestDocument>()
+      for (const document of dataset.values()) {
+        if (isVersionId(document._id)) continue
+        const id = getPublishedId(document._id)
+        if (isDraftId(document._id) || !rows.has(id)) rows.set(id, document)
+      }
+      const ordering = options.defaultOrdering?.length
+        ? options.defaultOrdering
+        : [{field: '_updatedAt', direction: 'desc'}]
+      const query = `*[${options.filter}] | order(${ordering.map(({field, direction}) => `${field} ${direction}`).join(', ')})`
+      const params = options.params ?? {}
+      const result = await evaluate(parse(query, {params}), {dataset: [...rows.values()], params})
+      return {type, title, documents: structuredClone(await result.get())}
     },
 
     // Every document in the dataset, sorted by _id.

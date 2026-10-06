@@ -189,3 +189,28 @@ test('a version with errors does not publish', async () => {
     ['drafts.item'],
   )
 })
+
+test('the Media section lists media items, newest service date first', async () => {
+  const item = (_id: string, title: string, serviceDate: string) => ({
+    _id,
+    _type: 'mediaItem',
+    title,
+    serviceDate,
+  })
+  const studio = createHarness({
+    documents: [
+      item('a', 'September 27', '2026-09-27'),
+      item('b', 'Published October 4', '2026-09-20'),
+      item('drafts.b', 'Draft moved to October 11', '2026-10-11'),
+      item('drafts.c', 'Draft-only October 4', '2026-10-04'),
+      item('versions.rSpring.d', 'Only in a release', '2026-12-25'),
+      {_id: 'news', _type: 'article', title: 'Not a media item'},
+    ],
+  })
+  const {title, documents} = await studio.desk('media', 'mediaItems')
+  assert.equal(title, 'Media items')
+  assert.deepEqual(
+    documents?.map((document) => document.title),
+    ['Draft moved to October 11', 'Draft-only October 4', 'September 27'],
+  )
+})
