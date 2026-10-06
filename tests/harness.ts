@@ -89,6 +89,16 @@ export type DeskPane = {
   initialValue?: TestDocument
 }
 
+// The document an intent URL opens. path is the router's pane IDs: desk item IDs, or
+// __edit__<id> when Studio opens its plain editor outside the desk. initialValue is what the
+// form starts from while the document doesn't exist.
+export type IntentPane = {
+  path: string[]
+  documentId: string
+  schemaType: string
+  initialValue?: TestDocument
+}
+
 // The client behind the mock auth store. Sanity needs config().url to build a Source. Nothing
 // should query it: the harness's own client answers from the dataset.
 const sourceClient = {
@@ -199,6 +209,12 @@ type StructureNode = {
   title?: string
   items?: StructureNode[]
   child?: unknown
+  schemaTypeName?: string
+  canHandleIntent?: (
+    intent: string,
+    params: Record<string, unknown>,
+    context: {pane: StructureNode; index: number},
+  ) => boolean
   options?: {
     filter?: string
     params?: Record<string, unknown>
@@ -215,9 +231,15 @@ const serializeNode = (node: unknown): StructureNode => {
   const builder = node as {serialize?: () => StructureNode}
   return typeof builder.serialize === 'function' ? builder.serialize() : (node as StructureNode)
 }
-async function openChild(child: unknown, id: string, path: string[]): Promise<StructureNode> {
+// A list's own child resolver finds the item through its parent, so pass the list as parent.
+async function openChild(
+  child: unknown,
+  id: string,
+  path: string[],
+  parent: StructureNode | null = null,
+): Promise<StructureNode> {
   if (typeof child !== 'function') return serializeNode(child)
-  return serializeNode(await child(id, {index: 0, splitIndex: 0, path, params: {}, parent: null}))
+  return serializeNode(await child(id, {index: 0, splitIndex: 0, path, params: {}, parent}))
 }
 
 // The text a React node renders. Function components are called directly, so a preview's media
@@ -386,13 +408,15 @@ export function createHarness({
 
   // The value a document pane's form starts from while its document doesn't exist, as Sanity
   // resolves it: the pane's template, else the type's only template. With neither, the form
-  // starts with just _id and _type, and field initial values don't apply. See
-  // lib/_chunks-es/pane.js:7223 and lib/index.js:7293-7305.
+  // starts with just _id and _type, and field initial values don't apply. Once the draft or the
+  // published document exists, the form shows it instead and this is undefined. See
+  // lib/_chunks-es/pane.js:7223 and lib/index.js:7286-7305.
   async function paneInitialValue(
     documentId: string,
     schemaType: string,
     {template, templateParameters}: {template?: string; templateParameters?: object},
-  ): Promise<TestDocument> {
+  ): Promise<TestDocument | undefined> {
+    if (dataset.has(getPublishedId(documentId)) || dataset.has(getDraftId(documentId))) return
     const empty = {_id: documentId, _type: schemaType}
     const typeTemplates = source.templates.filter(
       (candidate) => candidate.schemaType === schemaType,
@@ -414,13 +438,18 @@ export function createHarness({
 
     // The names of the document actions Studio's document pane shows for this type, resolved
     // through the whole plugin chain. Unnamed actions show their displayName. A version or a
-    // scheduled draft belongs to the release rHarness.
-    actions(type: string, versionType: DocumentActionsVersionType): string[] {
+    // scheduled draft belongs to the release rHarness. documentId is the published ID the pane
+    // passes, and defaults to the type name, a singleton's fixed ID.
+    actions(
+      type: string,
+      versionType: DocumentActionsVersionType,
+      {documentId = type}: {documentId?: string} = {},
+    ): string[] {
       const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
       return source.document
         .actions({
           schemaType: type,
-          documentId: type,
+          documentId,
           versionType,
           releaseId: inRelease ? 'rHarness' : undefined,
         })
@@ -542,6 +571,68 @@ export function createHarness({
       dataset.delete(pending._id)
       store(touch({...pending, _id: publishedId}))
       return structuredClone(dataset.get(publishedId) as TestDocument)
+    },
+
+    // Opens an intent URL as the structure tool does, such as intent('create', {type:
+    // 'mediaSettings'}) for /intent/create/type=mediaSettings. A create intent without an ID
+    // gets a random one first. Then Studio walks the desk for the pane closest to the root that
+    // takes the intent: a document pane with that ID, a pane whose canHandleIntent says yes, or
+    // a list of the type with the default filter. With none, it opens its plain editor outside
+    // the desk. Nothing is stored until an edit. See lib/_chunks-es/index3.js:80-198,506-560.
+    async intent(
+      intent: 'create' | 'edit',
+      {id = randomUUID(), type, ...rest}: {id?: string; type: string; template?: string},
+    ): Promise<IntentPane> {
+      const params = {...rest, id, type}
+      type Match = {path: string[]; depth: number; level: number; document: StructureNode}
+      async function traverse(
+        node: StructureNode,
+        flatIndex: number,
+        path: string[],
+        level: number,
+      ): Promise<Match[]> {
+        if (node.type === 'document' && node.id === id) {
+          return [{path: [...path.slice(0, -1), id], depth: path.length, level, document: node}]
+        }
+        const takesIntent =
+          node.canHandleIntent?.(intent, params, {pane: node, index: flatIndex}) ||
+          (node.type === 'documentList' &&
+            node.schemaTypeName === type &&
+            node.options?.filter === '_type == $type')
+        if (takesIntent) {
+          const document = await openChild(node.child, id, [...path, id], node)
+          return [{path: [...path, id], depth: path.length, level, document}]
+        }
+        if (node.type !== 'list' || !node.child || !node.items) return []
+        const found = await Promise.all(
+          node.items.map(async (item, index) =>
+            item.type === 'divider' || !item.id
+              ? []
+              : traverse(
+                  await openChild(node.child, item.id, [...path, item.id], node),
+                  flatIndex + 1,
+                  [...path, item.id],
+                  index,
+                ),
+          ),
+        )
+        return found.flat()
+      }
+      const root = serializeNode(deskStructure(structureBuilder, structureContext))
+      const [match] = (await traverse(root, 0, [], 0)).sort((a, b) =>
+        a.depth === b.depth ? a.level - b.level : a.depth - b.depth,
+      )
+      // Studio's plain editor is the type's default document node with the intent's template.
+      const {path, document} = match ?? {
+        path: [`__edit__${id}`],
+        document: {type: 'document', options: {id, type, template: rest.template}},
+      }
+      const {id: documentId = id, type: schemaType = type, template} = document.options ?? {}
+      const initialValue = await paneInitialValue(documentId, schemaType, {
+        ...document.options,
+        template: template ?? rest.template,
+      })
+      return {path, documentId, schemaType, initialValue}
     },
 
     // Opens the desk at a path of item IDs, such as desk('media', 'mediaItems'), and returns
