@@ -4,6 +4,7 @@
 import {randomUUID} from 'node:crypto'
 import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
+import speakingurl from 'speakingurl'
 import type {ClientPerspective} from '@sanity/client'
 import {isValidElement, type ReactNode} from 'react'
 import {defer, firstValueFrom} from 'rxjs'
@@ -22,6 +23,7 @@ import {
   getVersionId,
   isArraySchemaType,
   isDraftId,
+  isPublishedId,
   isVersionId,
   pathToString,
   prepareConfig,
@@ -38,6 +40,8 @@ import {
   type SanityClient,
   type SanityDocument,
   type SchemaType,
+  type SlugSchemaType,
+  type SlugSourceContext,
   type Source,
   type Workspace,
 } from 'sanity'
@@ -56,7 +60,11 @@ import {
   newDocumentOptions,
   templates,
   type DocumentPatch,
+  type FormFollowUp,
 } from '../structure/documentConfig'
+import {followUpPatch} from '../structure/FormFollowUpInput'
+
+export type {FormFollowUp}
 
 export type TestDocument = {_id: string; _type: string} & Record<string, unknown>
 
@@ -344,14 +352,20 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
 // documents seeds the dataset. Give each its full _id: item, drafts.item or
 // versions.<release>.item. now fixes the clock, as an ISO instant, for create and desk: templates
 // read it as the moment of creation, and desk lists read it as GROQ's now(). Without it, both use
-// the real clock.
+// the real clock. followUps adds form follow-up steps after the ones documentConfig.ts registers,
+// as a later ticket would register them there.
 export function createHarness({
   documents = [],
   now,
-}: {documents?: TestDocument[]; now?: string} = {}) {
+  followUps = {},
+}: {documents?: TestDocument[]; now?: string; followUps?: Record<string, FormFollowUp[]>} = {}) {
   const dataset = new Map<string, TestDocument>()
   const fixedNow = now === undefined ? undefined : Date.parse(now)
   if (fixedNow !== undefined && Number.isNaN(fixedNow)) throw new Error(`now isn't an instant`)
+  const followUpSteps = (type: string) => [
+    ...(formFollowUps[type] ?? []),
+    ...(followUps[type] ?? []),
+  ]
 
   // Runs work with Date set to the fixed clock, when there is one.
   async function atNow<T>(work: () => Promise<T>): Promise<T> {
@@ -490,8 +504,8 @@ export function createHarness({
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
-    // draft when nothing is published. Then the type's form follow-up step runs, with the version
-    // as it was before the patch.
+    // draft when nothing is published. Then the form applies the type's follow-up steps, with
+    // the version as it was before the patch.
     async edit(
       id: string,
       patch: DocumentPatch,
@@ -505,9 +519,33 @@ export function createHarness({
       if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
       const previous = {...base, _id: target}
       let version = applyPatch(previous, patch)
-      const followUp = formFollowUps[version._type]?.({previous, version, published})
+      const followUp = followUpPatch(followUpSteps(version._type), {previous, version, published})
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
+      return structuredClone(dataset.get(target) as TestDocument)
+    },
+
+    // Opens the document's form, as an editor does, and returns the document it shows. Without
+    // release the form shows the draft, else the published document. With release it shows that
+    // release's version, else the draft or the published document, and then it's read-only.
+    // Once loaded, the form applies the type's follow-up steps unless it's read-only. Like
+    // Sanity, a patch on the published document writes a draft made from it.
+    async open(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
+      const publishedId = getPublishedId(id)
+      const published = dataset.get(publishedId) ?? null
+      const version = release ? dataset.get(getVersionId(publishedId, release)) : undefined
+      const shown = version ?? dataset.get(getDraftId(publishedId)) ?? published
+      if (!shown) throw new Error(`No document to open with _id "${publishedId}"`)
+      const readOnly = release !== undefined && !version
+      const followUp = followUpPatch(followUpSteps(shown._type), {
+        previous: shown,
+        version: shown,
+        published,
+        readOnly,
+      })
+      if (!followUp) return structuredClone(shown)
+      const target = isPublishedId(shown._id) ? getDraftId(publishedId) : shown._id
+      store(touch(applyPatch({...shown, _id: target}, followUp)))
       return structuredClone(dataset.get(target) as TestDocument)
     },
 
@@ -539,6 +577,33 @@ export function createHarness({
         configContext,
       )
       return structuredClone({...item, ...(initial as object)})
+    },
+
+    // The slug a slug field's Generate button makes, as Sanity's slug input makes it: the field's
+    // source run through its slugify, or through speakingurl when it has none. Takes a document,
+    // or the _id of one in the dataset. Nothing is stored.
+    async generateSlug(
+      document: TestDocument | string,
+      field = 'slug',
+    ): Promise<string | undefined> {
+      const value = typeof document === 'string' ? dataset.get(document) : document
+      if (!value) throw new Error(`No document with _id "${document}"`)
+      const slugType = (schema.get(value._type) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type as SlugSchemaType | undefined
+      const {source, slugify, maxLength} = slugType?.options ?? {}
+      if (!slugType || !source) throw new Error(`${value._type}.${field} has no slug source`)
+      const context = {...configContext, parentPath: [], parent: value} as SlugSourceContext
+      const sourceValue =
+        typeof source === 'function'
+          ? await source(value as SanityDocument, context)
+          : (typeof source === 'string' ? source.split('.') : source).reduce<unknown>(
+              (parent, key) => (parent as Record<string, unknown> | undefined)?.[String(key)],
+              value,
+            )
+      if (!sourceValue) return undefined
+      if (slugify) return slugify(String(sourceValue), slugType, context)
+      return speakingurl(String(sourceValue), {truncate: maxLength ?? 200, symbols: true})
     },
 
     // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is
