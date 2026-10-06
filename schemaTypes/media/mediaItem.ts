@@ -23,6 +23,19 @@ function isCalendarDate(value: string): boolean {
   return date.getUTCMonth() === month - 1 && date.getUTCDate() === day
 }
 
+const kinds = [
+  {title: 'Full service', value: 'service'},
+  {title: 'Sermon', value: 'sermon'},
+  {title: 'Audio only', value: 'audio'},
+  {title: 'Other', value: 'other'},
+]
+
+// A service date is a calendar day, so it's formatted in UTC to keep the day from shifting.
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat('en-US', {dateStyle: 'medium', timeZone: 'UTC'}).format(
+    new Date(`${value}T00:00:00Z`),
+  )
+
 export default defineType({
   name: 'mediaItem',
   title: 'Media item',
@@ -36,15 +49,7 @@ export default defineType({
       title: 'Kind',
       type: 'string',
       description: 'What the recording holds. Most items are a full service.',
-      options: {
-        list: [
-          {title: 'Full service', value: 'service'},
-          {title: 'Sermon', value: 'sermon'},
-          {title: 'Audio only', value: 'audio'},
-          {title: 'Other', value: 'other'},
-        ],
-        layout: 'radio',
-      },
+      options: {list: kinds, layout: 'radio'},
       initialValue: 'service',
       validation: (rule) => rule.required(),
       group: 'details',
@@ -96,4 +101,23 @@ export default defineType({
       group: 'details',
     }),
   ],
+  orderings: [
+    {
+      title: 'Service date, newest first',
+      name: 'serviceDateDesc',
+      by: [{field: 'serviceDate', direction: 'desc'}],
+    },
+  ],
+  preview: {
+    select: {title: 'title', serviceDate: 'serviceDate', kind: 'kind'},
+    prepare({title, serviceDate, kind}) {
+      const kindTitle = kinds.find(({value}) => value === kind)?.title
+      return {
+        title: title || 'Untitled media item',
+        subtitle: [serviceDate ? formatDate(serviceDate) : 'No date', kindTitle]
+          .filter(Boolean)
+          .join(' · '),
+      }
+    },
+  },
 })
