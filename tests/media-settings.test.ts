@@ -98,3 +98,36 @@ test('a placeholder other than the four is an error that names it', async () => 
     }
   }
 })
+
+test('a description footer holds up to 1,000 UTF-8 bytes', async () => {
+  const studio = createHarness()
+  // é is 2 bytes, ✝ is 3 and 🙏 is 4, so each footer is 1,000 bytes in far fewer characters.
+  const atLimit = [
+    'a'.repeat(1000),
+    'é'.repeat(500),
+    `${'✝'.repeat(333)}a`,
+    '🙏'.repeat(250),
+    `Grace and peace 🙏 ${'é'.repeat(489)}.`,
+  ]
+  const overLimit = [...atLimit.map((footer) => `${footer}a`), `${'a'.repeat(997)}🙏`]
+  const label = (footer: string) => `${footer.slice(0, 20)}..., ${Buffer.byteLength(footer)} bytes`
+  for (const footer of atLimit) assert.equal(Buffer.byteLength(footer), 1000)
+  for (const footer of overLimit) assert.equal(Buffer.byteLength(footer), 1001)
+
+  for (const socialDescriptionFooter of atLimit) {
+    const markers = await studio.validate(settings({socialDescriptionFooter}))
+    assert.deepEqual(
+      errorsAt(markers, 'socialDescriptionFooter'),
+      [],
+      label(socialDescriptionFooter),
+    )
+  }
+  for (const socialDescriptionFooter of overLimit) {
+    const markers = await studio.validate(settings({socialDescriptionFooter}))
+    assert.equal(
+      errorsAt(markers, 'socialDescriptionFooter').length,
+      1,
+      label(socialDescriptionFooter),
+    )
+  }
+})
