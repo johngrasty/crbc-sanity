@@ -13,6 +13,7 @@ const item = (fields: Record<string, unknown> = {}): TestDocument => ({
   title: 'Easter Sunday',
   serviceDate: '2026-04-05',
   serviceTimezone: 'America/New_York',
+  publicationPolicy: 'auto',
   slug: slug('easter'),
   ...fields,
 })

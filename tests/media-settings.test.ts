@@ -59,14 +59,18 @@ test('a missing title template is an error', async () => {
   }
 })
 
-test('a title template holds up to 200 characters', async () => {
+test('a title template holds up to 200 characters, counted as Unicode code points', async () => {
   const studio = createHarness()
-  const template = (length: number) => `{title} ${'x'.repeat(length - 8)}`
-  assert.equal(template(200).length, 200)
-  const at = await studio.validate(settings({socialTitleTemplate: template(200)}))
-  assert.deepEqual(errorsAt(at, 'socialTitleTemplate'), [])
-  const over = await studio.validate(settings({socialTitleTemplate: template(201)}))
-  assert.equal(errorsAt(over, 'socialTitleTemplate').length, 1)
+  // 🙏 is outside the BMP. It's one code point, which is how the contract counts a character,
+  // and two UTF-16 units, which is how Sanity's max() counts.
+  for (const character of ['x', '🙏']) {
+    const template = (length: number) => `{title} ${character.repeat(length - 8)}`
+    assert.equal([...template(200)].length, 200)
+    const at = await studio.validate(settings({socialTitleTemplate: template(200)}))
+    assert.deepEqual(errorsAt(at, 'socialTitleTemplate'), [], `200 with ${character}`)
+    const over = await studio.validate(settings({socialTitleTemplate: template(201)}))
+    assert.equal(errorsAt(over, 'socialTitleTemplate').length, 1, `201 with ${character}`)
+  }
 })
 
 test('the default title template and the four placeholders are valid', async () => {

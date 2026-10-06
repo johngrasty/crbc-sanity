@@ -205,6 +205,38 @@ export type MediaSettings = {
   socialDescriptionFooter?: string
 }
 
+export type ServiceEvent = {
+  _id: string
+  _type: 'serviceEvent'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  eventId: string
+  mediaItem: {
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    [internalGroqTypeReferenceTo]?: 'mediaItem'
+  }
+  scheduledStart?: {
+    local: string
+    timeZone: string
+    offset?: string
+    utc?: string
+  }
+  expectedDurationMinutes: number
+  cancelled?: boolean
+  requestedDestinations?: Array<{
+    platform: 'youtube' | 'facebook'
+    accountLabel: string
+    visibility: 'public' | 'unlisted' | 'private'
+    _type: 'requestedDestination'
+    _key: string
+  }>
+  socialGoLiveLeadMinutes?: number
+  resourceId: string
+}
+
 export type MediaItem = {
   _id: string
   _type: 'mediaItem'
@@ -214,8 +246,19 @@ export type MediaItem = {
   contentId: string
   kind: 'service' | 'sermon' | 'audio' | 'other'
   title?: string
+  description?: string
   serviceDate?: string
   serviceTimezone: string
+  publicationPolicy: 'auto' | 'manual'
+  publishAt?: string
+  editorHold?: {
+    active?: boolean
+    note?: string
+  }
+  rightsHold?: {
+    active?: boolean
+    note?: string
+  }
 }
 
 export type JobOpening = {
@@ -1709,6 +1752,7 @@ export type AllSanitySchemaTypes =
   | LogoCloud
   | Hero
   | MediaSettings
+  | ServiceEvent
   | MediaItem
   | JobOpening
   | CustomSignUp

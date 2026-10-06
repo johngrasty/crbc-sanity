@@ -29,6 +29,7 @@ import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
 import mediaItem from './media/mediaItem'
+import serviceEvent from './media/serviceEvent'
 import mediaSettings from './media/mediaSettings'
 
 export const schemaTypes = [
@@ -59,6 +60,7 @@ export const schemaTypes = [
   customSignUp,
   jobOpening,
   mediaItem,
+  serviceEvent,
   mediaSettings,
   // Objects (Sections)
   hero,

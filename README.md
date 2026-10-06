@@ -21,9 +21,11 @@ existing Studio environment files and hosting settings.
 Run `npm run verify` before review. It checks TypeScript, lint, the tests, Sanity schema
 validation and the production build.
 
-`npm test` runs offline. The tests use an in-memory dataset, and the preload in
-`tests/loader/offline.mjs` fails the run if anything opens a network connection or looks up
-a host name. `npm run verify` never reads or writes content and never deploys the Studio. It
+`npm test` runs offline. The tests use an in-memory dataset. The preload in
+`tests/loader/offline.mjs` fails the run when a test process opens a network connection,
+sends a UDP packet or makes a DNS query, even if the code catches the error.
+`tests/offline-guard.test.ts` checks each kind. Child processes that a test starts don't load
+the preload. `npm run verify` never reads or writes content and never deploys the Studio. It
 turns off Sanity CLI telemetry and update checks with `DO_NOT_TRACK` and
 `NO_UPDATE_NOTIFIER`. The schema check still needs the network, because Sanity asks the
 API who the logged-in CLI user is before it validates the schema definitions. It never reads
