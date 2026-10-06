@@ -1,5 +1,6 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
+import {itemLimit, noRepeats, referencedId} from './lists'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
 import {publicationPolicyField} from './publicationPolicy'
@@ -139,6 +140,32 @@ export default defineType({
         rule.custom((value) =>
           !value || isCalendarDate(value) ? true : 'Pick the service date from the calendar.',
         ),
+      ],
+      group: 'details',
+    }),
+    // Contract section 10.2 allows 10 speakers and 20 topics on an item.
+    defineField({
+      name: 'speakers',
+      title: 'Speakers',
+      type: 'array',
+      description:
+        'Who preached or spoke, up to 10. Put the main speaker first, because YouTube and Facebook titles use the first one.',
+      of: [{type: 'reference', to: [{type: 'speaker'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 10, 'speakers'),
+        noRepeats(rule, referencedId, 'This speaker is already on the item.'),
+      ],
+      group: 'details',
+    }),
+    defineField({
+      name: 'topics',
+      title: 'Topics',
+      type: 'array',
+      description: 'What the message is about, up to 20. Viewers can browse recordings by topic.',
+      of: [{type: 'reference', to: [{type: 'topic'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 20, 'topics'),
+        noRepeats(rule, referencedId, 'This topic is already on the item.'),
       ],
       group: 'details',
     }),
