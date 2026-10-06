@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {createHarness, type Marker} from './harness.ts'
+import {createHarness, type Marker, type TestDocument} from './harness.ts'
 
 const P = 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C'
 const Q = 'mi_01K6Z9A7H2MXW4Q8C5R3T6V0BD'
@@ -137,6 +137,74 @@ test('every editorial type keeps its published ID', async () => {
     const draft = await studio.edit('doc', {set: {[field]: 'pasted'}})
     assert.equal(draft[field], 'published', type)
   }
+})
+
+// The form runs its steps once the document loads, so a pasted ID, or one an API write left,
+// goes back before the editor can Unpublish.
+test('a changed ID goes back to the one it has to keep as soon as the form opens', async () => {
+  const studio = createHarness({
+    documents: [item('item', P), item('drafts.item', Q), item('versions.rSpring.item', Q)],
+  })
+  assert.equal((await studio.open('item')).contentId, P)
+  assert.equal((await studio.open('item', {release: 'rSpring'})).contentId, P)
+  for (const _id of ['drafts.item', 'versions.rSpring.item']) {
+    assert.equal(studio.documents().find((document) => document._id === _id)?.contentId, P)
+    assert.deepEqual(idErrors(await studio.validate(_id)), [], _id)
+  }
+
+  const unpublished = createHarness({
+    documents: [item('drafts.n', P), item('versions.rSpring.n', Q)],
+  })
+  assert.equal((await unpublished.open('n', {release: 'rSpring'})).contentId, P)
+})
+
+test('opening an item whose versions keep its ID writes nothing', async () => {
+  const documents = [item('drafts.item', P), item('item', P)]
+  const studio = createHarness({documents})
+  await studio.open('item')
+  assert.deepEqual(studio.documents(), documents)
+  const published = createHarness({documents: [item('item', P)]})
+  await published.open('item')
+  assert.deepEqual(
+    published.documents().map(({_id}) => _id),
+    ['item'],
+  )
+})
+
+const slug = (current: string) => ({_type: 'slug', current})
+const history = (document: TestDocument) =>
+  ((document.slugHistory ?? []) as {current: string}[]).map(({current}) => current)
+
+test('on a media item, the ID step and slug history both apply when the form opens and on each edit', async () => {
+  const published = {...item('item', P), slug: slug('easter')}
+  // Written through the API with another ID and a new slug, and no history.
+  const written = {...published, _id: 'drafts.item', contentId: Q, slug: slug('easter-sunday')}
+  const studio = createHarness({documents: [published, written]})
+  const opened = await studio.open('item')
+  assert.equal(opened.contentId, P)
+  assert.deepEqual(history(opened), ['easter'])
+
+  const edited = await studio.edit('item', {
+    set: {contentId: Q, slug: slug('easter-sunday-2026')},
+  })
+  assert.equal(edited.contentId, P)
+  assert.deepEqual(history(edited), ['easter'])
+})
+
+test('on a service event, the ID step runs when the form opens, and the slot length step only on a change', async () => {
+  const eventId = 'ev_01K6Z8Y4N3QJ5W2X7R9T0V1B2C'
+  const sunday = {
+    local: '2026-10-11T09:00',
+    timeZone: 'America/New_York',
+    offset: '-04:00',
+    utc: '2026-10-11T13:00:00Z',
+  }
+  const event = {_id: 'event', _type: 'serviceEvent', eventId, scheduledStart: sunday}
+  const pasted = {...event, _id: 'drafts.event', eventId: 'ev_01K6Z9A7H2MXW4Q8C5R3T6V0BD'}
+  const studio = createHarness({documents: [event, pasted]})
+  const opened = await studio.open('event')
+  assert.equal(opened.eventId, eventId)
+  assert.equal(opened.expectedDurationMinutes, undefined)
 })
 
 test("one edit to a service event gets both its ID step's patch and its slot length step's", async () => {
