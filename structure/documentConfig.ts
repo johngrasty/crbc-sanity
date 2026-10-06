@@ -21,9 +21,12 @@ import {singletonActions, singletonsWithTemplates, singletonTypes} from './singl
 export const documentActions: DocumentActionsResolver = (prev, context) => {
   if (singletonTypes.has(context.schemaType)) {
     // A create intent URL can open a singleton that keeps its template under a random ID. Only
-    // its fixed document, whose ID is the type name, gets actions.
+    // its fixed document, whose ID is the type name, gets the singleton actions. Any other copy
+    // keeps only delete, so an editor can remove it but never publish it.
     const fixed = context.documentId && getPublishedId(context.documentId) === context.schemaType
-    if (singletonsWithTemplates.has(context.schemaType) && !fixed) return []
+    if (singletonsWithTemplates.has(context.schemaType) && !fixed) {
+      return prev.filter(({action}) => action === 'delete')
+    }
     return prev.filter(({action}) => action && singletonActions.has(action))
   }
   // Sanity's Duplicate copies every field, the editorial ID too. The editorial types get the

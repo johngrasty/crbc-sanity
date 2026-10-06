@@ -220,30 +220,41 @@ test('a media settings document under any other ID is an error, in every version
   }
 })
 
-const versionTypes = ['draft', 'published', 'version', 'scheduled-draft', 'revision'] as const
+// A media settings document under any other ID keeps only delete, so an editor can remove it.
+// Sanity's lists have delete for drafts, published documents and revisions, and none for a
+// release version or a scheduled draft. Source: /tmp/studio-spec/notes/01-sanity-research.md,
+// question 1.
+const strayActions = {
+  draft: ['delete'],
+  published: ['delete'],
+  version: [],
+  'scheduled-draft': [],
+  revision: ['delete'],
+}
+const versionTypes = Object.keys(strayActions) as (keyof typeof strayActions)[]
 
-test('a media settings document under any other ID has no actions, in every version type', () => {
+test('a media settings document under any other ID has only delete, in every version type', () => {
   const studio = createHarness()
   for (const versionType of versionTypes) {
     for (const documentId of ['other', '0b6f3c2e-5d4a-4e8b-9f1c-2a7d6e5b4c3a']) {
       assert.deepEqual(
         studio.actions('mediaSettings', versionType, {documentId}),
-        [],
+        strayActions[versionType],
         `${documentId} ${versionType}`,
       )
     }
   }
 })
 
-// What follows an intent: the editor's first edit stores the form's value as a draft, and the
-// draft can't publish, by the Publish button or with a release.
+// What follows an intent: the editor's first edit stores the form's value as a draft. The draft
+// can't publish, by the Publish button or with a release, and it can only be deleted.
 async function assertStrayCantPublish(studio: ReturnType<typeof createHarness>, id: string) {
   const errors = errorsAt(await studio.validate(`drafts.${id}`), '')
   assert.match(errors[0]?.message ?? '', /Media settings in the Media section/, id)
   for (const versionType of versionTypes) {
     assert.deepEqual(
       studio.actions('mediaSettings', versionType, {documentId: id}),
-      [],
+      strayActions[versionType],
       versionType,
     )
   }
