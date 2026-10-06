@@ -3,21 +3,7 @@ import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
 import {publicationPolicyField} from './publicationPolicy'
-
-// A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
-// That rejects aliases such as US/Eastern, other spellings such as america/new_york, and EST,
-// which Intl reads as America/Panama. Intl also accepts offsets such as +05:00, which aren't
-// zones, so a name must start with a letter.
-function isCanonicalTimeZone(value: string): boolean {
-  if (!/^[A-Za-z]/.test(value)) return false
-  try {
-    return (
-      new Intl.DateTimeFormat(undefined, {timeZone: value}).resolvedOptions().timeZone === value
-    )
-  } catch {
-    return false
-  }
-}
+import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
 
 // A real day written as YYYY-MM-DD, the way Sanity stores a date field. setUTCFullYear, unlike
 // Date.UTC, doesn't read years 0 to 99 as 1900 to 1999.
@@ -160,14 +146,10 @@ export default defineType({
       type: 'string',
       description:
         'Leave this as America/New_York unless the service took place in another time zone. Use a name like America/Chicago.',
-      initialValue: 'America/New_York',
+      initialValue: CHURCH_TIME_ZONE,
       validation: (rule) => [
         rule.required(),
-        rule.custom((value) =>
-          !value || isCanonicalTimeZone(value)
-            ? true
-            : 'Use the standard time zone name, such as America/New_York or America/Chicago.',
-        ),
+        rule.custom((value) => (!value || isTimeZone(value) ? true : timeZoneMessage)),
       ],
       group: 'details',
     }),
