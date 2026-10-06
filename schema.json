@@ -1,5 +1,329 @@
 [
   {
+    "name": "passage",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "passage"
+          }
+        },
+        "book": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "Gen"
+              },
+              {
+                "type": "string",
+                "value": "Exod"
+              },
+              {
+                "type": "string",
+                "value": "Lev"
+              },
+              {
+                "type": "string",
+                "value": "Num"
+              },
+              {
+                "type": "string",
+                "value": "Deut"
+              },
+              {
+                "type": "string",
+                "value": "Josh"
+              },
+              {
+                "type": "string",
+                "value": "Judg"
+              },
+              {
+                "type": "string",
+                "value": "Ruth"
+              },
+              {
+                "type": "string",
+                "value": "1Sam"
+              },
+              {
+                "type": "string",
+                "value": "2Sam"
+              },
+              {
+                "type": "string",
+                "value": "1Kgs"
+              },
+              {
+                "type": "string",
+                "value": "2Kgs"
+              },
+              {
+                "type": "string",
+                "value": "1Chr"
+              },
+              {
+                "type": "string",
+                "value": "2Chr"
+              },
+              {
+                "type": "string",
+                "value": "Ezra"
+              },
+              {
+                "type": "string",
+                "value": "Neh"
+              },
+              {
+                "type": "string",
+                "value": "Esth"
+              },
+              {
+                "type": "string",
+                "value": "Job"
+              },
+              {
+                "type": "string",
+                "value": "Ps"
+              },
+              {
+                "type": "string",
+                "value": "Prov"
+              },
+              {
+                "type": "string",
+                "value": "Eccl"
+              },
+              {
+                "type": "string",
+                "value": "Song"
+              },
+              {
+                "type": "string",
+                "value": "Isa"
+              },
+              {
+                "type": "string",
+                "value": "Jer"
+              },
+              {
+                "type": "string",
+                "value": "Lam"
+              },
+              {
+                "type": "string",
+                "value": "Ezek"
+              },
+              {
+                "type": "string",
+                "value": "Dan"
+              },
+              {
+                "type": "string",
+                "value": "Hos"
+              },
+              {
+                "type": "string",
+                "value": "Joel"
+              },
+              {
+                "type": "string",
+                "value": "Amos"
+              },
+              {
+                "type": "string",
+                "value": "Obad"
+              },
+              {
+                "type": "string",
+                "value": "Jonah"
+              },
+              {
+                "type": "string",
+                "value": "Mic"
+              },
+              {
+                "type": "string",
+                "value": "Nah"
+              },
+              {
+                "type": "string",
+                "value": "Hab"
+              },
+              {
+                "type": "string",
+                "value": "Zeph"
+              },
+              {
+                "type": "string",
+                "value": "Hag"
+              },
+              {
+                "type": "string",
+                "value": "Zech"
+              },
+              {
+                "type": "string",
+                "value": "Mal"
+              },
+              {
+                "type": "string",
+                "value": "Matt"
+              },
+              {
+                "type": "string",
+                "value": "Mark"
+              },
+              {
+                "type": "string",
+                "value": "Luke"
+              },
+              {
+                "type": "string",
+                "value": "John"
+              },
+              {
+                "type": "string",
+                "value": "Acts"
+              },
+              {
+                "type": "string",
+                "value": "Rom"
+              },
+              {
+                "type": "string",
+                "value": "1Cor"
+              },
+              {
+                "type": "string",
+                "value": "2Cor"
+              },
+              {
+                "type": "string",
+                "value": "Gal"
+              },
+              {
+                "type": "string",
+                "value": "Eph"
+              },
+              {
+                "type": "string",
+                "value": "Phil"
+              },
+              {
+                "type": "string",
+                "value": "Col"
+              },
+              {
+                "type": "string",
+                "value": "1Thess"
+              },
+              {
+                "type": "string",
+                "value": "2Thess"
+              },
+              {
+                "type": "string",
+                "value": "1Tim"
+              },
+              {
+                "type": "string",
+                "value": "2Tim"
+              },
+              {
+                "type": "string",
+                "value": "Titus"
+              },
+              {
+                "type": "string",
+                "value": "Phlm"
+              },
+              {
+                "type": "string",
+                "value": "Heb"
+              },
+              {
+                "type": "string",
+                "value": "Jas"
+              },
+              {
+                "type": "string",
+                "value": "1Pet"
+              },
+              {
+                "type": "string",
+                "value": "2Pet"
+              },
+              {
+                "type": "string",
+                "value": "1John"
+              },
+              {
+                "type": "string",
+                "value": "2John"
+              },
+              {
+                "type": "string",
+                "value": "3John"
+              },
+              {
+                "type": "string",
+                "value": "Jude"
+              },
+              {
+                "type": "string",
+                "value": "Rev"
+              }
+            ]
+          },
+          "optional": false
+        },
+        "chapterStart": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": false
+        },
+        "verseStart": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "chapterEnd": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "verseEnd": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "display": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": false
+        }
+      }
+    }
+  },
+  {
     "name": "statistic",
     "type": "type",
     "value": {
@@ -1425,6 +1749,28 @@
           "type": "string"
         },
         "optional": false
+      },
+      "passages": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "passage"
+            }
+          }
+        },
+        "optional": true
       },
       "publicationPolicy": {
         "type": "objectAttribute",
