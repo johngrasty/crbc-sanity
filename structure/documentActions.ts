@@ -1,6 +1,49 @@
 import {EyeOpenIcon} from '@sanity/icons'
-import {useClient, type DocumentActionComponent} from 'sanity'
+import {useToast} from '@sanity/ui'
+import {Copy} from 'lucide-react'
+import {useState} from 'react'
+import {getPublishedId, useClient, type DocumentActionComponent} from 'sanity'
+import {useRouter} from 'sanity/router'
+import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {createDocumentPreviewUrl, documentSlug, previewableTypes} from './preview'
+
+// Stands in for Sanity's Duplicate on the editorial types. duplicateWithFreshIds makes the copy,
+// and the harness tests it there. This shell only picks the source and opens the copy. The copy
+// is a draft even with a release pinned, so it opens outside that release.
+export const FreshIdDuplicateAction: DocumentActionComponent = (props) => {
+  const client = useClient({apiVersion: '2025-02-19'})
+  const {navigateIntent} = useRouter()
+  const toast = useToast()
+  const [duplicating, setDuplicating] = useState(false)
+  // As Sanity's Duplicate does: the open release version, else the draft, else the published one.
+  const source = props.version ?? props.draft ?? props.published
+  return {
+    label: duplicating ? 'Duplicating…' : 'Duplicate',
+    icon: Copy,
+    disabled: duplicating || !props.ready || !source,
+    title:
+      props.ready && !source
+        ? "This document hasn't been saved yet, so there's nothing to copy."
+        : undefined,
+    onHandle: async () => {
+      if (!source) return
+      setDuplicating(true)
+      try {
+        const copy = await duplicateWithFreshIds(client, source)
+        navigateIntent('edit', {id: getPublishedId(copy._id), type: copy._type})
+      } catch (error) {
+        toast.push({
+          status: 'error',
+          title: "The copy couldn't be made",
+          description: error instanceof Error ? error.message : undefined,
+        })
+      } finally {
+        setDuplicating(false)
+      }
+    },
+  }
+}
+FreshIdDuplicateAction.displayName = 'FreshIdDuplicateAction'
 
 export const PreviewAction: DocumentActionComponent = (props) => {
   const client = useClient({apiVersion: '2025-02-19'})

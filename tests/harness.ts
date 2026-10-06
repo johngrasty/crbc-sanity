@@ -21,6 +21,7 @@ import {
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type NewDocumentCreationContext,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -33,9 +34,11 @@ import {
 } from 'sanity/structure'
 import {schemaTypes} from '../schemaTypes'
 import {deskStructure} from '../structure/deskStructure'
+import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {
   documentActions,
   formFollowUps,
+  newDocumentOptions,
   templates,
   type DocumentPatch,
 } from '../structure/documentConfig'
@@ -47,7 +50,8 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
 
 // A pane of the desk. A list has items, a document list has the documents it shows, and a
-// document pane has its fixed document. Other panes, such as components, have only a type.
+// document pane has its fixed document and the value its form starts from while that document
+// doesn't exist. Other panes, such as components, have only a type.
 export type DeskPane = {
   type: string
   title?: string
@@ -55,6 +59,7 @@ export type DeskPane = {
   documents?: TestDocument[]
   documentId?: string
   schemaType?: string
+  initialValue?: TestDocument
 }
 
 // The client behind the mock auth store. Sanity needs config().url to build a Source. Nothing
@@ -97,7 +102,7 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {types: schemaTypes, templates},
-  document: {actions: documentActions},
+  document: {actions: documentActions, newDocumentOptions},
 })
 
 // Sanity reads window when a Source resolves, and its validator and initial values schedule
@@ -136,6 +141,8 @@ type StructureNode = {
     defaultOrdering?: Ordering[]
     id?: string
     type?: string
+    template?: string
+    templateParameters?: Record<string, unknown>
   }
 }
 const structureBuilder = createStructureBuilder({source, perspectiveStack: []})
@@ -206,6 +213,17 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
       const result = await evaluate(parse(query, {params}), {dataset: visible(), params})
       return structuredClone(await result.get())
     },
+    // Like Content Lake's create mutation, it fails when the _id is taken, sets the system
+    // fields, and returns the stored document.
+    async create(document: TestDocument) {
+      if (dataset.has(document._id)) {
+        throw new Error(`A document with _id "${document._id}" already exists`)
+      }
+      const now = new Date().toISOString()
+      const created = {...document, _rev: randomUUID(), _createdAt: now, _updatedAt: now}
+      dataset.set(created._id, structuredClone(created))
+      return structuredClone(created)
+    },
   }
   return client as unknown as SanityClient
 }
@@ -254,6 +272,28 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     return markers.map(({path, level, message}) => ({path: pathToString(path), level, message}))
   }
 
+  // The value a document pane's form starts from while its document doesn't exist, as Sanity
+  // resolves it: the pane's template, else the type's only template. With neither, the form
+  // starts with just _id and _type, and field initial values don't apply. See
+  // lib/_chunks-es/pane.js:7223 and lib/index.js:7293-7305.
+  async function paneInitialValue(
+    documentId: string,
+    schemaType: string,
+    {template, templateParameters}: {template?: string; templateParameters?: object},
+  ): Promise<TestDocument> {
+    const empty = {_id: documentId, _type: schemaType}
+    const typeTemplates = source.templates.filter(
+      (candidate) => candidate.schemaType === schemaType,
+    )
+    const templateId = template ?? (typeTemplates.length === 1 ? typeTemplates[0].id : undefined)
+    const found = source.templates.find(({id}) => id === templateId)
+    if (!found) return empty
+    return {
+      ...empty,
+      ...(await resolveInitialValue(schema, found, templateParameters, configContext)),
+    }
+  }
+
   const versionId = (id: string, release?: string) =>
     release ? getVersionId(getPublishedId(id), release) : getDraftId(getPublishedId(id))
 
@@ -273,6 +313,14 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
           releaseId: inRelease ? 'rHarness' : undefined,
         })
         .map(actionName)
+    },
+
+    // The template IDs a create menu offers, resolved through the whole config chain: the
+    // global create button by default, a structure list's "+" with {type: 'structure',
+    // schemaType}, or a reference field's "Create new" with {type: 'document', documentId,
+    // schemaType}. A reference field then keeps only the templates of the types it refers to.
+    createMenu(context: NewDocumentCreationContext = {type: 'global'}): string[] {
+      return source.document.resolveNewDocumentOptions(context).map(({templateId}) => templateId)
     },
 
     // A new document from a template, stored as a draft, as Studio stores it on the first edit.
@@ -311,6 +359,21 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       return structuredClone(dataset.get(target) as TestDocument)
     },
 
+    // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is
+    // what the document pane shows: with release, that release's version if it has one, else
+    // the draft, else the published document. The action gets Studio's client, which reads raw.
+    async duplicate(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
+      const publishedId = getPublishedId(id)
+      const source =
+        (release ? dataset.get(getVersionId(publishedId, release)) : undefined) ??
+        dataset.get(getDraftId(publishedId)) ??
+        dataset.get(publishedId)
+      if (!source) throw new Error(`No document to duplicate with _id "${publishedId}"`)
+      const client = getClient({apiVersion: '2025-02-19', perspective: 'raw'})
+      const copy = await duplicateWithFreshIds(client, structuredClone(source))
+      return structuredClone(copy) as TestDocument
+    },
+
     // Makes the draft, or with release the version in that release, the published document, as
     // the Publish button or publishing a release does. Like Studio, it refuses a version with
     // validation errors.
@@ -329,9 +392,9 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     },
 
     // Opens the desk at a path of item IDs, such as desk('media', 'mediaItems'), and returns
-    // that pane. A document list shows what the default perspective shows: each document's
-    // draft if it has one, else its published version, in the list's default order. Release
-    // versions are left out.
+    // that pane. A document pane reports the value its form starts from. A document list shows
+    // what the default perspective shows: each document's draft if it has one, else its
+    // published version, in the list's default order. Release versions are left out.
     async desk(...path: string[]): Promise<DeskPane> {
       let node = serializeNode(deskStructure(structureBuilder, structureContext))
       for (const [index, id] of path.entries()) {
@@ -344,8 +407,11 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         const items = (node.items ?? []).filter((item) => item.type !== 'divider')
         return {type, title, items: items.map((item) => ({id: item.id ?? '', title: item.title}))}
       }
-      if (type === 'document')
-        return {type, title, documentId: options.id, schemaType: options.type}
+      if (type === 'document') {
+        const {id = '', type: schemaType = ''} = options
+        const initialValue = await paneInitialValue(id, schemaType, options)
+        return {type, title, documentId: id, schemaType, initialValue}
+      }
       if (type !== 'documentList') return {type, title}
 
       const rows = new Map<string, TestDocument>()
