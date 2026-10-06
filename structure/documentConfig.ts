@@ -11,6 +11,7 @@ import {
 } from 'sanity'
 import {CalendarClock} from 'lucide-react'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
 import type {ZonedStart} from '../schemaTypes/media/zonedStart'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
@@ -88,11 +89,13 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 // title or editorHold.note.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
-// A form follow-up step runs after each edit to a draft or release version of its type. It gets
-// the version as it was before the edit, the edited version and the published document, and
-// returns a patch for the version, or null when the version needs nothing. The harness's edit
-// runs it. The type's form must run the same step, so the first ticket that registers one also
-// wires it into the form.
+// A form follow-up step keeps fields of a draft or release version in step as the editor works.
+// It gets the version before the latest change, the version now and the published document, and
+// returns a patch for the version, or null when the version needs nothing. The form runs every
+// step registered for the type after each change, including another editor's, and once when the
+// document loads, with previous the same as version. The harness's edit and open run them too.
+// Each step owns its own fields, returns null once there's nothing left to change, and returns
+// the same patch in every open form, because two editors' forms can both apply it.
 export type FormFollowUp = (versions: {
   previous: SanityDocumentLike
   version: SanityDocumentLike
@@ -114,10 +117,12 @@ const fillSlotLength: FormFollowUp = ({previous, version}) => {
   return untouched ? {set: {expectedDurationMinutes: slot.expectedDurationMinutes}} : null
 }
 
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = {
-  serviceEvent: fillSlotLength,
+// Each type's follow-up steps, in order. Every type with a slug keeps its slug history.
+export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
+  serviceEvent: [fillSlotLength],
+  ...Object.fromEntries(Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]])),
 }
 
-// The form components sanity.config.ts passes to Sanity. They run each type's follow-up step in
-// the form after every change.
+// The form components sanity.config.ts passes to Sanity. They run each type's follow-up steps in
+// the form.
 export const formComponents: FormComponents = {input: formFollowUpInput(formFollowUps)}

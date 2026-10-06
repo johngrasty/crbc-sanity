@@ -383,6 +383,12 @@ export type MediaItem = {
   contentId: string
   kind: 'service' | 'sermon' | 'audio' | 'other'
   title?: string
+  slug?: Slug
+  slugHistory?: Array<
+    {
+      _key: string
+    } & Slug
+  >
   description?: string
   serviceDate?: string
   serviceTimezone: string
@@ -415,6 +421,12 @@ export type MediaItem = {
     active?: boolean
     note?: string
   }
+}
+
+export type Slug = {
+  _type: 'slug'
+  current: string
+  source?: string
 }
 
 export type JobOpening = {
@@ -554,12 +566,6 @@ export type Ministry = {
   }>
   pcoTag?: string
   featured?: boolean
-}
-
-export type Slug = {
-  _type: 'slug'
-  current: string
-  source?: string
 }
 
 export type Resource = {
@@ -1899,10 +1905,10 @@ export type AllSanitySchemaTypes =
   | SanityImageHotspot
   | ServiceEvent
   | MediaItem
+  | Slug
   | JobOpening
   | CustomSignUp
   | Ministry
-  | Slug
   | Resource
   | Article
   | FooterMenu
