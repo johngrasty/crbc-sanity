@@ -18,11 +18,17 @@ existing Studio environment files and hosting settings.
 
 ## Verification
 
-Run `npm run verify` before review. It checks TypeScript, lint, preview URL tests,
-Sanity schema validation and the production build. The tests use a fake Sanity client;
-they do not read or write content. The schema command validates definitions locally,
-not existing dataset documents. No command in `verify` deploys the Studio. Studio runtime auto-updates are disabled
-so a deployment runs the dependency versions checked locally.
+Run `npm run verify` before review. It checks TypeScript, lint, the tests, Sanity schema
+validation and the production build.
+
+`npm test` runs offline. The tests use an in-memory dataset, and the preload in
+`tests/loader/offline.mjs` fails the run if anything opens a network connection or looks up
+a host name. `npm run verify` never reads or writes content and never deploys the Studio. It
+turns off Sanity CLI telemetry and update checks with `DO_NOT_TRACK` and
+`NO_UPDATE_NOTIFIER`. The schema check still needs the network, because Sanity asks the
+API who the logged-in CLI user is before it validates the schema definitions. It never reads
+dataset documents. Studio runtime auto-updates are disabled so a deployment runs the
+dependency versions checked locally.
 
 After changing schemas, run `npm run typegen` and commit both `schema.json` and
 `sanity.types.ts`. Update any corresponding queries in the website repository. Typegen

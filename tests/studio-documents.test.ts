@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {createHarness, type Marker} from './harness.ts'
+import {createHarness, type Marker, type TestDocument} from './harness.ts'
 
 const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
@@ -140,4 +140,21 @@ test('a reference needs a published document, or a version in the same release',
   assert.equal(await authorErrors('versions.rSpring.pastor', 'versions.rSpring.news'), 0)
   assert.equal(await authorErrors('versions.rOther.pastor', 'versions.rSpring.news'), 1)
   assert.equal(await authorErrors('pastor', 'versions.rSpring.news'), 0)
+})
+
+test('a reference to a document its release deletes is an error', async () => {
+  const article = {
+    _id: 'versions.rSpring.news',
+    _type: 'article',
+    author: {_type: 'reference', _ref: 'pastor'},
+  }
+  const authorErrors = async (staff: TestDocument[]) => {
+    const studio = createHarness({documents: [...staff, article]})
+    return errorsAt(await studio.validate(article._id), 'author').length
+  }
+  const published = {_id: 'pastor', _type: 'staff'}
+  const deleted = (_id: string) => ({_id, _type: 'staff', _system: {delete: true}})
+  assert.equal(await authorErrors([published, deleted('versions.rSpring.pastor')]), 1)
+  assert.equal(await authorErrors([deleted('versions.rSpring.pastor')]), 1)
+  assert.equal(await authorErrors([published, deleted('versions.rOther.pastor')]), 0)
 })
