@@ -168,7 +168,7 @@ export function slugFields(type: SlugType) {
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      description: `The end of the link to this ${noun}, made from the title.`,
+      description: `The end of the link to this ${noun}. Generate makes it from the title. If you change it after publishing, links with the old slug keep working.`,
       options: {source: 'title', slugify, isUnique},
       validation: (rule) => [slugShape(rule), missingSlug(withoutSlugCheck(rule), type)],
     }),
@@ -176,6 +176,7 @@ export function slugFields(type: SlugType) {
       name: 'slugHistory',
       title: 'Old slugs',
       type: 'array',
+      description: `Links with these slugs still lead to this ${noun}. Studio adds a slug here when you publish a new one.`,
       of: [
         defineArrayMember({
           type: 'slug',
@@ -190,7 +191,7 @@ export function slugFields(type: SlugType) {
         rule.custom((_value, {document}) => {
           const current = document && currentSlug(document)
           return current && historySlugs(document).includes(current)
-            ? `The slug history holds the current slug, ${quoted([current])}. Open this version of the ${noun} in Studio to fix it.`
+            ? `Old slugs can't include the current slug, ${quoted([current])}. Open this version of the ${noun} in Studio to fix it.`
             : true
         }),
         rule.custom(async (_value, context) => {
@@ -205,7 +206,7 @@ export function slugFields(type: SlugType) {
           const history = historySlugs(document)
           const missing = owedHistory(document, published).filter((slug) => !history.includes(slug))
           if (!missing.length) return true
-          return `The slug history is missing ${quoted(missing)}, which old links still use. Open this version of the ${noun} in Studio to add ${missing.length === 1 ? 'it' : 'them'} back.`
+          return `Old slugs are missing ${quoted(missing)}, which links still use. Open this version of the ${noun} in Studio to add ${missing.length === 1 ? 'it' : 'them'} back.`
         }),
       ],
     }),

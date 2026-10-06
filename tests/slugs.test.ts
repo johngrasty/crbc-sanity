@@ -263,3 +263,19 @@ test("two editors' forms write the same history, keys included", async () => {
   assert.deepEqual(history(first), ['resurrection', 'easter'])
   assert.deepEqual(first.slugHistory, second.slugHistory)
 })
+
+test('a draft left behind when a release publishes a new slug catches up when opened', async () => {
+  const studio = createHarness({documents: [item({slug: slug('easter')})]})
+  await studio.edit('item', {set: {title: 'Easter Sunday service'}})
+  await studio.edit('item', {set: {slug: slug('easter-sunday')}}, {release: 'rSpring'})
+  await studio.publish('item', {release: 'rSpring'})
+  // The draft still has the old slug and no history, so it can't publish over the release.
+  assert.equal(errorsAt(await studio.validate('drafts.item'), 'slugHistory').length, 1)
+  const draft = await studio.open('item')
+  assert.deepEqual(history(draft), ['easter-sunday'])
+  assert.deepEqual(errorsAt(await studio.validate('drafts.item'), 'slugHistory'), [])
+  // Publishing the draft makes its slug current again, and the release's slug redirects.
+  const published = await studio.publish('item')
+  assert.equal(slugOf(published), 'easter')
+  assert.deepEqual(history(published), ['easter-sunday'])
+})
