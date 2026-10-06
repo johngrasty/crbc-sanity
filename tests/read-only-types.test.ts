@@ -260,3 +260,19 @@ test('AI Assist offers its inspector and field actions on media items, not on th
     assert.ok(!studio.fieldActions(type).includes(assistFieldActions), type)
   }
 })
+
+test('no pane of the desk lists or opens a read-only document', async () => {
+  const drafts = samples.map((sample) => ({...sample, _id: `drafts.${sample._id}`}))
+  const studio = createHarness({documents: [...samples, ...drafts]})
+  const opened: string[] = []
+  const walk = async (path: string[]) => {
+    const pane = await studio.desk(...path)
+    const where = path.join(' > ') || 'root'
+    opened.push(where)
+    assert.ok(!readOnlyTypes.includes(pane.schemaType ?? ''), where)
+    for (const {_type} of pane.documents ?? []) assert.ok(!readOnlyTypes.includes(_type), where)
+    for (const item of pane.items ?? []) await walk([...path, item.id])
+  }
+  await walk([])
+  assert.ok(opened.includes('media > mediaItems'), 'the walk reached the Media section')
+})
