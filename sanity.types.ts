@@ -246,8 +246,19 @@ export type MediaItem = {
   contentId: string
   kind: 'service' | 'sermon' | 'audio' | 'other'
   title?: string
+  description?: string
   serviceDate?: string
   serviceTimezone: string
+  publicationPolicy: 'auto' | 'manual'
+  publishAt?: string
+  editorHold?: {
+    active?: boolean
+    note?: string
+  }
+  rightsHold?: {
+    active?: boolean
+    note?: string
+  }
 }
 
 export type JobOpening = {

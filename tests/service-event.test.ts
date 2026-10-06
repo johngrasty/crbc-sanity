@@ -11,6 +11,7 @@ const ITEM: TestDocument = {
   contentId: 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
   kind: 'service',
   serviceTimezone: 'America/New_York',
+  publicationPolicy: 'auto',
 }
 
 const errorsAt = (markers: Marker[], path: string) =>

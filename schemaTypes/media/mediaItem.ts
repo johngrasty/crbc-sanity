@@ -1,7 +1,8 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
-import {labelLimit} from './limits'
+import {characterLimit, labelLimit} from './limits'
+import {publicationPolicyField} from './publicationPolicy'
 import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
 
 // A real day written as YYYY-MM-DD, the way Sanity stores a date field. setUTCFullYear, unlike
@@ -16,6 +17,44 @@ function isCalendarDate(value: string): boolean {
     date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   )
 }
+
+// An instant, as the datetime input stores it, such as 2026-10-11T13:00:00.000Z. A date alone,
+// or a wall time without a zone, would leave media-ops guessing the hour.
+function isInstant(value: string): boolean {
+  const match = /^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.exec(value)
+  return match !== null && isCalendarDate(match[1]) && !Number.isNaN(Date.parse(value))
+}
+
+// An editor hold or a rights hold. media-ops reads only active, and a missing hold object
+// counts as no hold (contract section 10.2). The note tells the next editor why.
+const holdField = (name: string, title: string, description: string) =>
+  defineField({
+    name,
+    title,
+    type: 'object',
+    description,
+    fields: [
+      defineField({name: 'active', title: 'Hold this item', type: 'boolean', initialValue: false}),
+      defineField({
+        name: 'note',
+        title: 'Note',
+        type: 'text',
+        rows: 2,
+        description: 'Say why the item is held, so the next editor knows.',
+        validation: (rule) => [
+          characterLimit(rule, 500),
+          rule
+            .custom((note, context) =>
+              (context.parent as {active?: unknown} | undefined)?.active !== true || note?.trim()
+                ? true
+                : 'Add a note that says why the item is held.',
+            )
+            .warning(),
+        ],
+      }),
+    ],
+    group: 'publishing',
+  })
 
 const kinds = [
   {title: 'Full service', value: 'service'},
@@ -35,7 +74,10 @@ export default defineType({
   title: 'Media item',
   type: 'document',
   icon: Video,
-  groups: [{name: 'details', title: 'Details', default: true}],
+  groups: [
+    {name: 'details', title: 'Details', default: true},
+    {name: 'publishing', title: 'Publishing'},
+  ],
   fields: [
     {...editorialIdField('mediaItem'), group: 'details'},
     defineField({
@@ -65,6 +107,16 @@ export default defineType({
           )
           .warning(),
       ],
+      group: 'details',
+    }),
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'text',
+      rows: 4,
+      description:
+        'What viewers read about the recording on the website, in the apps and on YouTube and Facebook. Plain text, up to 5,000 characters.',
+      validation: (rule) => characterLimit(rule, 5000),
       group: 'details',
     }),
     defineField({
@@ -101,6 +153,30 @@ export default defineType({
       ],
       group: 'details',
     }),
+    {...publicationPolicyField, group: 'publishing'},
+    defineField({
+      name: 'publishAt',
+      title: 'Publish time',
+      type: 'datetime',
+      description:
+        "The recording won't appear before this time. Leave it empty to publish as soon as it's ready.",
+      // Sanity's datetime type doesn't check what the API stores.
+      validation: (rule) =>
+        rule.custom((value) =>
+          !value || isInstant(value) ? true : 'Pick the publish time from the calendar.',
+        ),
+      group: 'publishing',
+    }),
+    holdField(
+      'editorHold',
+      'Editor hold',
+      'Keeps the item and its recording off the website and apps. A public recording comes down. After you turn the hold off, an editor puts it back up in media-ops.',
+    ),
+    holdField(
+      'rightsHold',
+      'Rights hold',
+      "Use this when the church can't show the recording, for example because of music rights. It keeps the item off the website and apps, as an editor hold does.",
+    ),
   ],
   orderings: [
     {

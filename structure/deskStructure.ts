@@ -27,6 +27,7 @@ import {
   Wrench,
   Clapperboard,
   Video,
+  CirclePause,
   SlidersHorizontal,
   CalendarClock,
   CalendarCheck,
@@ -175,6 +176,20 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .child(
                   S.documentTypeList('mediaItem')
                     .title('Media items')
+                    .defaultOrdering([{field: 'serviceDate', direction: 'desc'}]),
+                ),
+              // A missing hold object means no hold, as the website's != true filter assumes.
+              S.listItem()
+                .title('Held items')
+                .id('heldItems')
+                .icon(CirclePause)
+                .child(
+                  S.documentTypeList('mediaItem')
+                    .title('Held items')
+                    .apiVersion('2025-02-19')
+                    .filter(
+                      '_type == "mediaItem" && (editorHold.active == true || rightsHold.active == true)',
+                    )
                     .defaultOrdering([{field: 'serviceDate', direction: 'desc'}]),
                 ),
               S.divider(),
