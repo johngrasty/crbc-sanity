@@ -131,14 +131,17 @@ test('the time zone is required and must be a canonical zone name Intl knows', a
   }
 })
 
-test('a title holds up to 200 characters', async () => {
+test('a title holds up to 200 characters, counted as Unicode code points', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
-  // é is two UTF-8 bytes, so this also shows the limit counts characters, not bytes.
-  const atLimit = await studio.validate({...item, title: 'é'.repeat(200)})
-  assert.deepEqual(errorsAt(atLimit, 'title'), [])
-  const pastLimit = await studio.validate({...item, title: 'é'.repeat(201)})
-  assert.equal(errorsAt(pastLimit, 'title').length, 1)
+  // é is one UTF-16 unit and two UTF-8 bytes. 😀 is outside the BMP: two UTF-16 units, one
+  // code point, which is how the contract's JSON Schema counts a character.
+  for (const character of ['é', '😀']) {
+    const atLimit = await studio.validate({...item, title: character.repeat(200)})
+    assert.deepEqual(errorsAt(atLimit, 'title'), [], `200 × ${character}`)
+    const pastLimit = await studio.validate({...item, title: character.repeat(201)})
+    assert.equal(errorsAt(pastLimit, 'title').length, 1, `201 × ${character}`)
+  }
 })
 
 test('a placeholder item with no title or service date has warnings, not errors', async () => {
