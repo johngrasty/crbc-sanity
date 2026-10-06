@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {createHarness, type Marker} from './harness.ts'
+import {createHarness, type Marker, type TestDocument} from './harness.ts'
 
 const EVENT_ID = /^ev_[0-9A-HJKMNP-TV-Z]{26}$/
 
 // A media item that publishes without errors.
-const ITEM = {
+const ITEM: TestDocument = {
   _id: 'item',
   _type: 'mediaItem',
   contentId: 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
@@ -192,7 +192,7 @@ const warningsAt = (markers: Marker[], path: string) =>
 
 // A valid event on the main live stream: October 11, 2026 from 9:00 to 10:20 in New York, which
 // is 13:00 to 14:20 UTC.
-const event = (_id: string, fields: Record<string, unknown> = {}) => ({
+const event = (_id: string, fields: Record<string, unknown> = {}): TestDocument => ({
   _id,
   _type: 'serviceEvent',
   eventId: 'ev_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
@@ -221,8 +221,8 @@ const nextWeek = {
 }
 
 test('another event that uses the same item is a warning, unless it is cancelled', async () => {
-  const sharedItemWarnings = async (...others: Record<string, unknown>[]) => {
-    const studio = createHarness({documents: [ITEM, ...(others as (typeof ITEM)[])]})
+  const sharedItemWarnings = async (...others: TestDocument[]) => {
+    const studio = createHarness({documents: [ITEM, ...others]})
     return warningsAt(await studio.validate(event('drafts.this')), 'mediaItem').length
   }
   assert.equal(await sharedItemWarnings(event('other', nextWeek)), 1)
@@ -249,7 +249,7 @@ test('another event on the same live stream that overlaps is a warning, unless i
     expectedDurationMinutes,
   })
   const overlapWarnings = async (fields: Record<string, unknown>, own = {}) => {
-    const studio = createHarness({documents: [ITEM, event('other', fields) as typeof ITEM]})
+    const studio = createHarness({documents: [ITEM, event('other', fields)]})
     return warningsAt(await studio.validate(event('drafts.this', own)), 'scheduledStart').length
   }
   // This event runs from 9:00 to 10:20 in New York, 13:00 to 14:20 UTC.
@@ -271,7 +271,7 @@ test('another event on the same live stream that overlaps is a warning, unless i
 })
 
 test('a cancelled event gets neither warning', async () => {
-  const studio = createHarness({documents: [ITEM, event('other') as typeof ITEM]})
+  const studio = createHarness({documents: [ITEM, event('other')]})
   const markers = await studio.validate(event('drafts.this', {cancelled: true}))
   assert.deepEqual(
     markers.filter(({level}) => level === 'warning'),
