@@ -1,10 +1,16 @@
 // The document settings sanity.config.ts passes to Sanity. They live here, not in the config,
 // because the full config can't load in Node and the test harness builds from this module.
-import type {DocumentActionsResolver, SanityDocumentLike, Template, TemplateResolver} from 'sanity'
+import type {
+  DocumentActionsResolver,
+  NewDocumentOptionsResolver,
+  SanityDocumentLike,
+  Template,
+  TemplateResolver,
+} from 'sanity'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
 import {previewableTypes} from './preview'
-import {singletonActions, singletonTypes} from './singletons'
+import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
 export const documentActions: DocumentActionsResolver = (prev, context) => {
   if (singletonTypes.has(context.schemaType)) {
@@ -34,8 +40,20 @@ function withFreshId(template: Template): Template {
   }
 }
 
+// Singletons have no template, except the ones whose fixed document opens with field defaults.
+// Sanity's document pane applies those only through the type's template.
 export const templates: TemplateResolver = (prev) =>
-  prev.filter(({schemaType}) => !singletonTypes.has(schemaType)).map(withFreshId)
+  prev
+    .filter(
+      ({schemaType}) => !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
+    )
+    .map(withFreshId)
+
+// No create menu offers a singleton that keeps its template: not the global create button, a
+// structure list's "+" or a reference field's "Create new". Sanity names a type's default
+// template after the type, and these singletons have only that one.
+export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
+  prev.filter(({templateId}) => !singletonsWithTemplates.has(templateId))
 
 // A patch for one document version. Keys in set and entries in unset are field paths such as
 // title or editorHold.note.
