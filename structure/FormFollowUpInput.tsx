@@ -4,6 +4,8 @@
 import {useEffect, useRef} from 'react'
 import {
   getPublishedId,
+  isDraftId,
+  isVersionId,
   set,
   unset,
   useEditState,
@@ -31,6 +33,9 @@ function FollowUp({followUp, ...props}: ObjectInputProps & {followUp: FormFollow
     const before = previous.current
     previous.current = version
     if (!before || !version || before === version || readOnly || !ready) return
+    // As in the harness, the step runs only on a draft or release version. The form shows the
+    // published document after Publish or Discard, and a patch then would create a new draft.
+    if (!isDraftId(version._id) && !isVersionId(version._id)) return
     // A new document's first patch turns its ID into a draft ID, so compare published IDs.
     if (getPublishedId(before._id) !== getPublishedId(version._id)) return
     const patch = followUp({previous: before, version, published: published ?? null})
