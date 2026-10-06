@@ -2,13 +2,19 @@
 // because the full config can't load in Node and the test harness builds from this module.
 import type {DocumentActionsResolver, SanityDocumentLike, Template, TemplateResolver} from 'sanity'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
-import {PreviewAction} from './documentActions'
+import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonTypes} from './singletons'
 
 export const documentActions: DocumentActionsResolver = (prev, context) => {
   if (singletonTypes.has(context.schemaType)) {
     return prev.filter(({action}) => action && singletonActions.has(action))
+  }
+  // Sanity's Duplicate copies every field, the editorial ID too. The editorial types get the
+  // fresh-ID Duplicate in its place. This goes by type name, so a type gets it once it's listed
+  // in editorialIds.
+  if (editorialIdFor(context.schemaType)) {
+    return prev.map((action) => (action.action === 'duplicate' ? FreshIdDuplicateAction : action))
   }
   return previewableTypes.has(context.schemaType) ? [...prev, PreviewAction] : prev
 }

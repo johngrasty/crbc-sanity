@@ -33,6 +33,7 @@ import {
 } from 'sanity/structure'
 import {schemaTypes} from '../schemaTypes'
 import {deskStructure} from '../structure/deskStructure'
+import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {
   documentActions,
   formFollowUps,
@@ -210,6 +211,17 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
       const result = await evaluate(parse(query, {params}), {dataset: visible(), params})
       return structuredClone(await result.get())
     },
+    // Like Content Lake's create mutation, it fails when the _id is taken, sets the system
+    // fields, and returns the stored document.
+    async create(document: TestDocument) {
+      if (dataset.has(document._id)) {
+        throw new Error(`A document with _id "${document._id}" already exists`)
+      }
+      const now = new Date().toISOString()
+      const created = {...document, _rev: randomUUID(), _createdAt: now, _updatedAt: now}
+      dataset.set(created._id, structuredClone(created))
+      return structuredClone(created)
+    },
   }
   return client as unknown as SanityClient
 }
@@ -316,6 +328,21 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
       return structuredClone(dataset.get(target) as TestDocument)
+    },
+
+    // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is
+    // what the document pane shows: with release, that release's version if it has one, else
+    // the draft, else the published document. The action gets Studio's client, which reads raw.
+    async duplicate(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
+      const publishedId = getPublishedId(id)
+      const source =
+        (release ? dataset.get(getVersionId(publishedId, release)) : undefined) ??
+        dataset.get(getDraftId(publishedId)) ??
+        dataset.get(publishedId)
+      if (!source) throw new Error(`No document to duplicate with _id "${publishedId}"`)
+      const client = getClient({apiVersion: '2025-02-19', perspective: 'raw'})
+      const copy = await duplicateWithFreshIds(client, structuredClone(source))
+      return structuredClone(copy) as TestDocument
     },
 
     // Makes the draft, or with release the version in that release, the published document, as
