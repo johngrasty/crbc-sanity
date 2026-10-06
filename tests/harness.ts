@@ -4,10 +4,12 @@
 import {randomUUID} from 'node:crypto'
 import {evaluate, parse} from 'groq-js'
 import {isValidElement, type ReactNode} from 'react'
+import {defer, firstValueFrom} from 'rxjs'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
   createMockAuthStore,
+  createSearch,
   definePlugin,
   getDraftId,
   getPublishedId,
@@ -27,6 +29,7 @@ import {
   type PreviewableType,
   type SanityClient,
   type SanityDocument,
+  type SchemaType,
   type Source,
   type Workspace,
 } from 'sanity'
@@ -243,6 +246,17 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
     async fetch(query: string, params: Record<string, unknown> = {}) {
       const result = await evaluate(parse(query, {params}), {dataset: visible(), params})
       return structuredClone(await result.get())
+    },
+    // Studio's search fetches through the observable client. A perspective in the options
+    // overrides the client's, as in @sanity/client.
+    observable: {
+      fetch: (query: string, params?: Record<string, unknown>, options?: {perspective?: unknown}) =>
+        defer(() =>
+          (options?.perspective === undefined
+            ? client
+            : testClient(dataset, {...config, perspective: options.perspective})
+          ).fetch(query, params),
+        ),
     },
     // Like Content Lake's create mutation, it fails when the _id is taken, sets the system
     // fields, and returns the stored document.
@@ -461,6 +475,20 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       const params = options.params ?? {}
       const result = await evaluate(parse(query, {params}), {dataset: [...rows.values()], params})
       return {type, title, documents: structuredClone(await result.get())}
+    },
+
+    // The _ids Studio's search finds for text among these types, best match first, as Sanity
+    // ranks them. With every searchable type that's the global search, and with a reference
+    // field's target types it's that field's picker. It sees published documents, as the
+    // client's default perspective does.
+    async search(text: string, types: string[]): Promise<string[]> {
+      const search = createSearch(
+        types.map((type) => schema.get(type) as SchemaType),
+        getClient({apiVersion: '2025-02-19'}),
+        {unique: true, strategy: source.search.strategy},
+      )
+      const {hits} = await firstValueFrom(search(text))
+      return hits.map(({hit}) => hit._id)
     },
 
     // The preview of a document, or of the _id of one in the dataset, from its type's preview
