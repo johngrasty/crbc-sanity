@@ -220,15 +220,11 @@ test('a media settings document under any other ID is an error, in every version
   }
 })
 
+const versionTypes = ['draft', 'published', 'version', 'scheduled-draft', 'revision'] as const
+
 test('a media settings document under any other ID has no actions, in every version type', () => {
   const studio = createHarness()
-  for (const versionType of [
-    'draft',
-    'published',
-    'version',
-    'scheduled-draft',
-    'revision',
-  ] as const) {
+  for (const versionType of versionTypes) {
     for (const documentId of ['other', '0b6f3c2e-5d4a-4e8b-9f1c-2a7d6e5b4c3a']) {
       assert.deepEqual(
         studio.actions('mediaSettings', versionType, {documentId}),
@@ -237,4 +233,39 @@ test('a media settings document under any other ID has no actions, in every vers
       )
     }
   }
+})
+
+// What follows an intent: the editor's first edit stores the form's value as a draft, and the
+// draft can't publish, by the Publish button or with a release.
+async function assertStrayCantPublish(studio: ReturnType<typeof createHarness>, id: string) {
+  const errors = errorsAt(await studio.validate(`drafts.${id}`), '')
+  assert.match(errors[0]?.message ?? '', /Media settings in the Media section/, id)
+  for (const versionType of versionTypes) {
+    assert.deepEqual(
+      studio.actions('mediaSettings', versionType, {documentId: id}),
+      [],
+      versionType,
+    )
+  }
+  await assert.rejects(studio.publish(id), /Media settings in the Media section/)
+  assert.equal(studio.documents().filter(({_id}) => !_id.startsWith('drafts.')).length, 1)
+}
+
+test("a settings document from a create intent can't publish, with or without the template", async () => {
+  for (const params of [
+    {type: 'mediaSettings'},
+    {type: 'mediaSettings', template: 'mediaSettings'},
+  ]) {
+    const pane = await createHarness({documents: [canonical]}).intent('create', params)
+    assert.ok(pane.initialValue)
+    const draft = {...pane.initialValue, _id: `drafts.${pane.documentId}`}
+    await assertStrayCantPublish(createHarness({documents: [canonical, draft]}), pane.documentId)
+  }
+})
+
+test("a settings document from an edit URL for another ID can't publish", async () => {
+  const studio = createHarness({documents: [canonical, {...canonical, _id: 'drafts.other'}]})
+  const pane = await studio.intent('edit', {id: 'other', type: 'mediaSettings'})
+  assert.equal(pane.documentId, 'other')
+  await assertStrayCantPublish(studio, 'other')
 })
