@@ -84,6 +84,9 @@ export function editorialIdField(type: EditorialType) {
     type: 'string',
     description: `Apps, links and bookmarks use this ID to find the ${id.noun}. Studio assigns it when you create the ${id.noun}, and it never changes.`,
     readOnly: ({value}) => Boolean(value),
+    // AI Assist offers a field unless its readOnly is literally true, so an empty ID could be
+    // filled with text that fails the format rule and then can't be cleared.
+    options: {aiAssist: {exclude: true}},
     components: {input: idInput(id)},
     validation: (rule) => [
       rule.required().error(`Assign an ID. Apps and links can't find this ${id.noun} without one.`),

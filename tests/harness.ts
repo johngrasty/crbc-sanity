@@ -453,6 +453,24 @@ export function createHarness({
       return resolveActions(type, versionType).map(actionDetail)
     },
 
+    // What Studio reads from a registered document type, or undefined for a type the schema
+    // doesn't have. liveEdit means edits skip the draft and go straight to the published
+    // document. A field is assistExcluded when its options set aiAssist.exclude, which AI Assist
+    // checks before it offers or writes the field (@sanity/assist/dist/index.js:235).
+    schemaType(
+      name: string,
+    ): {liveEdit: boolean; fields: {name: string; assistExcluded: boolean}[]} | undefined {
+      const type = schema.get(name) as (ObjectSchemaType & {liveEdit?: boolean}) | undefined
+      if (!type) return undefined
+      return {
+        liveEdit: type.liveEdit === true,
+        fields: type.fields.map((field) => {
+          const options = field.type.options as {aiAssist?: {exclude?: boolean}} | undefined
+          return {name: field.name, assistExcluded: options?.aiAssist?.exclude === true}
+        }),
+      }
+    },
+
     // The template IDs a create menu offers, resolved through the whole config chain: the
     // global create button by default, a structure list's "+" with {type: 'structure',
     // schemaType}, or a reference field's "Create new" with {type: 'document', documentId,
