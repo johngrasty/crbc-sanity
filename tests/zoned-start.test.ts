@@ -59,7 +59,15 @@ test('a malformed local time is an error', async () => {
 })
 
 test('an unknown or missing time zone is an error', async () => {
-  for (const timeZone of [undefined, 'Mars/Olympus', 'EST', '+05:00', 'america/new_york']) {
+  for (const timeZone of [
+    undefined,
+    'Mars/Olympus',
+    'EST',
+    '+05:00',
+    'america/new_york',
+    'AMERICA/NEW_YORK',
+    'America/New_york',
+  ]) {
     const errors = await startErrorsFor({local: '2026-10-11T09:00', timeZone})
     assert.deepEqual(pathsOf(errors), ['scheduledStart.timeZone'], `${timeZone}`)
   }
