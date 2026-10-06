@@ -11,6 +11,7 @@
     "deploy": "sanity deploy",
     "deploy-graphql": "sanity graphql deploy",
     "check": "tsc --noEmit",
+    "contract:sync": "node scripts/sync-media-contract.ts",
     "schema:check": "sanity schema validate",
     "typegen": "sanity schema extract --enforce-required-fields && sanity typegen generate",
     "verify": "npm run check && npm run lint && npm test && npm run schema:check && npm run build",

@@ -1,0 +1,1731 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mycalvaryroad.com/schemas/media-v1.schema.json",
+  "title": "CRBC media contract v1",
+  "description": "Public response shapes for /api/media/v1, the two Sanity mirror documents, and the standing schedule. Contract sections are cited per definition. Enums are strict here; clients still decode them as strings and handle unknown values as section 10.5 requires.",
+  "$defs": {
+    "ContentId": {
+      "type": "string",
+      "pattern": "^mi_[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Section 2"
+    },
+    "SeriesId": {
+      "type": "string",
+      "pattern": "^se_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "SpeakerId": {
+      "type": "string",
+      "pattern": "^sp_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "TopicId": {
+      "type": "string",
+      "pattern": "^tp_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "EventId": {
+      "type": "string",
+      "pattern": "^ev_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "ResourceId": {
+      "type": "string",
+      "pattern": "^lr_[a-z0-9_]{1,40}$"
+    },
+    "OsisBook": {
+      "type": "string",
+      "pattern": "^[1-3]?[A-Z][A-Za-z]{1,5}$",
+      "description": "OSIS book code such as Jas or 1Cor"
+    },
+    "Url": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "CalendarDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "Label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "Slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 200
+    },
+    "Cursor": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "maxLength": 512,
+      "description": "Opaque base64url (section 10.2)"
+    },
+    "PageLimit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "ItemKind": {
+      "type": "string",
+      "enum": [
+        "service",
+        "sermon",
+        "audio",
+        "other"
+      ]
+    },
+    "CaptionKind": {
+      "type": "string",
+      "enum": [
+        "live",
+        "generated",
+        "uploaded"
+      ]
+    },
+    "LiveState": {
+      "type": "string",
+      "enum": [
+        "offline",
+        "upcoming",
+        "starting",
+        "live",
+        "interrupted",
+        "ended"
+      ]
+    },
+    "Platform": {
+      "type": "string",
+      "enum": [
+        "web",
+        "tvos",
+        "roku"
+      ]
+    },
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+    },
+    "Image": {
+      "type": "object",
+      "description": "A Sanity image rendered through the Sanity image CDN. thumbnail images are 16:9.",
+      "required": [
+        "url",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "url": {
+          "$ref": "#/$defs/Url"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "alt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "lqip": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048,
+          "description": "Optional low-quality placeholder data URL"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SpeakerRef": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SpeakerId"
+        },
+        "name": {
+          "$ref": "#/$defs/Label"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TopicRef": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/TopicId"
+        },
+        "label": {
+          "$ref": "#/$defs/Label"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeriesRef": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SeriesId"
+        },
+        "title": {
+          "$ref": "#/$defs/Label"
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Present only when the series is manually ordered"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Passage": {
+      "type": "object",
+      "description": "Section 3. Optional verse fields are absent, not null, when unknown.",
+      "required": [
+        "book",
+        "chapterStart",
+        "display"
+      ],
+      "properties": {
+        "book": {
+          "$ref": "#/$defs/OsisBook"
+        },
+        "chapterStart": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "verseStart": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 176
+        },
+        "chapterEnd": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "verseEnd": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 176
+        },
+        "display": {
+          "$ref": "#/$defs/Label"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Document": {
+      "type": "object",
+      "required": [
+        "label",
+        "url",
+        "mimeType"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/Label"
+        },
+        "url": {
+          "$ref": "#/$defs/Url"
+        },
+        "mimeType": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "additionalProperties": false
+    },
+    "Audio": {
+      "type": "object",
+      "description": "The podcast enclosure (section 3 audioEnclosure)",
+      "required": [
+        "url",
+        "mimeType",
+        "bytes"
+      ],
+      "properties": {
+        "url": {
+          "$ref": "#/$defs/Url"
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": [
+            "audio/mpeg",
+            "audio/mp4",
+            "audio/aac"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "durationSeconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "ItemDetail": {
+      "description": "Section 10.2. The summary fields plus detail fields.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/ItemSummaryFields"
+        },
+        {
+          "type": "object",
+          "required": [
+            "description",
+            "canonicalUrl",
+            "publishedAt",
+            "revision",
+            "passages",
+            "topics",
+            "series",
+            "banner",
+            "availability",
+            "documents"
+          ],
+          "properties": {
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 5000
+            },
+            "canonicalUrl": {
+              "$ref": "#/$defs/Url"
+            },
+            "publishedAt": {
+              "$ref": "#/$defs/Instant"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{8,64}$"
+            },
+            "passages": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/Passage"
+              }
+            },
+            "topics": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/TopicRef"
+              }
+            },
+            "series": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "$ref": "#/$defs/SeriesRef"
+              }
+            },
+            "banner": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Image"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "availability": {
+              "type": "object",
+              "required": [
+                "video",
+                "audio",
+                "captions",
+                "documents"
+              ],
+              "properties": {
+                "video": {
+                  "type": "boolean"
+                },
+                "audio": {
+                  "type": "boolean"
+                },
+                "captions": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "pending",
+                    "available"
+                  ]
+                },
+                "documents": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            },
+            "documents": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {
+                "$ref": "#/$defs/Document"
+              }
+            },
+            "audio": {
+              "$ref": "#/$defs/Audio"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false,
+      "type": "object"
+    },
+    "CaptionTrack": {
+      "type": "object",
+      "required": [
+        "language",
+        "label",
+        "kind"
+      ],
+      "properties": {
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+        },
+        "label": {
+          "$ref": "#/$defs/Label"
+        },
+        "kind": {
+          "$ref": "#/$defs/CaptionKind"
+        }
+      },
+      "additionalProperties": false
+    },
+    "VodPlayback": {
+      "type": "object",
+      "description": "Section 10.2. hlsRoku carries roku_trick_play=true.",
+      "required": [
+        "mode",
+        "hls",
+        "hlsRoku",
+        "captions",
+        "previews",
+        "durationSeconds"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "const": "vod"
+        },
+        "hls": {
+          "$ref": "#/$defs/Url"
+        },
+        "hlsRoku": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Url"
+            },
+            {
+              "pattern": "[?&]roku_trick_play=true(&|$)",
+              "type": "string"
+            }
+          ]
+        },
+        "captions": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/CaptionTrack"
+          }
+        },
+        "previews": {
+          "type": "object",
+          "required": [
+            "webStoryboardVtt",
+            "thumbnailTemplate"
+          ],
+          "properties": {
+            "webStoryboardVtt": {
+              "$ref": "#/$defs/Url"
+            },
+            "thumbnailTemplate": {
+              "type": "string",
+              "maxLength": 2048,
+              "pattern": "\\{time\\}",
+              "description": "URL with a {time} placeholder in seconds"
+            }
+          },
+          "additionalProperties": false
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "LiveEvent": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "contentId",
+        "title",
+        "scheduledStart",
+        "seriesTitle"
+      ],
+      "properties": {
+        "eventId": {
+          "$ref": "#/$defs/EventId"
+        },
+        "contentId": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "title": {
+          "$ref": "#/$defs/Label"
+        },
+        "scheduledStart": {
+          "$ref": "#/$defs/Instant"
+        },
+        "seriesTitle": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Label"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LivePlayback": {
+      "type": "object",
+      "description": "Signed live playback. No Roku trick-play modifier (section 10.3).",
+      "required": [
+        "hls",
+        "hlsRoku",
+        "expiresAt"
+      ],
+      "properties": {
+        "hls": {
+          "$ref": "#/$defs/Url"
+        },
+        "hlsRoku": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Url"
+            },
+            {
+              "type": "string",
+              "not": {
+                "pattern": "roku_trick_play"
+              }
+            }
+          ],
+          "description": "Live has no trick play, so the Roku URL never carries roku_trick_play"
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/Instant"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Live": {
+      "type": "object",
+      "description": "Section 10.3",
+      "required": [
+        "state",
+        "observedAt",
+        "staleAfterSeconds",
+        "event",
+        "playback",
+        "latestReplay"
+      ],
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/LiveState"
+        },
+        "observedAt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "staleAfterSeconds": {
+          "type": "integer",
+          "enum": [
+            180,
+            2700
+          ]
+        },
+        "event": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/LiveEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "playback": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/LivePlayback"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestReplay": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ItemSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "offline",
+                  "upcoming",
+                  "ended"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "playback": {
+                "const": null
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "offline"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "event": {
+                "const": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ClientVersions": {
+      "type": "object",
+      "required": [
+        "web",
+        "tvos",
+        "roku"
+      ],
+      "properties": {
+        "web": {
+          "$ref": "#/$defs/SemVer"
+        },
+        "tvos": {
+          "$ref": "#/$defs/SemVer"
+        },
+        "roku": {
+          "$ref": "#/$defs/SemVer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Config": {
+      "type": "object",
+      "description": "Section 10.2 and 10.5",
+      "required": [
+        "contractVersion",
+        "minSupportedClient",
+        "recommendedClient",
+        "features"
+      ],
+      "properties": {
+        "contractVersion": {
+          "$ref": "#/$defs/SemVer"
+        },
+        "minSupportedClient": {
+          "$ref": "#/$defs/ClientVersions"
+        },
+        "recommendedClient": {
+          "$ref": "#/$defs/ClientVersions"
+        },
+        "features": {
+          "type": "object",
+          "description": "Named feature switches. Clients ignore names they do not know.",
+          "propertyNames": {
+            "pattern": "^[a-z][A-Za-z0-9]{0,40}$"
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "notice": {
+          "type": "object",
+          "required": [
+            "message",
+            "severity"
+          ],
+          "properties": {
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning"
+              ]
+            },
+            "url": {
+              "$ref": "#/$defs/Url"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeriesDetail": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/SeriesSummaryFields"
+        },
+        {
+          "type": "object",
+          "required": [
+            "description",
+            "banner",
+            "ordering",
+            "canonicalUrl"
+          ],
+          "properties": {
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 5000
+            },
+            "banner": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Image"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ordering": {
+              "type": "string",
+              "enum": [
+                "newestFirst",
+                "oldestFirst",
+                "manual"
+              ]
+            },
+            "canonicalUrl": {
+              "$ref": "#/$defs/Url"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false,
+      "type": "object"
+    },
+    "ItemsPage": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor",
+        "limit"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/ItemSummary"
+          }
+        },
+        "nextCursor": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeriesPage": {
+      "type": "object",
+      "required": [
+        "series",
+        "nextCursor",
+        "limit"
+      ],
+      "properties": {
+        "series": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/SeriesSummary"
+          }
+        },
+        "nextCursor": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeriesDetailPage": {
+      "type": "object",
+      "required": [
+        "series",
+        "items",
+        "nextCursor",
+        "limit"
+      ],
+      "properties": {
+        "series": {
+          "$ref": "#/$defs/SeriesDetail"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/ItemSummary"
+          }
+        },
+        "nextCursor": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Facets": {
+      "type": "object",
+      "required": [
+        "kind",
+        "entries"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "speaker",
+            "topic",
+            "book"
+          ]
+        },
+        "entries": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "count"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 40,
+                "description": "A speaker ID, a topic ID, or an OSIS book code"
+              },
+              "label": {
+                "$ref": "#/$defs/Label"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "initials": {
+                "type": "string",
+                "pattern": "^[A-Z]{1,3}$",
+                "description": "Speakers without a photo"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Error": {
+      "type": "object",
+      "description": "Section 10.2",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found",
+                "bad_request",
+                "rate_limited",
+                "unavailable"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "retryAfterSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Environment": {
+      "type": "string",
+      "enum": [
+        "dev",
+        "staging",
+        "production"
+      ]
+    },
+    "MirrorFence": {
+      "type": "object",
+      "required": [
+        "mirrorGen",
+        "mirrorSeq"
+      ],
+      "properties": {
+        "mirrorGen": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mirrorSeq": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "SanityMediaRelease": {
+      "description": "Section 3. Written only by media-ops. Never deleted; a tombstone has public false.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MirrorFence"
+        },
+        {
+          "type": "object",
+          "required": [
+            "_id",
+            "_type",
+            "environment",
+            "contentId",
+            "kind",
+            "public",
+            "assetId",
+            "playbackId",
+            "durationSeconds",
+            "captions",
+            "publishedAt",
+            "releaseVersion"
+          ],
+          "properties": {
+            "_id": {
+              "type": "string",
+              "pattern": "^mediaRelease\\.(dev|staging|production)\\.mi_[0-9A-HJKMNP-TV-Z]{26}$"
+            },
+            "_type": {
+              "const": "mediaRelease"
+            },
+            "_rev": {
+              "type": "string"
+            },
+            "_createdAt": {
+              "type": "string"
+            },
+            "_updatedAt": {
+              "type": "string"
+            },
+            "environment": {
+              "$ref": "#/$defs/Environment"
+            },
+            "contentId": {
+              "$ref": "#/$defs/ContentId"
+            },
+            "kind": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "video",
+                "nonvideo",
+                null
+              ],
+              "description": "Null only on a tombstone created for an absent source"
+            },
+            "public": {
+              "type": "boolean"
+            },
+            "assetId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^as_[0-9A-HJKMNP-TV-Z]{26}$"
+            },
+            "playbackId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 128
+            },
+            "durationSeconds": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "captions": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "required": [
+                  "language",
+                  "label",
+                  "kind",
+                  "state"
+                ],
+                "properties": {
+                  "language": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "$ref": "#/$defs/Label"
+                  },
+                  "kind": {
+                    "$ref": "#/$defs/CaptionKind"
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "requested",
+                      "processing",
+                      "available"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "publishedAt": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Instant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "releaseVersion": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "allOf": [
+            {
+              "description": "A tombstone carries no pointer, duration or captions",
+              "if": {
+                "properties": {
+                  "public": {
+                    "const": false
+                  }
+                },
+                "required": [
+                  "public"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "assetId": {
+                    "const": null
+                  },
+                  "playbackId": {
+                    "const": null
+                  },
+                  "durationSeconds": {
+                    "const": null
+                  },
+                  "captions": {
+                    "type": "array",
+                    "maxItems": 0
+                  }
+                }
+              }
+            },
+            {
+              "description": "A nonvideo release carries no pointer or duration",
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "nonvideo"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "assetId": {
+                    "const": null
+                  },
+                  "playbackId": {
+                    "const": null
+                  },
+                  "durationSeconds": {
+                    "const": null
+                  }
+                }
+              }
+            },
+            {
+              "description": "A public video release carries its whole pointer",
+              "if": {
+                "properties": {
+                  "public": {
+                    "const": true
+                  },
+                  "kind": {
+                    "const": "video"
+                  }
+                },
+                "required": [
+                  "public",
+                  "kind"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "assetId": {
+                    "type": "string"
+                  },
+                  "playbackId": {
+                    "type": "string"
+                  },
+                  "durationSeconds": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            {
+              "description": "A public release has a kind and a first publication time",
+              "if": {
+                "properties": {
+                  "public": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "public"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "kind": {
+                    "type": "string"
+                  },
+                  "publishedAt": {
+                    "type": "string"
+                  },
+                  "releaseVersion": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "unevaluatedProperties": false,
+      "type": "object"
+    },
+    "SanityLiveStatus": {
+      "description": "Section 3. Written only by media-ops. playback is null until playableFrom and while takenDown.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MirrorFence"
+        },
+        {
+          "type": "object",
+          "required": [
+            "_id",
+            "_type",
+            "environment",
+            "channel",
+            "resourceId",
+            "sessionState",
+            "takenDown",
+            "playableFrom",
+            "endedAt",
+            "event",
+            "nextEvent",
+            "playback",
+            "observedAt",
+            "staleAfterSeconds"
+          ],
+          "properties": {
+            "_id": {
+              "type": "string",
+              "pattern": "^liveStatus\\.(dev|staging|production)\\.[a-z0-9_]{1,40}$"
+            },
+            "_type": {
+              "const": "liveStatus"
+            },
+            "_rev": {
+              "type": "string"
+            },
+            "_createdAt": {
+              "type": "string"
+            },
+            "_updatedAt": {
+              "type": "string"
+            },
+            "environment": {
+              "$ref": "#/$defs/Environment"
+            },
+            "channel": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]{1,40}$"
+            },
+            "resourceId": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/ResourceId"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sessionState": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "armed",
+                "connecting",
+                "live",
+                "reconnecting",
+                "interrupted",
+                "ending",
+                "ended",
+                "abandoned",
+                "cancelled",
+                null
+              ]
+            },
+            "takenDown": {
+              "type": "boolean"
+            },
+            "playableFrom": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Instant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "endedAt": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Instant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "event": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/LiveEvent"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "nextEvent": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/LiveEvent"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "playback": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/LivePlayback"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "observedAt": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Instant"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "staleAfterSeconds": {
+              "type": "integer",
+              "enum": [
+                180,
+                2700
+              ]
+            }
+          },
+          "if": {
+            "properties": {
+              "takenDown": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "playback": {
+                "const": null
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false,
+      "type": "object"
+    },
+    "StandingSchedule": {
+      "type": "object",
+      "description": "Section 3. contract/standing-schedule.json",
+      "required": [
+        "timezone",
+        "slots"
+      ],
+      "properties": {
+        "timezone": {
+          "type": "string",
+          "pattern": "^[A-Za-z_]+/[A-Za-z_]+$"
+        },
+        "slots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "slot",
+              "label",
+              "weekday",
+              "localStart",
+              "expectedDurationMinutes"
+            ],
+            "properties": {
+              "slot": {
+                "type": "string",
+                "pattern": "^[a-z]+(-[a-z]+)*$"
+              },
+              "label": {
+                "$ref": "#/$defs/Label"
+              },
+              "weekday": {
+                "type": "string",
+                "enum": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ]
+              },
+              "localStart": {
+                "type": "string",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+              },
+              "expectedDurationMinutes": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 300
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ItemSummaryFields": {
+      "type": "object",
+      "description": "Section 10.2. Field set shared by ItemSummary and ItemDetail.",
+      "required": [
+        "contentId",
+        "kind",
+        "title",
+        "slug",
+        "serviceDate",
+        "durationSeconds",
+        "thumbnail",
+        "speakers"
+      ],
+      "properties": {
+        "contentId": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "title": {
+          "$ref": "#/$defs/Label"
+        },
+        "slug": {
+          "$ref": "#/$defs/Slug"
+        },
+        "serviceDate": {
+          "$ref": "#/$defs/CalendarDate"
+        },
+        "durationSeconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Null for items without video or audio duration"
+        },
+        "thumbnail": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Image"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "speakers": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/SpeakerRef"
+          }
+        },
+        "seriesTitle": {
+          "$ref": "#/$defs/Label",
+          "description": "Absent when the item has no series"
+        }
+      }
+    },
+    "ItemSummary": {
+      "description": "Section 10.2",
+      "allOf": [
+        {
+          "$ref": "#/$defs/ItemSummaryFields"
+        }
+      ],
+      "unevaluatedProperties": false,
+      "type": "object"
+    },
+    "SeriesSummaryFields": {
+      "type": "object",
+      "description": "Section 10.2. Field set shared by SeriesSummary and SeriesDetail.",
+      "required": [
+        "seriesId",
+        "title",
+        "slug",
+        "thumbnail",
+        "itemCount",
+        "newestItemDate"
+      ],
+      "properties": {
+        "seriesId": {
+          "$ref": "#/$defs/SeriesId"
+        },
+        "title": {
+          "$ref": "#/$defs/Label"
+        },
+        "slug": {
+          "$ref": "#/$defs/Slug"
+        },
+        "thumbnail": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Image"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "itemCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Published items only"
+        },
+        "newestItemDate": {
+          "$ref": "#/$defs/CalendarDate"
+        }
+      }
+    },
+    "SeriesSummary": {
+      "description": "Section 10.2",
+      "allOf": [
+        {
+          "$ref": "#/$defs/SeriesSummaryFields"
+        }
+      ],
+      "unevaluatedProperties": false,
+      "type": "object"
+    },
+    "ErrorNotFound": {
+      "type": "object",
+      "description": "404",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "not_found"
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "retryAfterSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorBadRequest": {
+      "type": "object",
+      "description": "400",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "bad_request"
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "retryAfterSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorRateLimited": {
+      "type": "object",
+      "description": "429",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "rate_limited"
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "retryAfterSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorUnavailable": {
+      "type": "object",
+      "description": "503",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "const": "unavailable"
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "retryAfterSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3600
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
