@@ -5,10 +5,25 @@ import {utf8Bytes} from './bytes'
 // The placeholders media-ops fills in when it renders a YouTube or Facebook title.
 const placeholders = ['{title}', '{series}', '{speaker}', '{date}']
 
+// A placeholder is a {, then anything but braces, then a }.
+const placeholderPattern = /\{[^{}]*\}/g
+
 // Each placeholder in a template that media-ops doesn't fill in, named once.
 function unknownPlaceholders(template: string): string[] {
-  const found = template.match(/\{[^{}]*\}/g) ?? []
+  const found = template.match(placeholderPattern) ?? []
   return [...new Set(found)].filter((placeholder) => !placeholders.includes(placeholder))
+}
+
+// The braces left in a template once its placeholders are taken out: '', '{', '}' or '{}'.
+function strayBraces(template: string): string {
+  const rest = template.replace(placeholderPattern, '')
+  return ['{', '}'].filter((brace) => rest.includes(brace)).join('')
+}
+
+const strayBraceProblems: Record<string, string> = {
+  '{': 'A { has no closing }',
+  '}': 'A } has no opening {',
+  '{}': "A { or } isn't part of a placeholder",
 }
 
 // Contract section 9.6 says Studio limits the footer to 1,000 UTF-8 bytes. media-ops fits the
@@ -39,6 +54,11 @@ export default defineType({
           if (!unknown.length) return true
           const what = unknown.length === 1 ? "isn't a placeholder" : "aren't placeholders"
           return `${listOf(unknown, 'and')} ${what}. Use ${listOf(placeholders, 'or')}.`
+        }),
+        rule.custom((value) => {
+          const stray = value ? strayBraces(value) : ''
+          if (!stray) return true
+          return `${strayBraceProblems[stray]}. Use ${listOf(placeholders, 'or')}, or remove the brace.`
         }),
       ],
     }),

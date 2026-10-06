@@ -105,6 +105,29 @@ test('a placeholder other than the four is an error that names it', async () => 
   }
 })
 
+test('a brace outside a placeholder is an error that names it', async () => {
+  const studio = createHarness()
+  const opening = /^A \{ has no closing \}\./
+  const closing = /^A \} has no opening \{\./
+  const both = /^A \{ or \} isn't part of a placeholder\./
+  for (const [socialTitleTemplate, problem] of [
+    ['{title', opening],
+    ['{title}, {series', opening],
+    ['Sermon { notes', opening],
+    ['title}', closing],
+    ['{title}}, {series}', closing],
+    ['{{title}}', both],
+    ['}{title}{', both],
+  ] as const) {
+    const errors = errorsAt(
+      await studio.validate(settings({socialTitleTemplate})),
+      'socialTitleTemplate',
+    )
+    assert.equal(errors.length, 1, socialTitleTemplate)
+    assert.match(errors[0].message, problem, socialTitleTemplate)
+  }
+})
+
 test('a description footer holds up to 1,000 UTF-8 bytes', async () => {
   const studio = createHarness()
   // é is 2 bytes, ✝ is 3 and 🙏 is 4, so each footer is 1,000 bytes in far fewer characters.
