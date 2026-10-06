@@ -10,6 +10,7 @@ import {
   definePlugin,
   getDraftId,
   getPublishedId,
+  getVersionFromId,
   getVersionId,
   isDraftId,
   isVersionId,
@@ -195,10 +196,16 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     if (!value) throw new Error(`No document with _id "${document}"`)
     // Without i18n on the workspace, Sanity falls back to its English messages.
     const workspace = {schema, getClient} as unknown as Workspace
+    // As in Studio, a referenced document exists when it's published. For a document in a
+    // release, a version of it in the same release counts too.
+    const release = getVersionFromId(value._id)
+    const exists = (id: string) =>
+      dataset.has(getPublishedId(id)) ||
+      (release !== undefined && dataset.has(getVersionId(id, release)))
     const markers = await validateDocument({
       document: value as SanityDocument,
       workspace,
-      getDocumentExists: async ({id}) => dataset.has(id),
+      getDocumentExists: async ({id}) => exists(id),
       environment: 'studio',
     })
     return markers.map(({path, level, message}) => ({path: pathToString(path), level, message}))

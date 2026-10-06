@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {createHarness} from './harness.ts'
+import {createHarness, type Marker} from './harness.ts'
+
+const errorsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'error' && marker.path === path)
 
 // What Sanity 4.22.1's plugin chain hands the root resolver for each versionType, with the
 // structure tool, tasks, canvas, releases and scheduled drafts. Unnamed actions show their
@@ -129,4 +132,23 @@ test('a new job opening starts as a draft with its field defaults', async () => 
   assert.equal(job.acceptingApplications, true)
   assert.equal(job.active, true)
   assert.deepEqual(studio.documents(), [job])
+})
+
+test('a reference needs a published document, or a version in the same release', async () => {
+  // article.author is a strong reference to staff.
+  const authorErrors = async (staffId: string, articleId: string) => {
+    const studio = createHarness({
+      documents: [
+        {_id: staffId, _type: 'staff'},
+        {_id: articleId, _type: 'article', author: {_type: 'reference', _ref: 'pastor'}},
+      ],
+    })
+    return errorsAt(await studio.validate(articleId), 'author').length
+  }
+  assert.equal(await authorErrors('pastor', 'drafts.news'), 0)
+  assert.equal(await authorErrors('drafts.pastor', 'drafts.news'), 1)
+  assert.equal(await authorErrors('versions.rSpring.pastor', 'drafts.news'), 1)
+  assert.equal(await authorErrors('versions.rSpring.pastor', 'versions.rSpring.news'), 0)
+  assert.equal(await authorErrors('versions.rOther.pastor', 'versions.rSpring.news'), 1)
+  assert.equal(await authorErrors('pastor', 'versions.rSpring.news'), 0)
 })
