@@ -125,9 +125,10 @@ test("a slug another item uses now or used before is an error, in any of that it
     for (const _id of ['other', 'drafts.other', 'versions.rSpring.other']) {
       const studio = createHarness({documents: [other(_id, fields)]})
       const markers = await studio.validate(item({_id: 'drafts.item', slug: slug('easter')}))
+      // Editors see one message, whichever way the slug is taken.
       assert.deepEqual(
-        errorsAt(markers, 'slug').map(({message}) => message),
-        ['Slug is already in use'],
+        markers.filter(({path}) => path === 'slug').map(({level, message}) => [level, message]),
+        [['error', 'Slug is already in use']],
         `${_id} ${JSON.stringify(fields)}`,
       )
     }
@@ -218,4 +219,15 @@ test('slugs and history entries hold up to 200 characters, counted as code point
   // a second error only past 200 code points.
   assert.deepEqual(await errorCounts('😀'.repeat(200)), [1, 1])
   assert.deepEqual(await errorCounts('😀'.repeat(201)), [2, 2])
+})
+
+test('a media item without a slug has a warning, not an error, so a placeholder can publish', async () => {
+  const studio = createHarness()
+  const {_id} = await studio.create('mediaItem')
+  const markers = await studio.validate(_id)
+  assert.deepEqual(
+    markers.filter(({path}) => path === 'slug').map(({level}) => level),
+    ['warning'],
+  )
+  await studio.publish(_id)
 })

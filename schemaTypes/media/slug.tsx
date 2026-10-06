@@ -6,6 +6,7 @@ import {
   defineField,
   getPublishedId,
   isPublishedId,
+  type Rule,
   type SanityDocumentLike,
   type SlugIsUniqueValidator,
   type SlugRule,
@@ -14,10 +15,11 @@ import contract from '../../media-contract/schemas/media-v1.schema.json' with {t
 import type {FormFollowUp} from '../../structure/documentConfig'
 import {checkCharacters, SLUG_MAX_LENGTH} from './limits'
 
-// One entry per document type with a slug. Each type is its own namespace.
+// One entry per document type with a slug. Each type is its own namespace. A media item can
+// publish without a slug, so a placeholder can go out before it has a title. A series can't.
 export const slugTypes = {
-  mediaItem: {noun: 'media item'},
-  series: {noun: 'series'},
+  mediaItem: {noun: 'media item', required: false},
+  series: {noun: 'series', required: true},
 } as const
 
 export type SlugType = keyof typeof slugTypes
@@ -89,6 +91,21 @@ const slugShape = (rule: SlugRule) =>
     })
     .custom((value) => checkCharacters(slugText(value), SLUG_MAX_LENGTH))
 
+// A copy of the rule without Sanity's slug check, for a second rule on the slug field, so a
+// taken slug still gets one message.
+const withoutSlugCheck = (rule: SlugRule) =>
+  (rule as unknown as Rule).clone().reset() as unknown as SlugRule
+
+// A missing slug. typegen reads required() as a required field even at warning level, so the
+// warning is a custom rule.
+function missingSlug(rule: SlugRule, type: SlugType) {
+  const {noun, required} = slugTypes[type]
+  const message = `Add a slug. Generate makes one from the ${noun}'s title.`
+  return required
+    ? rule.required().error(message)
+    : rule.custom((value) => (slugText(value) ? true : message)).warning()
+}
+
 const isEntry = (entry: unknown): entry is SlugEntry => {
   const {_type, _key, current} = (entry ?? {}) as Partial<SlugEntry>
   return _type === 'slug' && typeof _key === 'string' && typeof current === 'string'
@@ -137,7 +154,7 @@ export function slugFields(type: SlugType) {
       type: 'slug',
       description: `The end of the link to this ${noun}, made from the title.`,
       options: {source: 'title', isUnique},
-      validation: (rule) => slugShape(rule),
+      validation: (rule) => [slugShape(rule), missingSlug(withoutSlugCheck(rule), type)],
     }),
     defineField({
       name: 'slugHistory',
