@@ -195,6 +195,16 @@ export type Hero = {
   }
 }
 
+export type MediaSettings = {
+  _id: string
+  _type: 'mediaSettings'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  socialTitleTemplate: string
+  socialDescriptionFooter?: string
+}
+
 export type Topic = {
   _id: string
   _type: 'topic'
@@ -254,16 +264,6 @@ export type SanityImageHotspot = {
   y: number
   height: number
   width: number
-}
-
-export type MediaSettings = {
-  _id: string
-  _type: 'mediaSettings'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  socialTitleTemplate: string
-  socialDescriptionFooter?: string
 }
 
 export type ServiceEvent = {
@@ -1810,11 +1810,11 @@ export type AllSanitySchemaTypes =
   | RichText
   | LogoCloud
   | Hero
+  | MediaSettings
   | Topic
   | Speaker
   | SanityImageCrop
   | SanityImageHotspot
-  | MediaSettings
   | ServiceEvent
   | MediaItem
   | JobOpening
