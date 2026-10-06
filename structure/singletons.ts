@@ -21,3 +21,7 @@ export const singletonTypes = new Set([
 ])
 
 export const singletonActions = new Set(['publish', 'discardChanges', 'restore'])
+
+// Singletons that keep their template, so their fixed document opens with its field defaults.
+// No create menu offers them. Every other singleton has no template.
+export const singletonsWithTemplates = new Set(['mediaSettings'])

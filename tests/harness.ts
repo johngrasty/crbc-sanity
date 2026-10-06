@@ -21,6 +21,7 @@ import {
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type NewDocumentCreationContext,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -36,6 +37,7 @@ import {deskStructure} from '../structure/deskStructure'
 import {
   documentActions,
   formFollowUps,
+  newDocumentOptions,
   templates,
   type DocumentPatch,
 } from '../structure/documentConfig'
@@ -99,7 +101,7 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {types: schemaTypes, templates},
-  document: {actions: documentActions},
+  document: {actions: documentActions, newDocumentOptions},
 })
 
 // Sanity reads window when a Source resolves, and its validator and initial values schedule
@@ -299,6 +301,14 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
           releaseId: inRelease ? 'rHarness' : undefined,
         })
         .map(actionName)
+    },
+
+    // The template IDs a create menu offers, resolved through the whole config chain: the
+    // global create button by default, a structure list's "+" with {type: 'structure',
+    // schemaType}, or a reference field's "Create new" with {type: 'document', documentId,
+    // schemaType}. A reference field then keeps only the templates of the types it refers to.
+    createMenu(context: NewDocumentCreationContext = {type: 'global'}): string[] {
+      return source.document.resolveNewDocumentOptions(context).map(({templateId}) => templateId)
     },
 
     // A new document from a template, stored as a draft, as Studio stores it on the first edit.
