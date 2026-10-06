@@ -3,11 +3,14 @@
 // actions directly.
 import {randomUUID} from 'node:crypto'
 import {evaluate, parse} from 'groq-js'
+import type {ClientPerspective} from '@sanity/client'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
   createMockAuthStore,
+  defineField,
   definePlugin,
+  defineType,
   getDraftId,
   getPublishedId,
   getVersionFromId,
@@ -78,6 +81,38 @@ const sourceClient = {
   observable: {},
 }
 
+// A document type only the harness registers, never the Studio, and it has no template, so no
+// create menu offers it. Its rule queries through ValidationContext.getClient, as Studio's rules
+// do, and reports the media item _id values it saw as an info marker. tests/harness-client.test.ts
+// uses it to pin what the harness client shows at each API version and perspective.
+const clientProbe = defineType({
+  name: 'harnessClientProbe',
+  type: 'document',
+  fields: [
+    defineField({
+      name: 'query',
+      type: 'object',
+      fields: [
+        defineField({name: 'apiVersion', type: 'string'}),
+        defineField({name: 'perspective', type: 'string'}),
+      ],
+      validation: (rule) =>
+        rule
+          .custom(async (value, context) => {
+            if (!value) return true
+            const {apiVersion, perspective} = value as {
+              apiVersion: string
+              perspective?: ClientPerspective
+            }
+            const client = context.getClient({apiVersion})
+            const scoped = perspective ? client.withConfig({perspective}) : client
+            return JSON.stringify(await scoped.fetch('*[_type == "mediaItem"] | order(_id)._id'))
+          })
+          .info(),
+    }),
+  ],
+})
+
 // Sanity's own config resolution, with the plugins sanity.config.ts uses. sanity-plugin-media
 // can't load in Node, so an inert plugin stands in for it. It adds no document actions,
 // templates or create-menu options. Keep this list in step with sanity.config.ts.
@@ -101,7 +136,11 @@ const prepared = prepareConfig({
     definePlugin({name: 'media'})(),
     assist(),
   ],
-  schema: {types: schemaTypes, templates},
+  schema: {
+    types: [...schemaTypes, clientProbe],
+    templates: (prev, context) =>
+      templates(prev, context).filter(({schemaType}) => schemaType !== clientProbe.name),
+  },
   document: {actions: documentActions, newDocumentOptions},
 })
 
