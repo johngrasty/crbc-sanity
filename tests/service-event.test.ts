@@ -155,11 +155,16 @@ test('a destination has a platform, an account label and a visibility', async ()
   for (const visibility of [undefined, 'hidden']) {
     assert.notDeepEqual(await errorsFor({visibility}, 'visibility'), [], `${visibility}`)
   }
-  // é is two UTF-8 bytes, so this also shows the limit counts characters, not bytes.
-  assert.deepEqual(await errorsFor({accountLabel: 'é'.repeat(200)}, 'accountLabel'), [])
-  for (const accountLabel of [undefined, '', 'é'.repeat(201)]) {
-    const errors = await errorsFor({accountLabel}, 'accountLabel')
-    assert.equal(errors.length, 1, `${accountLabel}`)
+  for (const accountLabel of [undefined, '']) {
+    assert.equal((await errorsFor({accountLabel}, 'accountLabel')).length, 1, `${accountLabel}`)
+  }
+  // é is one UTF-16 unit and two UTF-8 bytes. 😀 is two UTF-16 units and one code point, which
+  // is how the contract's JSON Schema counts a character.
+  for (const character of ['é', '😀']) {
+    const atLimit = await errorsFor({accountLabel: character.repeat(200)}, 'accountLabel')
+    assert.deepEqual(atLimit, [], `200 × ${character}`)
+    const pastLimit = await errorsFor({accountLabel: character.repeat(201)}, 'accountLabel')
+    assert.equal(pastLimit.length, 1, `201 × ${character}`)
   }
 })
 

@@ -2,6 +2,7 @@ import {defineArrayMember, defineField, defineType} from 'sanity'
 import {CalendarClock} from 'lucide-react'
 import {isResourceId} from '../../media-contract/src/ids'
 import {editorialIdField} from './editorialId'
+import {labelLimit} from './limits'
 import {CHURCH_TIME_ZONE} from './timeZone'
 import {startMessages, startProblems, type ZonedStart} from './zonedStart'
 
@@ -145,7 +146,7 @@ export default defineType({
               description: 'The account name exactly as media-ops lists it, such as CRBC YouTube.',
               validation: (rule) => [
                 rule.required().error('Enter the account name.'),
-                rule.max(200),
+                labelLimit(rule),
               ],
             }),
             defineField({
