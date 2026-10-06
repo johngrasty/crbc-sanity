@@ -195,6 +195,15 @@ export type Hero = {
   }
 }
 
+export type MediaOpsBinding = {
+  _id: string
+  _type: 'mediaOpsBinding'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environments?: Array<'dev' | 'staging' | 'production'>
+}
+
 export type LiveStatus = {
   _id: string
   _type: 'liveStatus'
@@ -1792,6 +1801,7 @@ export type AllSanitySchemaTypes =
   | RichText
   | LogoCloud
   | Hero
+  | MediaOpsBinding
   | LiveStatus
   | MediaRelease
   | MediaSettings

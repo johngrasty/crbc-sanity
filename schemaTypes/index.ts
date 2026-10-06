@@ -32,6 +32,7 @@ import mediaItem from './media/mediaItem'
 import mediaSettings from './media/mediaSettings'
 import mediaRelease from './media/mediaRelease'
 import liveStatus from './media/liveStatus'
+import mediaOpsBinding from './media/mediaOpsBinding'
 
 export const schemaTypes = [
   // Documents
@@ -64,6 +65,7 @@ export const schemaTypes = [
   mediaSettings,
   mediaRelease,
   liveStatus,
+  mediaOpsBinding,
   // Objects (Sections)
   hero,
   logoCloud,
