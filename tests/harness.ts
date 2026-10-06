@@ -7,21 +7,25 @@ import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
   createMockAuthStore,
+  DEFAULT_MAX_RECURSION_DEPTH,
   definePlugin,
   getDraftId,
   getPublishedId,
   getVersionFromId,
   getVersionId,
+  isArraySchemaType,
   isDraftId,
   isVersionId,
   pathToString,
   prepareConfig,
   resolveInitialValue,
+  resolveInitialValueForType,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
   type NewDocumentCreationContext,
+  type ObjectSchemaType,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -357,6 +361,36 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
       return structuredClone(dataset.get(target) as TestDocument)
+    },
+
+    // The item an array field's "Add item" inserts, as the form builds it: a _type and a fresh
+    // _key, then the member type's initial values. Name memberType when the array holds more
+    // than one type. Nothing is stored.
+    async newArrayItem(
+      documentType: string,
+      field: string,
+      memberType?: string,
+    ): Promise<Record<string, unknown>> {
+      const fieldType = (schema.get(documentType) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type
+      if (!fieldType || !isArraySchemaType(fieldType)) {
+        throw new Error(`${documentType} has no array field "${field}"`)
+      }
+      const member = memberType
+        ? fieldType.of.find(({name}) => name === memberType)
+        : fieldType.of.length === 1
+          ? fieldType.of[0]
+          : undefined
+      if (!member) throw new Error(`Name one of the member types of ${documentType}.${field}`)
+      const item = {_type: member.name, _key: randomUUID().slice(0, 12).replace('-', '')}
+      const initial = await resolveInitialValueForType(
+        member,
+        item,
+        DEFAULT_MAX_RECURSION_DEPTH,
+        configContext,
+      )
+      return structuredClone({...item, ...(initial as object)})
     },
 
     // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is

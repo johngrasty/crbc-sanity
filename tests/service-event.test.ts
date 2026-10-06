@@ -117,3 +117,67 @@ test('the go-live lead is optional, in whole minutes from 0 to 60', async () => 
     )
   }
 })
+
+const destination = (_key: string, fields: Record<string, unknown>) => ({
+  _key,
+  _type: 'requestedDestination',
+  platform: 'youtube',
+  accountLabel: 'CRBC YouTube',
+  visibility: 'public',
+  ...fields,
+})
+
+test('a destination an editor adds starts as public', async () => {
+  const studio = createHarness()
+  const added = await studio.newArrayItem('serviceEvent', 'requestedDestinations')
+  assert.equal(added._type, 'requestedDestination')
+  assert.match(String(added._key), /^\w+$/)
+  assert.equal(added.visibility, 'public')
+})
+
+test('a destination has a platform, an account label and a visibility', async () => {
+  const studio = createHarness()
+  const event = await studio.create('serviceEvent')
+  const errorsFor = async (fields: Record<string, unknown>, field: string) => {
+    const requestedDestinations = [destination('a', fields)]
+    const markers = await studio.validate({...event, requestedDestinations})
+    return errorsAt(markers, `requestedDestinations[_key=="a"].${field}`)
+  }
+  for (const platform of ['youtube', 'facebook']) {
+    assert.deepEqual(await errorsFor({platform}, 'platform'), [], platform)
+  }
+  for (const platform of [undefined, 'YouTube', 'twitch']) {
+    assert.notDeepEqual(await errorsFor({platform}, 'platform'), [], `${platform}`)
+  }
+  for (const visibility of ['public', 'unlisted', 'private']) {
+    assert.deepEqual(await errorsFor({visibility}, 'visibility'), [], visibility)
+  }
+  for (const visibility of [undefined, 'hidden']) {
+    assert.notDeepEqual(await errorsFor({visibility}, 'visibility'), [], `${visibility}`)
+  }
+  // é is two UTF-8 bytes, so this also shows the limit counts characters, not bytes.
+  assert.deepEqual(await errorsFor({accountLabel: 'é'.repeat(200)}, 'accountLabel'), [])
+  for (const accountLabel of [undefined, '', 'é'.repeat(201)]) {
+    const errors = await errorsFor({accountLabel}, 'accountLabel')
+    assert.equal(errors.length, 1, `${accountLabel}`)
+  }
+})
+
+test('the same platform and account label twice is an error', async () => {
+  const studio = createHarness()
+  const event = await studio.create('serviceEvent')
+  const requestedDestinations = [
+    destination('a', {platform: 'youtube', accountLabel: 'CRBC'}),
+    destination('b', {platform: 'facebook', accountLabel: 'CRBC'}),
+    destination('c', {platform: 'youtube', accountLabel: 'CRBC Rehearsals'}),
+    destination('d', {platform: 'youtube', accountLabel: 'CRBC', visibility: 'unlisted'}),
+  ]
+  const destinationErrors = async (list: unknown[]) =>
+    (await studio.validate({...event, requestedDestinations: list}))
+      .filter(({level, path}) => level === 'error' && path.startsWith('requestedDestinations'))
+      .map(({path}) => path)
+  assert.deepEqual(await destinationErrors(requestedDestinations), [
+    'requestedDestinations[_key=="d"]',
+  ])
+  assert.deepEqual(await destinationErrors(requestedDestinations.slice(0, 3)), [])
+})

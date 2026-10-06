@@ -1,9 +1,25 @@
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 import {CalendarClock} from 'lucide-react'
 import {isResourceId} from '../../media-contract/src/ids'
 import {editorialIdField} from './editorialId'
 import {CHURCH_TIME_ZONE} from './timeZone'
 import {startMessages, startProblems, type ZonedStart} from './zonedStart'
+
+const platforms = [
+  {title: 'YouTube', value: 'youtube'},
+  {title: 'Facebook', value: 'facebook'},
+]
+
+const visibilities = [
+  {title: 'Public', value: 'public'},
+  {title: 'Unlisted', value: 'unlisted'},
+  {title: 'Private', value: 'private'},
+]
+
+const titleOf = (list: {title: string; value: string}[], value: unknown) =>
+  list.find((option) => option.value === value)?.title
+
+type Destination = {_key: string; platform?: string; accountLabel?: string}
 
 // The start a scheduledStart field's rule belongs to.
 const startOf = (context: {parent?: unknown}) => context.parent as ZonedStart | undefined
@@ -102,6 +118,77 @@ export default defineType({
       type: 'boolean',
       initialValue: false,
       group: 'details',
+    }),
+    defineField({
+      name: 'requestedDestinations',
+      title: 'YouTube and Facebook',
+      type: 'array',
+      description:
+        'The accounts media-ops streams the service to, as well as the website. Add one for each account.',
+      of: [
+        defineArrayMember({
+          name: 'requestedDestination',
+          title: 'Destination',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'platform',
+              title: 'Platform',
+              type: 'string',
+              options: {list: platforms, layout: 'radio', direction: 'horizontal'},
+              validation: (rule) => rule.required().error('Pick YouTube or Facebook.'),
+            }),
+            defineField({
+              name: 'accountLabel',
+              title: 'Account',
+              type: 'string',
+              description: 'The account name exactly as media-ops lists it, such as CRBC YouTube.',
+              validation: (rule) => [
+                rule.required().error('Enter the account name.'),
+                rule.max(200),
+              ],
+            }),
+            defineField({
+              name: 'visibility',
+              title: 'Who can see it',
+              type: 'string',
+              description:
+                "Public tells the church's followers. Use unlisted or private for a rehearsal.",
+              options: {list: visibilities, layout: 'radio', direction: 'horizontal'},
+              initialValue: 'public',
+              validation: (rule) => rule.required().error('Pick who can see the stream.'),
+            }),
+          ],
+          preview: {
+            select: {accountLabel: 'accountLabel', platform: 'platform', visibility: 'visibility'},
+            prepare: ({accountLabel, platform, visibility}) => ({
+              title: accountLabel || 'No account yet',
+              subtitle: [titleOf(platforms, platform), titleOf(visibilities, visibility)]
+                .filter(Boolean)
+                .join(' · '),
+            }),
+          },
+        }),
+      ],
+      // media-ops keeps one destination per platform and account label.
+      validation: (rule) =>
+        rule.custom((destinations: Destination[] | undefined) => {
+          const seen = new Set<string>()
+          const repeats = []
+          for (const {_key, platform, accountLabel} of destinations ?? []) {
+            if (!platform || !accountLabel) continue
+            const pair = JSON.stringify([platform, accountLabel])
+            if (seen.has(pair)) repeats.push([{_key}])
+            seen.add(pair)
+          }
+          return repeats.length
+            ? {
+                message: 'This account is already listed for this platform. Remove one.',
+                paths: repeats,
+              }
+            : true
+        }),
+      group: 'social',
     }),
     defineField({
       name: 'socialGoLiveLeadMinutes',
