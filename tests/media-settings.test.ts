@@ -176,3 +176,34 @@ test('the media settings form starts with the default title template', async () 
   assert.ok(initialValue)
   assert.deepEqual(errorsAt(await studio.validate(initialValue), 'socialTitleTemplate'), [])
 })
+
+const canonical = {_id: 'mediaSettings', _type: 'mediaSettings', socialTitleTemplate: '{title}'}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+// What Studio's structure tool opens for an intent URL, as the review's probe of Sanity's own
+// resolveIntent found: /tmp/review-t20-22-probes/intent.log.
+test('Studio routes only the fixed ID to Media settings, and other intents to its plain editor', async () => {
+  const studio = createHarness({documents: [canonical, {...canonical, _id: 'drafts.other'}]})
+
+  const fixed = await studio.intent('edit', {id: 'mediaSettings', type: 'mediaSettings'})
+  assert.deepEqual(fixed.path, ['media', 'mediaSettings'])
+  assert.equal(fixed.documentId, 'mediaSettings')
+  assert.equal(fixed.initialValue, undefined, 'the saved document opens, not the defaults')
+
+  const other = await studio.intent('edit', {id: 'other', type: 'mediaSettings'})
+  assert.deepEqual(other.path, ['__edit__other'])
+  assert.equal(other.documentId, 'other')
+
+  // A create intent gets a random ID before Studio routes it, so it never reaches the fixed
+  // document, with or without the template.
+  for (const params of [
+    {type: 'mediaSettings'},
+    {type: 'mediaSettings', template: 'mediaSettings'},
+  ]) {
+    const created = await studio.intent('create', params)
+    assert.match(created.documentId, UUID)
+    assert.deepEqual(created.path, [`__edit__${created.documentId}`])
+    assert.equal(created.schemaType, 'mediaSettings')
+    assert.equal(created.initialValue?.socialTitleTemplate, '{title}, {series}')
+  }
+})
