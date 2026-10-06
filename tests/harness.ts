@@ -44,6 +44,7 @@ import {
 import {schemaTypes} from '../schemaTypes'
 import {deskStructure} from '../structure/deskStructure'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
+import {editorialIdFor, idToAssign} from '../schemaTypes/media/editorialId'
 import {
   documentActions,
   formComponents,
@@ -602,6 +603,23 @@ export function createHarness({
       dataset.delete(pending._id)
       store(touch({...pending, _id: publishedId}))
       return structuredClone(dataset.get(publishedId) as TestDocument)
+    },
+
+    // The ID that the ID input's Assign button sets on the draft, or with release on the version
+    // in that release, from what's stored. Nothing is stored. The input reads the published
+    // document and the draft from Studio's edit state, as this reads them from the dataset.
+    assignedId(id: string, {release}: {release?: string} = {}): string {
+      const publishedId = getPublishedId(id)
+      const target = versionId(id, release)
+      const document =
+        dataset.get(target) ?? dataset.get(publishedId) ?? dataset.get(getDraftId(publishedId))
+      const editorialId = document && editorialIdFor(document._type)
+      if (!editorialId) throw new Error(`No editorial document with _id "${publishedId}"`)
+      const value = (stored?: TestDocument) => stored?.[editorialId.field]
+      return idToAssign(target, editorialId.kind, {
+        published: value(dataset.get(publishedId)),
+        draft: value(dataset.get(getDraftId(publishedId))),
+      })
     },
 
     // Unpublishes the document as Sanity's Unpublish does, with no validation first: the

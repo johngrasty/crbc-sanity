@@ -163,3 +163,22 @@ test("one edit to a service event gets both its ID step's patch and its slot len
   assert.equal(draft.eventId, eventId)
   assert.equal(draft.expectedDurationMinutes, 80)
 })
+
+// /tmp/studio-spec/reviews/ids-fable-5.1.md, finding 4. A history restore or an API write can
+// leave a published item's draft without an ID.
+test('Assign uses the ID the item has to keep, and mints one only when there is none', () => {
+  const restored = createHarness({documents: [item('item', P), item('drafts.item')]})
+  assert.equal(restored.assignedId('item'), P)
+
+  const beforeFirstPublish = createHarness({
+    documents: [item('drafts.n', P), item('versions.rSpring.n')],
+  })
+  assert.equal(beforeFirstPublish.assignedId('n', {release: 'rSpring'}), P)
+
+  const contentId = /^mi_[0-9A-HJKMNP-TV-Z]{26}$/
+  // Published without an ID, and never published.
+  const imported = createHarness({documents: [item('item'), item('drafts.new')]})
+  assert.match(imported.assignedId('item'), contentId)
+  assert.match(imported.assignedId('new'), contentId)
+  assert.notEqual(imported.assignedId('new'), imported.assignedId('new'))
+})

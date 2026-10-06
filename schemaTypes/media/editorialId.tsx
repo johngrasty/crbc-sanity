@@ -7,6 +7,8 @@ import {
   getPublishedId,
   isVersionId,
   set,
+  useEditState,
+  useFormValue,
   type StringInputProps,
 } from 'sanity'
 import {ID_PREFIXES, isId, type IdKind} from '../../media-contract/src/ids'
@@ -70,8 +72,20 @@ export function idToKeep(
   return undefined
 }
 
-function idInput({kind, label, noun}: EditorialId) {
+// The ID the input's Assign button sets on a version: the ID it has to keep, so a draft
+// restored from before the item had an ID gets the published one back, else a fresh one.
+export function idToAssign(
+  documentId: string,
+  kind: EditorialIdKind,
+  ids: {published?: unknown; draft?: unknown},
+): string {
+  return idToKeep(documentId, ids)?.id ?? newEditorialId(kind)
+}
+
+function idInput(type: EditorialType, {field, kind, label, noun}: EditorialId) {
   function EditorialIdInput({value, onChange, readOnly}: StringInputProps) {
+    const documentId = String(useFormValue(['_id']) ?? '')
+    const {draft, published} = useEditState(getPublishedId(documentId), type)
     if (value) {
       return (
         <Card padding={3} radius={2} border tone="transparent">
@@ -79,17 +93,16 @@ function idInput({kind, label, noun}: EditorialId) {
         </Card>
       )
     }
+    const assign = () =>
+      onChange(
+        set(idToAssign(documentId, kind, {published: published?.[field], draft: draft?.[field]})),
+      )
     return (
       <Stack space={3}>
         <Text size={1} muted>
           This {noun} has no {label} yet.
         </Text>
-        <Button
-          mode="ghost"
-          text="Assign an ID"
-          disabled={readOnly}
-          onClick={() => onChange(set(newEditorialId(kind)))}
-        />
+        <Button mode="ghost" text="Assign an ID" disabled={readOnly} onClick={assign} />
       </Stack>
     )
   }
@@ -108,7 +121,7 @@ export function editorialIdField(type: EditorialType) {
     // AI Assist offers a field unless its readOnly is literally true, so an empty ID could be
     // filled with text that fails the format rule and then can't be cleared.
     options: {aiAssist: {exclude: true}},
-    components: {input: idInput(id)},
+    components: {input: idInput(type, id)},
     validation: (rule) => [
       rule.required().error(`Assign an ID. Apps and links can't find this ${id.noun} without one.`),
       rule.custom(async (value, context) => {
