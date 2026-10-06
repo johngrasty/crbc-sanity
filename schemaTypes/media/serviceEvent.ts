@@ -3,6 +3,10 @@ import {CalendarClock} from 'lucide-react'
 import {isResourceId} from '../../media-contract/src/ids'
 import {editorialIdField} from './editorialId'
 import {CHURCH_TIME_ZONE} from './timeZone'
+import {startMessages, startProblems, type ZonedStart} from './zonedStart'
+
+// The start a scheduledStart field's rule belongs to.
+const startOf = (context: {parent?: unknown}) => context.parent as ZonedStart | undefined
 
 // A service media-ops arms and streams. media-ops reads scheduledStart.utc as the start.
 export default defineType({
@@ -31,13 +35,52 @@ export default defineType({
       name: 'scheduledStart',
       title: 'Start',
       type: 'object',
+      description:
+        'The local date and time the service starts, in the time zone it takes place in.',
       fields: [
-        defineField({name: 'local', title: 'Date and time', type: 'string'}),
-        defineField({name: 'timeZone', title: 'Time zone', type: 'string'}),
-        defineField({name: 'offset', title: 'UTC offset', type: 'string'}),
-        defineField({name: 'utc', title: 'UTC time', type: 'string'}),
+        defineField({
+          name: 'local',
+          title: 'Date and time',
+          type: 'string',
+          validation: (rule) => [
+            rule.required().error(startMessages.missing),
+            rule.custom((local, context) =>
+              local ? (startProblems(startOf(context)).local ?? true) : true,
+            ),
+          ],
+        }),
+        defineField({
+          name: 'timeZone',
+          title: 'Time zone',
+          type: 'string',
+          validation: (rule) => [
+            rule.required().error(startMessages.zoneMissing),
+            rule.custom((timeZone, context) =>
+              timeZone ? (startProblems(startOf(context)).timeZone ?? true) : true,
+            ),
+          ],
+        }),
+        // Studio sets the offset and UTC time from the local time and zone. A start in a gap,
+        // or one that happens twice before the editor chooses, has neither.
+        defineField({
+          name: 'offset',
+          title: 'UTC offset',
+          type: 'string',
+          validation: (rule) =>
+            rule.custom((_, context) => startProblems(startOf(context)).offset ?? true),
+        }),
+        defineField({
+          name: 'utc',
+          title: 'UTC time',
+          type: 'string',
+          validation: (rule) =>
+            rule.custom((_, context) => startProblems(startOf(context)).utc ?? true),
+        }),
       ],
       initialValue: {timeZone: CHURCH_TIME_ZONE},
+      // required() here would make Sanity also run the field rules on a missing start, and
+      // repeat this message there.
+      validation: (rule) => rule.custom((start) => (start ? true : startMessages.missing)),
       group: 'details',
     }),
     defineField({
