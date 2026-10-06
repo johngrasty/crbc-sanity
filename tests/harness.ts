@@ -240,11 +240,14 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     // Without i18n on the workspace, Sanity falls back to its English messages.
     const workspace = {schema, getClient} as unknown as Workspace
     // As in Studio, a referenced document exists when it's published. For a document in a
-    // release, a version of it in the same release counts too.
+    // release, the referenced document's version in that release decides first: a version the
+    // release deletes, with _system.delete, doesn't exist, and any other version does.
     const release = getVersionFromId(value._id)
-    const exists = (id: string) =>
-      dataset.has(getPublishedId(id)) ||
-      (release !== undefined && dataset.has(getVersionId(id, release)))
+    const exists = (id: string) => {
+      const version = release === undefined ? undefined : dataset.get(getVersionId(id, release))
+      if (version) return (version._system as {delete?: boolean} | undefined)?.delete !== true
+      return dataset.has(getPublishedId(id))
+    }
     const markers = await validateDocument({
       document: value as SanityDocument,
       workspace,
