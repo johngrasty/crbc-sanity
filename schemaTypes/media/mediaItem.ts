@@ -77,6 +77,16 @@ export default defineType({
       group: 'details',
     }),
     defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'text',
+      rows: 4,
+      description:
+        'What viewers read about the recording on the website, in the apps and on YouTube and Facebook. Plain text, up to 5,000 characters.',
+      validation: (rule) => rule.max(5000),
+      group: 'details',
+    }),
+    defineField({
       name: 'serviceDate',
       title: 'Service date',
       type: 'date',
