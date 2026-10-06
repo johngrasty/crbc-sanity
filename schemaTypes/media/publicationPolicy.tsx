@@ -17,12 +17,15 @@ const policies = [
 ]
 
 // Sanity's radio list shows only each value's title, so this input adds what the value does.
+// Like Sanity's own radio input, it gives the first choice the ref Studio focuses the field
+// through, for example when an editor selects the field's Required marker.
 function PublicationPolicyInput({value, onChange, readOnly, elementProps}: StringInputProps) {
   return (
     <Stack space={3} role="radiogroup">
-      {policies.map((policy) => (
+      {policies.map((policy, index) => (
         <Flex key={policy.value} as="label" gap={3} align="flex-start">
           <Radio
+            ref={index === 0 ? elementProps.ref : undefined}
             name={elementProps.id}
             value={policy.value}
             checked={value === policy.value}
