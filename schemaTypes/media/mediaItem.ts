@@ -55,7 +55,8 @@ export default defineType({
       group: 'details',
     }),
     // media-ops holds the recording until the title and date are filled in, so an editor can
-    // publish a placeholder for next week's service.
+    // publish a placeholder for next week's service. The warnings are custom rules, because
+    // typegen reads required() as a required field even at warning level.
     defineField({
       name: 'title',
       title: 'Title',
@@ -64,7 +65,11 @@ export default defineType({
         'The sermon or service title viewers see. You can publish without one, but the recording waits until you add it.',
       validation: (rule) => [
         rule.max(200),
-        rule.required().warning("Add a title. The recording won't publish until the item has one."),
+        rule
+          .custom((value) =>
+            value ? true : "Add a title. The recording won't publish until the item has one.",
+          )
+          .warning(),
       ],
       group: 'details',
     }),
@@ -76,8 +81,12 @@ export default defineType({
         'The day of the service, as the church calendar shows it. Lists show the newest date first.',
       validation: (rule) => [
         rule
-          .required()
-          .warning("Add the service date. The recording won't publish until the item has one."),
+          .custom((value) =>
+            value
+              ? true
+              : "Add the service date. The recording won't publish until the item has one.",
+          )
+          .warning(),
         // Sanity's date type doesn't check what the API stores.
         rule.custom((value) =>
           !value || isCalendarDate(value) ? true : 'Pick the service date from the calendar.',
