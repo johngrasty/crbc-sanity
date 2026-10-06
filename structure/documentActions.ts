@@ -7,19 +7,24 @@ import {useRouter} from 'sanity/router'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {createDocumentPreviewUrl, documentSlug, previewableTypes} from './preview'
 
-// Stands in for Sanity's Duplicate on the editorial types. The operation does the work, so the
-// harness tests what this action does. This shell only opens the copy.
+// Stands in for Sanity's Duplicate on the editorial types. duplicateWithFreshIds makes the copy,
+// and the harness tests it there. This shell only picks the source and opens the copy. The copy
+// is a draft even with a release pinned, so it opens outside that release.
 export const FreshIdDuplicateAction: DocumentActionComponent = (props) => {
   const client = useClient({apiVersion: '2025-02-19'})
   const {navigateIntent} = useRouter()
   const toast = useToast()
   const [duplicating, setDuplicating] = useState(false)
+  // As Sanity's Duplicate does: the open release version, else the draft, else the published one.
   const source = props.version ?? props.draft ?? props.published
   return {
     label: duplicating ? 'Duplicating…' : 'Duplicate',
     icon: Copy,
     disabled: duplicating || !props.ready || !source,
-    title: source ? undefined : "This document hasn't been saved yet, so there's nothing to copy.",
+    title:
+      props.ready && !source
+        ? "This document hasn't been saved yet, so there's nothing to copy."
+        : undefined,
     onHandle: async () => {
       if (!source) return
       setDuplicating(true)
