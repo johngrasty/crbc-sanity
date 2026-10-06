@@ -34,6 +34,37 @@ function isInstant(value: string): boolean {
   return match !== null && isCalendarDate(match[1]) && !Number.isNaN(Date.parse(value))
 }
 
+// An editor hold or a rights hold. media-ops reads only active, and a missing hold object
+// counts as no hold (contract section 10.2). The note tells the next editor why.
+const holdField = (name: string, title: string, description: string) =>
+  defineField({
+    name,
+    title,
+    type: 'object',
+    description,
+    fields: [
+      defineField({name: 'active', title: 'Hold this item', type: 'boolean', initialValue: false}),
+      defineField({
+        name: 'note',
+        title: 'Note',
+        type: 'text',
+        rows: 2,
+        description: 'Say why the item is held, so the next editor knows.',
+        validation: (rule) => [
+          rule.max(500),
+          rule
+            .custom((note, context) =>
+              (context.parent as {active?: unknown} | undefined)?.active !== true || note?.trim()
+                ? true
+                : 'Add a note that says why the item is held.',
+            )
+            .warning(),
+        ],
+      }),
+    ],
+    group: 'publishing',
+  })
+
 const kinds = [
   {title: 'Full service', value: 'service'},
   {title: 'Sermon', value: 'sermon'},
@@ -149,6 +180,16 @@ export default defineType({
         ),
       group: 'publishing',
     }),
+    holdField(
+      'editorHold',
+      'Editor hold',
+      'Keeps the item and its recording off the website and apps. A public recording comes down. After you turn the hold off, an editor puts it back up in media-ops.',
+    ),
+    holdField(
+      'rightsHold',
+      'Rights hold',
+      "Use this when the church can't show the recording, for example because of music rights. It keeps the item off the website and apps, as an editor hold does.",
+    ),
   ],
   orderings: [
     {

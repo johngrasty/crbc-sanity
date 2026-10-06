@@ -4,6 +4,11 @@ import {createHarness, type Marker} from './harness.ts'
 
 const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
+const errors = (markers: Marker[]) => markers.filter((marker) => marker.level === 'error')
+const warningsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'warning' && marker.path === path)
+
+const holds = ['editorHold', 'rightsHold']
 
 test('a description is plain text of up to 5,000 characters', async () => {
   const studio = createHarness()
@@ -56,5 +61,58 @@ test('a publish time is optional, and is an instant when set', async () => {
   ]) {
     const markers = await studio.validate({...item, publishAt})
     assert.notDeepEqual(errorsAt(markers, 'publishAt'), [], publishAt)
+  }
+})
+
+test('a new media item has no editor hold and no rights hold', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const hold of holds) {
+    assert.equal((item[hold] as {active?: boolean} | undefined)?.active, false, hold)
+  }
+})
+
+test('an active hold without a note is a warning, not an error', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const hold of holds) {
+    for (const note of [undefined, '', '   ']) {
+      const markers = await studio.validate({...item, [hold]: {active: true, note}})
+      assert.deepEqual(errors(markers), [], `${hold} with note ${JSON.stringify(note)}`)
+      assert.equal(warningsAt(markers, `${hold}.note`).length, 1, `${hold} ${JSON.stringify(note)}`)
+    }
+    const noted = await studio.validate({...item, [hold]: {active: true, note: 'Music rights'}})
+    assert.deepEqual(warningsAt(noted, `${hold}.note`), [], hold)
+    const off = await studio.validate({...item, [hold]: {active: false}})
+    assert.deepEqual(warningsAt(off, `${hold}.note`), [], hold)
+  }
+})
+
+test('an item with no hold objects at all has no hold warnings or errors', async () => {
+  const studio = createHarness()
+  const {editorHold, rightsHold, ...item} = await studio.create('mediaItem')
+  assert.ok(editorHold && rightsHold)
+  const markers = await studio.validate(item)
+  assert.deepEqual(errors(markers), [])
+  for (const hold of holds) {
+    assert.deepEqual(
+      markers.filter(({path}) => path.startsWith(hold)),
+      [],
+      hold,
+    )
+  }
+})
+
+test('a hold note holds up to 500 characters', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  for (const hold of holds) {
+    const atLimit = await studio.validate({...item, [hold]: {active: true, note: 'é'.repeat(500)}})
+    assert.deepEqual(errorsAt(atLimit, `${hold}.note`), [], hold)
+    const pastLimit = await studio.validate({
+      ...item,
+      [hold]: {active: true, note: 'é'.repeat(501)},
+    })
+    assert.equal(errorsAt(pastLimit, `${hold}.note`).length, 1, hold)
   }
 })
