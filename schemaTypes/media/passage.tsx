@@ -4,6 +4,7 @@ import {BookOpen} from 'lucide-react'
 import {defineArrayMember, defineField, defineType, type ValidationContext} from 'sanity'
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import {bookFor, books} from './books'
+import {labelLimit} from './limits'
 
 // Contract section 10.2.
 const MAX_PASSAGES = 20
@@ -102,7 +103,12 @@ export default defineType({
       type: 'number',
       validation: (rule) => rule.custom(verseEndProblem),
     }),
-    defineField({name: 'display', title: 'Display text', type: 'string'}),
+    defineField({
+      name: 'display',
+      title: 'Display text',
+      type: 'string',
+      validation: (rule) => [rule.required(), labelLimit(rule)],
+    }),
   ],
 })
 

@@ -247,3 +247,22 @@ test("a passage's end can't come before its start", async () => {
     "chapterEnd: The end chapter can't come before the start chapter.",
   ])
 })
+
+test('the display text is required and holds up to 200 characters', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  const errorsOn = async (display: unknown) =>
+    errorsAt(
+      await studio.validate({...item, passages: [passage('a', {display})]}),
+      'passages[_key=="a"].display',
+    )
+
+  for (const display of [undefined, '']) {
+    assert.notDeepEqual(await errorsOn(display), [], `${display}`)
+  }
+  // The limit counts Unicode code points. 😀 is two UTF-16 units.
+  for (const character of ['é', '😀']) {
+    assert.deepEqual(await errorsOn(character.repeat(200)), [], character)
+    assert.equal((await errorsOn(character.repeat(201))).length, 1, character)
+  }
+})
