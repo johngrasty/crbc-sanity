@@ -4,7 +4,10 @@ import {join} from 'node:path'
 import {test} from 'node:test'
 import {fileURLToPath} from 'node:url'
 import contract from '../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
-import {createHarness, type TestDocument} from './harness.ts'
+import {createHarness, type Marker, type TestDocument} from './harness.ts'
+
+const errorsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'error' && marker.path === path)
 
 const fixturesDir = fileURLToPath(new URL('../media-contract/fixtures/sanity/', import.meta.url))
 const fixtures: TestDocument[] = readdirSync(fixturesDir)
@@ -93,5 +96,26 @@ test('the mirror types declare every field the fixtures use', () => {
     const declared = new Set(studio.fields(fixture._type).map(({path}) => path))
     const undeclared = [...documentFields(fixture)].filter((path) => !declared.has(path))
     assert.deepEqual(undeclared, [], fixture._id)
+  }
+})
+
+test("a draft or release version of a mirror document is an error, so it can't publish", async () => {
+  // The published fixtures' IDs contain dots, such as mediaRelease.production.mi_..., and the
+  // first test shows they validate. Only a drafts. or versions. prefix makes an ID unpublished.
+  for (const fixture of fixtures) {
+    const draft = {...fixture, _id: `drafts.${fixture._id}`}
+    const version = {...fixture, _id: `versions.rSpring.${fixture._id}`}
+    const studio = createHarness({documents: [draft, version]})
+    for (const {_id} of [draft, version]) {
+      const errors = errorsAt(await studio.validate(_id), '')
+      assert.equal(errors.length, 1, _id)
+      assert.match(errors[0].message, /^media-ops writes this document/, _id)
+    }
+    await assert.rejects(studio.publish(fixture._id), /validation errors/)
+    await assert.rejects(studio.publish(fixture._id, {release: 'rSpring'}), /validation errors/)
+    assert.deepEqual(
+      studio.documents().map(({_id}) => _id),
+      [draft._id, version._id].sort(),
+    )
   }
 })
