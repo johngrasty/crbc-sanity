@@ -37,3 +37,24 @@ test('publication policy is required and is auto or manual', async () => {
     assert.notDeepEqual(errorsAt(markers, 'publicationPolicy'), [], `${publicationPolicy}`)
   }
 })
+
+test('a publish time is optional, and is an instant when set', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  assert.equal(item.publishAt, undefined)
+  assert.deepEqual(errorsAt(await studio.validate(item), 'publishAt'), [])
+  for (const publishAt of ['2026-10-11T13:00:00.000Z', '2026-10-11T13:00:00Z']) {
+    const markers = await studio.validate({...item, publishAt})
+    assert.deepEqual(errorsAt(markers, 'publishAt'), [], publishAt)
+  }
+  // A date or a wall time without a zone isn't an instant.
+  for (const publishAt of [
+    '2026-10-11',
+    '2026-10-11T09:00:00',
+    'next Sunday',
+    '2026-02-30T13:00Z',
+  ]) {
+    const markers = await studio.validate({...item, publishAt})
+    assert.notDeepEqual(errorsAt(markers, 'publishAt'), [], publishAt)
+  }
+})

@@ -27,6 +27,13 @@ function isCalendarDate(value: string): boolean {
   return date.getUTCMonth() === month - 1 && date.getUTCDate() === day
 }
 
+// An instant, as the datetime input stores it, such as 2026-10-11T13:00:00.000Z. A date alone,
+// or a wall time without a zone, would leave media-ops guessing the hour.
+function isInstant(value: string): boolean {
+  const match = /^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.exec(value)
+  return match !== null && isCalendarDate(match[1]) && !Number.isNaN(Date.parse(value))
+}
+
 const kinds = [
   {title: 'Full service', value: 'service'},
   {title: 'Sermon', value: 'sermon'},
@@ -129,6 +136,19 @@ export default defineType({
       group: 'details',
     }),
     {...publicationPolicyField, group: 'publishing'},
+    defineField({
+      name: 'publishAt',
+      title: 'Publish time',
+      type: 'datetime',
+      description:
+        "The recording won't appear before this time. Leave it empty to publish as soon as it's ready.",
+      // Sanity's datetime type doesn't check what the API stores.
+      validation: (rule) =>
+        rule.custom((value) =>
+          !value || isInstant(value) ? true : 'Pick the publish time from the calendar.',
+        ),
+      group: 'publishing',
+    }),
   ],
   orderings: [
     {
