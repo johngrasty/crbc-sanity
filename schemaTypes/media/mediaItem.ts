@@ -1,7 +1,7 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {editorialIdField} from './editorialId'
-import {labelLimit} from './limits'
+import {characterLimit, labelLimit} from './limits'
 import {publicationPolicyField} from './publicationPolicy'
 
 // A canonical time zone name, such as America/New_York, the name Intl resolves the value to.
@@ -56,7 +56,7 @@ const holdField = (name: string, title: string, description: string) =>
         rows: 2,
         description: 'Say why the item is held, so the next editor knows.',
         validation: (rule) => [
-          rule.max(500),
+          characterLimit(rule, 500),
           rule
             .custom((note, context) =>
               (context.parent as {active?: unknown} | undefined)?.active !== true || note?.trim()
@@ -130,7 +130,7 @@ export default defineType({
       rows: 4,
       description:
         'What viewers read about the recording on the website, in the apps and on YouTube and Facebook. Plain text, up to 5,000 characters.',
-      validation: (rule) => rule.max(5000),
+      validation: (rule) => characterLimit(rule, 5000),
       group: 'details',
     }),
     defineField({

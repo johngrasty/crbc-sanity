@@ -10,14 +10,19 @@ const warningsAt = (markers: Marker[], path: string) =>
 
 const holds = ['editorHold', 'rightsHold']
 
+// Limits count Unicode code points, as the contract's JSON Schema does. é is one UTF-16 unit and
+// two UTF-8 bytes. 😀 is outside the Basic Multilingual Plane, so it's two UTF-16 units.
+const characters = ['é', '😀']
+
 test('a description is plain text of up to 5,000 characters', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
-  // é is two UTF-8 bytes, so this also shows the limit counts characters, not bytes.
-  const atLimit = await studio.validate({...item, description: 'é'.repeat(5000)})
-  assert.deepEqual(errorsAt(atLimit, 'description'), [])
-  const pastLimit = await studio.validate({...item, description: 'é'.repeat(5001)})
-  assert.equal(errorsAt(pastLimit, 'description').length, 1)
+  for (const character of characters) {
+    const atLimit = await studio.validate({...item, description: character.repeat(5000)})
+    assert.deepEqual(errorsAt(atLimit, 'description'), [], character)
+    const pastLimit = await studio.validate({...item, description: character.repeat(5001)})
+    assert.equal(errorsAt(pastLimit, 'description').length, 1, character)
+  }
 
   const richText = [{_type: 'block', _key: 'a', children: [{_type: 'span', text: 'Hello'}]}]
   const markers = await studio.validate({...item, description: richText})
@@ -107,13 +112,13 @@ test('a hold note holds up to 500 characters', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
   for (const hold of holds) {
-    const atLimit = await studio.validate({...item, [hold]: {active: true, note: 'é'.repeat(500)}})
-    assert.deepEqual(errorsAt(atLimit, `${hold}.note`), [], hold)
-    const pastLimit = await studio.validate({
-      ...item,
-      [hold]: {active: true, note: 'é'.repeat(501)},
-    })
-    assert.equal(errorsAt(pastLimit, `${hold}.note`).length, 1, hold)
+    for (const character of characters) {
+      const note = (length: number) => ({active: true, note: character.repeat(length)})
+      const atLimit = await studio.validate({...item, [hold]: note(500)})
+      assert.deepEqual(errorsAt(atLimit, `${hold}.note`), [], `${hold} ${character}`)
+      const pastLimit = await studio.validate({...item, [hold]: note(501)})
+      assert.equal(errorsAt(pastLimit, `${hold}.note`).length, 1, `${hold} ${character}`)
+    }
   }
 })
 
