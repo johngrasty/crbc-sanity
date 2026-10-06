@@ -152,6 +152,18 @@ test('a placeholder item with no title or service date has warnings, not errors'
   assert.equal(warningsAt(markers, 'serviceDate').length, 1)
 })
 
+test('a service date is a real leap day only in a leap year, including years below 100', async () => {
+  const studio = createHarness()
+  const item = await studio.create('mediaItem')
+  const dateErrors = async (serviceDate: string) =>
+    errorsAt(await studio.validate({...item, serviceDate}), 'serviceDate').length
+  // 1900 isn't a leap year. 2000 and year 0 are, in the proleptic Gregorian calendar.
+  assert.equal(await dateErrors('1900-02-29'), 1)
+  assert.equal(await dateErrors('2000-02-29'), 0)
+  assert.equal(await dateErrors('0000-02-29'), 0)
+  assert.equal(await dateErrors('0000-02-30'), 1)
+})
+
 test('a service date is a calendar date, not an instant', async () => {
   const studio = createHarness()
   const item = await studio.create('mediaItem')
