@@ -116,3 +116,14 @@ test('a hold note holds up to 500 characters', async () => {
     assert.equal(errorsAt(pastLimit, `${hold}.note`).length, 1, hold)
   }
 })
+
+test('a placeholder item with no title or service date publishes, with warnings only', async () => {
+  const studio = createHarness()
+  const created = await studio.create('mediaItem')
+  const published = await studio.publish(created._id)
+  assert.equal(published._id, created._id.replace(/^drafts\./, ''))
+  const markers = await studio.validate(published._id)
+  assert.deepEqual(errors(markers), [])
+  assert.equal(warningsAt(markers, 'title').length, 1)
+  assert.equal(warningsAt(markers, 'serviceDate').length, 1)
+})
