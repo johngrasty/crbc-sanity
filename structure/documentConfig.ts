@@ -16,6 +16,7 @@ import {
   idToKeep,
   newEditorialId,
 } from '../schemaTypes/media/editorialId'
+import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
 import type {ZonedStart} from '../schemaTypes/media/zonedStart'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
@@ -96,11 +97,15 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 // title or editorHold.note.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
-// A form follow-up step runs after each edit to a draft or release version of its type. It gets
-// the version as it was before the edit, the edited version, the published document and the
+// A form follow-up step keeps fields of a draft or release version in step as the editor works.
+// It gets the version before the latest change, the version now, the published document and the
 // stored draft, and returns a patch for the version, or null when the version needs nothing.
-// When the draft is the version being edited, draft is the stored copy, which may lag the edit.
-// The harness's edit runs it, and FormFollowUpInput runs it in Studio's form.
+// When the draft is the version shown, draft is the stored copy, which may lag the form. The
+// form runs every step registered for the type after each change, including another editor's,
+// and once when the document loads, with previous the same as version. The harness's edit and
+// open run them too. Each step owns its own fields, returns null once there's nothing left to
+// change, and returns the same patch in every open form, because two editors' forms can both
+// apply it.
 export type FormFollowUp = (versions: {
   previous: SanityDocumentLike
   version: SanityDocumentLike
@@ -124,8 +129,9 @@ const fillSlotLength: FormFollowUp = ({previous, version}) => {
 }
 
 // A draft or release version keeps its document's ID. A paste, a history restore or an API write
-// that changes it goes back on the next edit, so Unpublish can't carry a changed ID to the next
-// publish. Before the first publish, a release version keeps its draft's ID.
+// that changes it goes back as soon as the form opens or changes, so Unpublish can't carry a
+// changed ID to the next publish. Before the first publish, a release version keeps its draft's
+// ID.
 const keepId: FormFollowUp = ({version, published, draft}) => {
   const id = editorialIdFor(version._type)
   if (!id) return null
@@ -133,32 +139,16 @@ const keepId: FormFollowUp = ({version, published, draft}) => {
   return kept && version[id.field] !== kept.id ? {set: {[id.field]: kept.id}} : null
 }
 
-// Each step with the types it runs on. A ticket that adds a step adds a line here.
-const followUpSteps: [types: string[], step: FormFollowUp][] = [
-  [Object.keys(editorialIds), keepId],
-  [['serviceEvent'], fillSlotLength],
-]
+// Each type's follow-up steps, in order. Every type with a slug keeps its slug history, and then
+// every editorial type keeps its ID.
+export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
+  serviceEvent: [fillSlotLength],
+  ...Object.fromEntries(Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]])),
+}
+for (const type of Object.keys(editorialIds)) {
+  formFollowUps[type] = [...(formFollowUps[type] ?? []), keepId]
+}
 
-// A type with several steps runs them all on the same versions and applies their patches
-// together, so each step must patch its own fields.
-const allSteps =
-  (steps: FormFollowUp[]): FormFollowUp =>
-  (versions) => {
-    const patches = steps.flatMap((step) => step(versions) ?? [])
-    if (patches.length < 2) return patches[0] ?? null
-    return {
-      set: Object.assign({}, ...patches.map((patch) => patch.set)),
-      unset: patches.flatMap((patch) => patch.unset ?? []),
-    }
-  }
-
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = Object.fromEntries(
-  [...new Set(followUpSteps.flatMap(([types]) => types))].map((type) => [
-    type,
-    allSteps(followUpSteps.filter(([types]) => types.includes(type)).map(([, step]) => step)),
-  ]),
-)
-
-// The form components sanity.config.ts passes to Sanity. They run each type's follow-up step in
-// the form after every change.
+// The form components sanity.config.ts passes to Sanity. They run each type's follow-up steps in
+// the form.
 export const formComponents: FormComponents = {input: formFollowUpInput(formFollowUps)}
