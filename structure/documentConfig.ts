@@ -1,15 +1,22 @@
 // The document settings sanity.config.ts passes to Sanity. They live here, not in the config,
 // because the full config can't load in Node and the test harness builds from this module.
-import type {
-  DocumentActionsResolver,
-  NewDocumentOptionsResolver,
-  SanityDocumentLike,
-  Template,
-  TemplateResolver,
+import {
+  getPublishedId,
+  type DocumentActionsResolver,
+  type FormComponents,
+  type NewDocumentOptionsResolver,
+  type SanityDocumentLike,
+  type Template,
+  type TemplateResolver,
 } from 'sanity'
+import {CalendarClock} from 'lucide-react'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
 import {readOnlyTypeNames} from '../schemaTypes/media/readOnlyTypes'
+import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
+import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
+import type {ZonedStart} from '../schemaTypes/media/zonedStart'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
+import {formFollowUpInput} from './FormFollowUpInput'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
@@ -18,6 +25,13 @@ export const documentActions: DocumentActionsResolver = (prev, context) => {
   // Duplicate, Discard, the scheduled-draft Schedule, Create task and the release actions.
   if (readOnlyTypeNames.has(context.schemaType)) return []
   if (singletonTypes.has(context.schemaType)) {
+    // A create intent URL can open a singleton that keeps its template under a random ID. Only
+    // its fixed document, whose ID is the type name, gets the singleton actions. Any other copy
+    // keeps only delete, so an editor can remove it but never publish it.
+    const fixed = context.documentId && getPublishedId(context.documentId) === context.schemaType
+    if (singletonsWithTemplates.has(context.schemaType) && !fixed) {
+      return prev.filter(({action}) => action === 'delete')
+    }
     return prev.filter(({action}) => action && singletonActions.has(action))
   }
   // Sanity's Duplicate copies every field, the editorial ID too. The editorial types get the
@@ -44,16 +58,34 @@ function withFreshId(template: Template): Template {
   }
 }
 
+// One service event template per standing slot, named by the slot's label. It starts at the
+// slot's next occurrence after the moment the editor creates it, with the slot's length. The
+// event's other fields take their defaults.
+const standingSlotTemplates: Template[] = standingSlots.map((slot) => ({
+  id: `serviceEvent-${slot.slot}`,
+  title: slot.label,
+  description: `The next ${slot.label.toLowerCase()} service, at ${slot.localStart} for ${slot.expectedDurationMinutes} minutes`,
+  schemaType: 'serviceEvent',
+  icon: CalendarClock,
+  value: () => ({
+    scheduledStart: nextOccurrence(slot, Date.now()),
+    expectedDurationMinutes: slot.expectedDurationMinutes,
+  }),
+}))
+
 // Singletons have no template, except the ones whose fixed document opens with field defaults.
 // Sanity's document pane applies those only through the type's template. The read-only types
 // have none, and every create menu starts from this list, so no menu offers them.
 export const templates: TemplateResolver = (prev) =>
-  prev
-    .filter(({schemaType}) => !readOnlyTypeNames.has(schemaType))
-    .filter(
-      ({schemaType}) => !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
-    )
-    .map(withFreshId)
+  [
+    ...prev
+      .filter(({schemaType}) => !readOnlyTypeNames.has(schemaType))
+      .filter(
+        ({schemaType}) =>
+          !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
+      ),
+    ...standingSlotTemplates,
+  ].map(withFreshId)
 
 // No create menu offers a singleton that keeps its template: not the global create button, a
 // structure list's "+" or a reference field's "Create new". Sanity names a type's default
@@ -65,13 +97,40 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 // title or editorHold.note.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
-// A form follow-up step runs after each edit to a draft or release version of its type. It gets
-// the edited version and the published document, and returns a patch for the version, or null
-// when the version needs nothing. The harness's edit runs it. The type's form must run the same
-// step, so the first ticket that registers one also wires it into the form.
+// A form follow-up step keeps fields of a draft or release version in step as the editor works.
+// It gets the version before the latest change, the version now and the published document, and
+// returns a patch for the version, or null when the version needs nothing. The form runs every
+// step registered for the type after each change, including another editor's, and once when the
+// document loads, with previous the same as version. The harness's edit and open run them too.
+// Each step owns its own fields, returns null once there's nothing left to change, and returns
+// the same patch in every open form, because two editors' forms can both apply it.
 export type FormFollowUp = (versions: {
+  previous: SanityDocumentLike
   version: SanityDocumentLike
   published: SanityDocumentLike | null
 }) => DocumentPatch | null
 
-export const formFollowUps: Partial<Record<string, FormFollowUp>> = {}
+// When an edit moves a service event's start onto a standing slot, the length becomes the slot's,
+// if it's empty or still holds the length of the slot the start was on before. A length the
+// editor chose stays.
+const fillSlotLength: FormFollowUp = ({previous, version}) => {
+  const before = previous.scheduledStart as ZonedStart | undefined
+  const after = version.scheduledStart as ZonedStart | undefined
+  if (before?.local === after?.local && before?.timeZone === after?.timeZone) return null
+  const slot = slotAt(after)
+  const length = version.expectedDurationMinutes
+  if (!slot || length === slot.expectedDurationMinutes) return null
+  const untouched =
+    length === undefined || length === null || length === slotAt(before)?.expectedDurationMinutes
+  return untouched ? {set: {expectedDurationMinutes: slot.expectedDurationMinutes}} : null
+}
+
+// Each type's follow-up steps, in order. Every type with a slug keeps its slug history.
+export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
+  serviceEvent: [fillSlotLength],
+  ...Object.fromEntries(Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]])),
+}
+
+// The form components sanity.config.ts passes to Sanity. They run each type's follow-up steps in
+// the form.
+export const formComponents: FormComponents = {input: formFollowUpInput(formFollowUps)}

@@ -7,12 +7,19 @@ import contract from '../../media-contract/schemas/media-v1.schema.json' with {t
 // Titles, labels and names, from the contract's Label definition.
 export const LABEL_MAX_LENGTH: number = contract.$defs.Label.maxLength
 
+// Slugs, from the contract's Slug definition.
+export const SLUG_MAX_LENGTH: number = contract.$defs.Slug.maxLength
+
+// True when text has at most max characters, counted as Unicode code points, or else the
+// error. For rules on values that aren't strings, such as a slug's current text.
+export function checkCharacters(value: string | undefined, max: number): true | string {
+  const length = value ? [...value].length : 0
+  return length <= max ? true : `Use ${max} characters or fewer. This has ${length}.`
+}
+
 // An error when a string has more than max characters, counted as Unicode code points.
 export const characterLimit = (rule: StringRule, max: number) =>
-  rule.custom((value) => {
-    const length = value ? [...value].length : 0
-    return length <= max ? true : `Use ${max} characters or fewer. This has ${length}.`
-  })
+  rule.custom((value) => checkCharacters(value, max))
 
 // The limit for every title, label and name: validation: (rule) => labelLimit(rule)
 export const labelLimit = (rule: StringRule) => characterLimit(rule, LABEL_MAX_LENGTH)

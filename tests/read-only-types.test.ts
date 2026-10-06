@@ -194,10 +194,15 @@ test('the read-only types have no template and no create menu offers them', asyn
   assert.deepEqual(studio.documents(), [])
 })
 
-test("global search and the release tool's Add document leave out the read-only types", () => {
-  const studio = createHarness()
-  const searched = studio.search()
-  assert.ok(searched.includes('mediaItem'), 'search still covers media items')
+test("global search and the release tool's Add document leave out the read-only documents", async () => {
+  const item = {_id: 'item', _type: 'mediaItem', title: 'Synthetic Sunday Service'}
+  const studio = createHarness({documents: [...samples, item]})
+  // The live status fixture's event has the same title, and a search of its own type finds it.
+  assert.deepEqual(await studio.search('synthetic', ['liveStatus']), ['liveStatus.production.main'])
+  assert.deepEqual(await studio.search('synthetic'), ['item'])
+  // "Add document" searches the same types.
+  const searched = studio.searchTypes()
+  assert.ok(searched.includes('mediaItem'))
   for (const type of readOnlyTypes) assert.ok(!searched.includes(type), type)
 })
 
@@ -221,20 +226,48 @@ test('the form refuses every patch to a read-only document, so it writes no draf
   }
 })
 
-test('a crafted create URL opens a form that refuses its first patch', async () => {
-  // With no template, /intent/create/type=mediaRelease still opens an empty form. Its first
-  // patch would create the document.
+test('a create URL opens a form that refuses its first patch', async () => {
+  // With no template, /intent/create/type=mediaRelease still opens an empty form outside the
+  // desk. Its first patch would create the document.
   for (const type of readOnlyTypes) {
     const studio = createHarness()
+    const pane = await studio.intent('create', {type})
+    assert.deepEqual(pane.path, [`__edit__${pane.documentId}`], type)
+    assert.deepEqual(pane.initialValue, {_id: pane.documentId, _type: type}, type)
     const patch = patches[type as keyof typeof patches]
-    await assert.rejects(studio.edit(`${type}.new`, patch, {type}), /read-only/, type)
+    const {initialValue} = pane
+    await assert.rejects(studio.edit(pane.documentId, patch, {initialValue}), /read-only/, type)
     assert.deepEqual(studio.documents(), [], type)
   }
-  // An editorial type's new document takes the same patch path.
+  // A media item's create form takes the same path, and its first patch writes the draft.
   const studio = createHarness()
-  const item = await studio.edit('item', {set: {title: 'Spring'}}, {type: 'mediaItem'})
-  assert.equal(item._id, 'drafts.item')
+  const {documentId, initialValue} = await studio.intent('create', {type: 'mediaItem'})
+  const item = await studio.edit(documentId, {set: {title: 'Spring'}}, {initialValue})
+  assert.equal(item._id, `drafts.${documentId}`)
   assert.equal(item.title, 'Spring')
+  assert.equal(item.contentId, initialValue?.contentId)
+})
+
+test('the form runs no follow-up step on a read-only document, even a draft', async () => {
+  // No step is registered for these types. A stand-in step shows that the form, which is
+  // read-only for them, wouldn't apply one when it opens a draft or release version.
+  const step = () => ({set: {stray: true}})
+  for (const sample of samples) {
+    const draft = {...sample, _id: `drafts.${sample._id}`}
+    const version = {...sample, _id: `versions.rSpring.${sample._id}`}
+    const seeded = [sample, draft, version]
+    const studio = createHarness({documents: seeded, followUps: {[sample._type]: [step]}})
+    assert.deepEqual(await studio.open(sample._id), draft)
+    assert.deepEqual(await studio.open(sample._id, {release: 'rSpring'}), version)
+    assert.deepEqual(
+      studio.documents(),
+      seeded.sort((a, b) => a._id.localeCompare(b._id)),
+    )
+  }
+  // A media item's draft gets the step.
+  const draft = {_id: 'drafts.item', _type: 'mediaItem'}
+  const studio = createHarness({documents: [draft], followUps: {mediaItem: [step]}})
+  assert.equal((await studio.open('item')).stray, true)
 })
 
 test('each read-only type, and every field and array member in it, is read-only', () => {

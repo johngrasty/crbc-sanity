@@ -1,6 +1,7 @@
 // Loaded with node --import before every test file. Tests run offline: a network connection, a
-// UDP packet or a DNS lookup fails the run, even when the code under test catches the error.
+// UDP packet or a DNS query fails the run, even when the code under test catches the error.
 // Unix sockets and named pipes stay open, because they're local IPC, not network.
+// tests/offline-guard.test.ts checks each kind of attempt from a child process.
 import dgram from 'node:dgram'
 import dns from 'node:dns'
 import {syncBuiltinESMExports} from 'node:module'
@@ -32,13 +33,30 @@ dgram.Socket.prototype.send = function () {
   throw blocked('a UDP address')
 }
 
-dns.lookup = (hostname, ...args) => {
-  const callback = args.at(-1)
-  const error = blocked(hostname)
-  process.nextTick(() => callback(error))
+// Every DNS function is denied before Node's native resolver runs: lookup, lookupService,
+// reverse and each resolve method, on the callback and promise modules, and on both Resolver
+// classes, whose instances don't go through the module functions. A callback gets the error, and
+// a promise rejects with it. Node answers a lookup of an IP literal itself, without the resolver,
+// and listen() and bind() look up the address they're given, so those lookups pass.
+const isDnsCall = (name) =>
+  name === 'lookup' || name === 'lookupService' || name === 'reverse' || name.startsWith('resolve')
+
+function denyDns(target, {promises}) {
+  for (const name of Object.getOwnPropertyNames(target).filter(isDnsCall)) {
+    const original = target[name]
+    target[name] = function (hostname, ...args) {
+      if (name === 'lookup' && net.isIP(hostname)) return original.call(this, hostname, ...args)
+      const error = blocked(`DNS ${name} ${hostname}`)
+      if (promises) return Promise.reject(error)
+      const callback = args.at(-1)
+      if (typeof callback === 'function') process.nextTick(callback, error)
+      return undefined
+    }
+  }
 }
-dns.promises.lookup = async (hostname) => {
-  throw blocked(hostname)
-}
+denyDns(dns, {promises: false})
+denyDns(dns.Resolver.prototype, {promises: false})
+denyDns(dns.promises, {promises: true})
+denyDns(dns.promises.Resolver.prototype, {promises: true})
 
 syncBuiltinESMExports()
