@@ -28,6 +28,7 @@ import {
   Clapperboard,
   Video,
   CirclePause,
+  SlidersHorizontal,
 } from 'lucide-react'
 import {AnnouncementHelp} from '../schemaTypes/components/AnnouncementHelp'
 import {SignUpHelp} from '../schemaTypes/components/SignUpHelp'
@@ -140,6 +141,12 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                     )
                     .defaultOrdering([{field: 'serviceDate', direction: 'desc'}]),
                 ),
+              S.divider(),
+              S.listItem()
+                .title('Media settings')
+                .id('mediaSettings')
+                .icon(SlidersHorizontal)
+                .child(S.document().schemaType('mediaSettings').documentId('mediaSettings')),
             ]),
         ),
 

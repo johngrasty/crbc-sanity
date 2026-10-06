@@ -5,7 +5,7 @@ import {media} from 'sanity-plugin-media'
 import {assist} from '@sanity/assist'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
-import {documentActions, templates} from './structure/documentConfig'
+import {documentActions, newDocumentOptions, templates} from './structure/documentConfig'
 import {previewOrigin, singletonPaths} from './structure/preview'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID
@@ -22,6 +22,7 @@ export default defineConfig({
   schema: {types: schemaTypes, templates},
   document: {
     actions: documentActions,
+    newDocumentOptions,
     // Studio re-resolves productionUrl on every debounced form change, so it must
     // never mint a preview secret here (that writes to the dataset on each pause in
     // typing). Slugged types get a secret only when the Preview action is clicked.

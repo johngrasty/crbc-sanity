@@ -21,6 +21,7 @@ import {
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type NewDocumentCreationContext,
   type SanityClient,
   type SanityDocument,
   type Source,
@@ -37,6 +38,7 @@ import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {
   documentActions,
   formFollowUps,
+  newDocumentOptions,
   templates,
   type DocumentPatch,
 } from '../structure/documentConfig'
@@ -48,7 +50,8 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
 
 // A pane of the desk. A list has items, a document list has the documents it shows, and a
-// document pane has its fixed document. Other panes, such as components, have only a type.
+// document pane has its fixed document and the value its form starts from while that document
+// doesn't exist. Other panes, such as components, have only a type.
 export type DeskPane = {
   type: string
   title?: string
@@ -56,6 +59,7 @@ export type DeskPane = {
   documents?: TestDocument[]
   documentId?: string
   schemaType?: string
+  initialValue?: TestDocument
 }
 
 // The client behind the mock auth store. Sanity needs config().url to build a Source. Nothing
@@ -98,7 +102,7 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {types: schemaTypes, templates},
-  document: {actions: documentActions},
+  document: {actions: documentActions, newDocumentOptions},
 })
 
 // Sanity reads window when a Source resolves, and its validator and initial values schedule
@@ -137,6 +141,8 @@ type StructureNode = {
     defaultOrdering?: Ordering[]
     id?: string
     type?: string
+    template?: string
+    templateParameters?: Record<string, unknown>
   }
 }
 const structureBuilder = createStructureBuilder({source, perspectiveStack: []})
@@ -266,6 +272,28 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     return markers.map(({path, level, message}) => ({path: pathToString(path), level, message}))
   }
 
+  // The value a document pane's form starts from while its document doesn't exist, as Sanity
+  // resolves it: the pane's template, else the type's only template. With neither, the form
+  // starts with just _id and _type, and field initial values don't apply. See
+  // lib/_chunks-es/pane.js:7223 and lib/index.js:7293-7305.
+  async function paneInitialValue(
+    documentId: string,
+    schemaType: string,
+    {template, templateParameters}: {template?: string; templateParameters?: object},
+  ): Promise<TestDocument> {
+    const empty = {_id: documentId, _type: schemaType}
+    const typeTemplates = source.templates.filter(
+      (candidate) => candidate.schemaType === schemaType,
+    )
+    const templateId = template ?? (typeTemplates.length === 1 ? typeTemplates[0].id : undefined)
+    const found = source.templates.find(({id}) => id === templateId)
+    if (!found) return empty
+    return {
+      ...empty,
+      ...(await resolveInitialValue(schema, found, templateParameters, configContext)),
+    }
+  }
+
   const versionId = (id: string, release?: string) =>
     release ? getVersionId(getPublishedId(id), release) : getDraftId(getPublishedId(id))
 
@@ -285,6 +313,14 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
           releaseId: inRelease ? 'rHarness' : undefined,
         })
         .map(actionName)
+    },
+
+    // The template IDs a create menu offers, resolved through the whole config chain: the
+    // global create button by default, a structure list's "+" with {type: 'structure',
+    // schemaType}, or a reference field's "Create new" with {type: 'document', documentId,
+    // schemaType}. A reference field then keeps only the templates of the types it refers to.
+    createMenu(context: NewDocumentCreationContext = {type: 'global'}): string[] {
+      return source.document.resolveNewDocumentOptions(context).map(({templateId}) => templateId)
     },
 
     // A new document from a template, stored as a draft, as Studio stores it on the first edit.
@@ -356,9 +392,9 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     },
 
     // Opens the desk at a path of item IDs, such as desk('media', 'mediaItems'), and returns
-    // that pane. A document list shows what the default perspective shows: each document's
-    // draft if it has one, else its published version, in the list's default order. Release
-    // versions are left out.
+    // that pane. A document pane reports the value its form starts from. A document list shows
+    // what the default perspective shows: each document's draft if it has one, else its
+    // published version, in the list's default order. Release versions are left out.
     async desk(...path: string[]): Promise<DeskPane> {
       let node = serializeNode(deskStructure(structureBuilder, structureContext))
       for (const [index, id] of path.entries()) {
@@ -371,8 +407,11 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
         const items = (node.items ?? []).filter((item) => item.type !== 'divider')
         return {type, title, items: items.map((item) => ({id: item.id ?? '', title: item.title}))}
       }
-      if (type === 'document')
-        return {type, title, documentId: options.id, schemaType: options.type}
+      if (type === 'document') {
+        const {id = '', type: schemaType = ''} = options
+        const initialValue = await paneInitialValue(id, schemaType, options)
+        return {type, title, documentId: id, schemaType, initialValue}
+      }
       if (type !== 'documentList') return {type, title}
 
       const rows = new Map<string, TestDocument>()

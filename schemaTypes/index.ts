@@ -29,6 +29,7 @@ import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
 import mediaItem from './media/mediaItem'
+import mediaSettings from './media/mediaSettings'
 
 export const schemaTypes = [
   // Documents
@@ -58,6 +59,7 @@ export const schemaTypes = [
   customSignUp,
   jobOpening,
   mediaItem,
+  mediaSettings,
   // Objects (Sections)
   hero,
   logoCloud,
