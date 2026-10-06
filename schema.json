@@ -2303,6 +2303,13 @@
         },
         "optional": true
       },
+      "serviceTimezone": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": false
+      },
       "speakers": {
         "type": "objectAttribute",
         "value": {
@@ -2390,13 +2397,6 @@
           }
         },
         "optional": true
-      },
-      "serviceTimezone": {
-        "type": "objectAttribute",
-        "value": {
-          "type": "string"
-        },
-        "optional": false
       },
       "passages": {
         "type": "objectAttribute",

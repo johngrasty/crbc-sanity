@@ -385,6 +385,7 @@ export type MediaItem = {
   title?: string
   description?: string
   serviceDate?: string
+  serviceTimezone: string
   speakers?: Array<{
     _ref: string
     _type: 'reference'
@@ -399,7 +400,6 @@ export type MediaItem = {
     _key: string
     [internalGroqTypeReferenceTo]?: 'topic'
   }>
-  serviceTimezone: string
   passages?: Array<
     {
       _key: string
