@@ -7,7 +7,10 @@
 import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import dgram from 'node:dgram'
+import {mkdtempSync, rmSync} from 'node:fs'
 import net from 'node:net'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import process from 'node:process'
 import {after, before, test} from 'node:test'
 import {setTimeout as wait} from 'node:timers/promises'
@@ -158,3 +161,22 @@ for (const {name, code, observable} of cases) {
     assert.equal(guarded.hits, 0, `${name} reached the receiver through the guard`)
   })
 }
+
+test('the offline guard leaves Unix sockets open, because they are local IPC', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'offline-guard-'))
+  const path = join(directory, 'ipc.sock')
+  const server = net.createServer((socket) => {
+    hits++
+    socket.end()
+  })
+  await new Promise<void>((resolve) => server.listen(path, resolve))
+  try {
+    const code = `net.connect(${JSON.stringify(path)}).on('connect', () => process.exit(0))`
+    const result = await attempt(code, {guarded: true})
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.hits, 1)
+  } finally {
+    server.close()
+    rmSync(directory, {recursive: true, force: true})
+  }
+})
