@@ -12,7 +12,10 @@ import {
   getPublishedId,
   getVersionFromId,
   getVersionId,
+  isArraySchemaType,
   isDraftId,
+  isObjectSchemaType,
+  isReferenceSchemaType,
   isVersionId,
   pathToString,
   prepareConfig,
@@ -24,6 +27,7 @@ import {
   type NewDocumentCreationContext,
   type SanityClient,
   type SanityDocument,
+  type SchemaType,
   type Source,
   type Workspace,
 } from 'sanity'
@@ -159,6 +163,34 @@ async function openChild(child: unknown, id: string, path: string[]): Promise<St
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
+// A field a type declares, at any depth, as Sanity compiled it. path is dotted, with [] for an
+// array's members, for example captions[].label. readOnly is the declared value, so a callback
+// stays a function. A reference lists the types it can point to.
+export type SchemaField = {path: string; jsonType: string; readOnly: unknown; to?: string[]}
+
+// Walks a compiled type's fields and array members. Names that start with _, such as a
+// reference's _ref, are Sanity's own. A type already open higher up the path isn't walked again,
+// so a type that contains itself ends.
+function declaredFields(type: SchemaType, prefix = '', open = new Set<SchemaType>()) {
+  const found: SchemaField[] = []
+  if (open.has(type)) return found
+  open = new Set(open).add(type)
+  const add = (path: string, member: SchemaType) => {
+    const field: SchemaField = {path, jsonType: member.jsonType, readOnly: member.readOnly}
+    if (isReferenceSchemaType(member)) field.to = member.to.map(({name}) => name)
+    found.push(field, ...declaredFields(member, path, open))
+  }
+  if (isObjectSchemaType(type)) {
+    for (const {name, type: member} of type.fields) {
+      if (!name.startsWith('_')) add(prefix ? `${prefix}.${name}` : name, member)
+    }
+  }
+  if (isArraySchemaType(type)) {
+    for (const member of type.of) add(`${prefix}[]`, member)
+  }
+  return found
+}
+
 // Applies set, then unset, as Sanity does. Paths are dotted field names.
 function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatch): TestDocument {
   const next = structuredClone(document)
@@ -259,6 +291,8 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
   async function validate(document: TestDocument | string): Promise<Marker[]> {
     const value = typeof document === 'string' ? dataset.get(document) : document
     if (!value) throw new Error(`No document with _id "${document}"`)
+    // Sanity skips a type the schema doesn't have and returns no markers, which would pass.
+    if (!schema.get(value._type)) throw new Error(`No schema type named "${value._type}"`)
     // Without i18n on the workspace, Sanity falls back to its English messages.
     const workspace = {schema, getClient} as unknown as Workspace
     // As in Studio, a referenced document exists when it's published. For a document in a
@@ -320,6 +354,13 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
           releaseId: inRelease ? 'rHarness' : undefined,
         })
         .map(actionName)
+    },
+
+    // Every field the registered type declares, at any depth. See SchemaField.
+    fields(type: string): SchemaField[] {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No schema type named "${type}"`)
+      return declaredFields(schemaType)
     },
 
     // The template IDs a create menu offers, resolved through the whole config chain: the
