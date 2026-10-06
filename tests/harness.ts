@@ -5,10 +5,13 @@ import {randomUUID} from 'node:crypto'
 import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
 import type {ClientPerspective} from '@sanity/client'
+import {isValidElement, type ReactNode} from 'react'
+import {defer, firstValueFrom} from 'rxjs'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
   createMockAuthStore,
+  createSearch,
   DEFAULT_MAX_RECURSION_DEPTH,
   defineField,
   definePlugin,
@@ -22,6 +25,7 @@ import {
   isVersionId,
   pathToString,
   prepareConfig,
+  prepareForPreview,
   resolveInitialValue,
   resolveInitialValueForType,
   validateDocument,
@@ -30,8 +34,10 @@ import {
   type DocumentActionsVersionType,
   type NewDocumentCreationContext,
   type ObjectSchemaType,
+  type PreviewableType,
   type SanityClient,
   type SanityDocument,
+  type SchemaType,
   type Source,
   type Workspace,
 } from 'sanity'
@@ -57,6 +63,18 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 // A validation marker. path is in Sanity's string form, for example passages[_key=="a"].book,
 // and is empty for a document-level rule.
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
+
+// What a document's preview shows in desk lists, search and reference fields. media is the
+// selected value, such as an image. When the media is a React element instead, such as a
+// speaker's initials, mediaText is the text it renders. Without either, Studio shows the type's
+// icon.
+export type Preview = {
+  title?: string
+  subtitle?: string
+  description?: string
+  media?: unknown
+  mediaText?: string
+}
 
 // A pane of the desk. A list has items, a document list has the documents it shows, and a
 // document pane has its fixed document and the value its form starts from while that document
@@ -224,6 +242,18 @@ async function openChild(
   return serializeNode(await child(id, {index: 0, splitIndex: 0, path, params: {}, parent}))
 }
 
+// The text a React node renders. Function components are called directly, so a preview's media
+// component mustn't use hooks.
+function textOf(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(textOf).join('')
+  if (!isValidElement<{children?: ReactNode}>(node)) return ''
+  const {type, props} = node
+  return textOf(
+    typeof type === 'function' ? (type as (props: unknown) => ReactNode)(props) : props.children,
+  )
+}
+
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
@@ -284,6 +314,17 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
     async fetch(query: string, params: Record<string, unknown> = {}) {
       const result = await evaluate(parse(query, {params}), {dataset: visible(), params})
       return structuredClone(await result.get())
+    },
+    // Studio's search fetches through the observable client. A perspective in the options
+    // overrides the client's, as in @sanity/client.
+    observable: {
+      fetch: (query: string, params?: Record<string, unknown>, options?: {perspective?: unknown}) =>
+        defer(() =>
+          (options?.perspective === undefined
+            ? client
+            : testClient(dataset, {...config, perspective: options.perspective})
+          ).fetch(query, params),
+        ),
     },
     // Like Content Lake's create mutation, it fails when the _id is taken, sets the system
     // fields, and returns the stored document.
@@ -634,6 +675,36 @@ export function createHarness({
         timestamp: fixedNow === undefined ? new Date() : new Date(fixedNow),
       })
       return {type, title, documents: structuredClone(await result.get())}
+    },
+
+    // The _ids Studio's search finds for text among these types, best match first, as Sanity
+    // ranks them. With every searchable type that's the global search, and with a reference
+    // field's target types it's that field's picker. It sees published documents, as the
+    // client's default perspective does.
+    async search(text: string, types: string[]): Promise<string[]> {
+      const search = createSearch(
+        types.map((type) => schema.get(type) as SchemaType),
+        getClient({apiVersion: '2025-02-19'}),
+        {unique: true, strategy: source.search.strategy},
+      )
+      const {hits} = await firstValueFrom(search(text))
+      return hits.map(({hit}) => hit._id)
+    },
+
+    // The preview of a document, or of the _id of one in the dataset, from its type's preview
+    // config, as Sanity prepares it. Only the fields the preview selects reach it.
+    preview(document: TestDocument | string): Preview {
+      const value = typeof document === 'string' ? dataset.get(document) : document
+      if (!value) throw new Error(`No document with _id "${document}"`)
+      const type = schema.get(value._type) as PreviewableType
+      const {title, subtitle, description, media} = prepareForPreview(value, type)
+      const preview = Object.fromEntries(
+        Object.entries({title, subtitle, description}).filter(([, text]) => text !== undefined),
+      ) as Preview
+      if (isValidElement(media)) {
+        return {...preview, mediaText: textOf(media)}
+      }
+      return media === undefined ? preview : {...preview, media}
     },
 
     // Every document in the dataset, sorted by _id.
