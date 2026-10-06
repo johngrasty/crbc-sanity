@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {createHarness, type TestDocument} from './harness.ts'
+import {createHarness, type Marker, type TestDocument} from './harness.ts'
 
 const editorialTypes = ['mediaItem', 'serviceEvent', 'series', 'speaker', 'topic'] as const
 type EditorialType = (typeof editorialTypes)[number]
@@ -15,7 +15,10 @@ const ids = {
 }
 
 const ULID = '01K6Z8Y4N3QJ5W2X7R9T0V1B2C'
+const OTHER_ULID = '01K6Z9A7H2MXW4Q8C5R3T6V0BD'
 const reference = (_key: string, _ref: string) => ({_key, _type: 'reference', _ref})
+const errorsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'error' && marker.path === path)
 
 // Every type is seeded with the slug, the slug history and the import source, whether or not
 // its schema has them yet, so these tests hold before the other type tickets merge.
@@ -169,7 +172,7 @@ test("the editorial types swap Sanity's Duplicate for the fresh-ID one in every 
   }
 })
 
-test('a copy is a new draft with a fresh ID of its kind, and nothing else changes', async () => {
+test('a copy is an unpublished draft with a fresh ID of its kind, and the original is unchanged', async () => {
   for (const type of editorialTypes) {
     const original = originals[type]
     const {field, pattern} = ids[type]
@@ -179,7 +182,6 @@ test('a copy is a new draft with a fresh ID of its kind, and nothing else change
     assert.equal(copy._type, type)
     assert.match(String(copy[field]), pattern, type)
     assert.notEqual(copy[field], original[field], type)
-    // The copy isn't published, and the original is as it was.
     assert.deepEqual(
       studio.documents(),
       [copy, original].sort((a, b) => a._id.localeCompare(b._id)),
@@ -237,4 +239,56 @@ test('a speaker or topic copy keeps everything else', async () => {
     aliases: ['Pastor Sam'],
   })
   assert.deepEqual(await copyFields('topic'), {_type: 'topic', label: 'Grace', aliases: ['Mercy']})
+})
+
+test('with a release pinned, the copy is made from the release version and still goes to drafts', async () => {
+  const item = originals.mediaItem
+  const versions = [
+    item,
+    {...item, _id: 'drafts.item', title: 'Easter Sunday, draft'},
+    {...item, _id: 'versions.rSpring.item', title: 'Easter Sunday, spring release'},
+  ]
+  const studio = createHarness({documents: versions})
+  const copy = await studio.duplicate('item', {release: 'rSpring'})
+  assert.match(copy._id, /^drafts\.[0-9a-f-]{36}$/)
+  assert.notEqual(copy.contentId, item.contentId)
+  assert.equal(copy.title, 'Easter Sunday, spring release')
+  assert.deepEqual(
+    studio.documents().filter(({_id}) => _id !== copy._id),
+    [...versions].sort((a, b) => a._id.localeCompare(b._id)),
+  )
+
+  // A release with no version of the item shows the draft, so the copy is made from that.
+  const fromDraft = await studio.duplicate('item', {release: 'rSummer'})
+  assert.match(fromDraft._id, /^drafts\.[0-9a-f-]{36}$/)
+  assert.equal(fromDraft.title, 'Easter Sunday, draft')
+})
+
+test("a media item's copy passes the ID rules next to its original", async () => {
+  const studio = createHarness({documents: [originals.mediaItem]})
+  const copy = await studio.duplicate('item')
+  assert.deepEqual(errorsAt(await studio.validate(copy._id), 'contentId'), [])
+})
+
+// Studio's "Paste document" writes every field of the copied document, read-only ones included,
+// so the content ID comes along. The ID rules are the guard (research question 4).
+test("a whole-document paste of another item's fields is caught by the ID rules", async () => {
+  const other = {...originals.mediaItem, _id: 'other', contentId: `mi_${OTHER_ULID}`}
+  const pasted = {
+    set: Object.fromEntries(Object.entries(other).filter(([key]) => !key.startsWith('_'))),
+  }
+  const studio = createHarness({documents: [originals.mediaItem, other]})
+  const created = await studio.create('mediaItem')
+  // Pasted into a published item's draft or release version, the ID differs from the published
+  // one. Pasted into a new item, it's the other item's ID.
+  const pastes: [TestDocument, string | undefined][] = [
+    [await studio.edit('item', pasted), undefined],
+    [await studio.edit('item', pasted, {release: 'rSpring'}), 'rSpring'],
+    [await studio.edit(created._id, pasted), undefined],
+  ]
+  for (const [{_id, contentId}, release] of pastes) {
+    assert.equal(contentId, other.contentId, _id)
+    assert.equal(errorsAt(await studio.validate(_id), 'contentId').length, 1, _id)
+    await assert.rejects(studio.publish(_id, {release}), /contentId/, _id)
+  }
 })
