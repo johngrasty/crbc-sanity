@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {createHarness, type Marker} from './harness.ts'
+import {createHarness, type Marker, type TestDocument} from './harness.ts'
 
 // Contract section 2: each kind's prefix and a ULID, 26 characters of Crockford base32.
 const ids = {
@@ -13,6 +13,7 @@ const nameFields: Record<string, string> = {speaker: 'name', topic: 'label'}
 
 const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
+const errors = (markers: Marker[]) => markers.filter((marker) => marker.level === 'error')
 const warningsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'warning' && marker.path === path)
 
@@ -212,5 +213,79 @@ test('a source URL is an http or https address', async () => {
       const markers = await studio.validate({...document, source: {...source, sourceUrl}})
       assert.equal(errorsAt(markers, 'source.sourceUrl').length, 1, `${type} ${sourceUrl}`)
     }
+  }
+})
+
+const photo = {
+  _type: 'image',
+  asset: {_type: 'reference', _ref: 'image-a1b2c3-400x400-jpg'},
+  alt: 'Sam Jones smiling',
+}
+
+test("a speaker photo's alt text holds up to 200 characters, counted as Unicode code points", async () => {
+  const studio = createHarness({
+    documents: [{_id: 'image-a1b2c3-400x400-jpg', _type: 'sanity.imageAsset'}],
+  })
+  const speaker = await studio.create('speaker')
+  assert.deepEqual(errorsAt(await studio.validate({...speaker, photo}), 'photo'), [])
+  for (const character of characters) {
+    const atLimit = await studio.validate({
+      ...speaker,
+      photo: {...photo, alt: character.repeat(200)},
+    })
+    assert.deepEqual(errorsAt(atLimit, 'photo.alt'), [], `200 × ${character}`)
+    const pastLimit = await studio.validate({
+      ...speaker,
+      photo: {...photo, alt: character.repeat(201)},
+    })
+    assert.equal(errorsAt(pastLimit, 'photo.alt').length, 1, `201 × ${character}`)
+  }
+})
+
+const ULID = '01K6Z8Y4N3QJ5W2X7R9T0V1B2C'
+const imageAsset = {_id: 'image-a1b2c3-400x400-jpg', _type: 'sanity.imageAsset'}
+const originals: Record<string, TestDocument> = {
+  speaker: {
+    _id: 'pastor',
+    _type: 'speaker',
+    speakerId: `sp_${ULID}`,
+    name: 'Sam Jones',
+    aliases: ['Pastor Sam'],
+    photo,
+    source,
+  },
+  topic: {
+    _id: 'grace',
+    _type: 'topic',
+    topicId: `tp_${ULID}`,
+    label: 'Grace',
+    aliases: ['Mercy'],
+    source,
+  },
+}
+
+// The source ID must stay unique, so a copy that kept it would fail validation.
+test('a duplicated speaker or topic drops its import source, keeps the rest, and has no errors', async () => {
+  for (const [type, original] of Object.entries(originals)) {
+    const studio = createHarness({documents: [original, imageAsset]})
+    const copy = await studio.duplicate(original._id)
+    const {
+      _id,
+      _rev,
+      _createdAt,
+      _updatedAt,
+      [ids[type as keyof typeof ids].field]: id,
+      ...fields
+    } = copy
+    assert.ok(_id && _rev && _createdAt && _updatedAt && id, type)
+    const {_id: originalId, source: originalSource, ...kept} = original
+    assert.ok(originalId && originalSource)
+    delete kept[ids[type as keyof typeof ids].field]
+    assert.deepEqual(fields, kept, type)
+
+    assert.deepEqual(errors(await studio.validate(copy._id)), [], `${type} copy`)
+    assert.deepEqual(errors(await studio.validate(original._id)), [], `${type} original`)
+    // The copy shares the original's name, which is what the warning is for.
+    assert.equal(warningsAt(await studio.validate(copy._id), nameFields[type]).length, 1, type)
   }
 })

@@ -32,6 +32,23 @@ export default defineType({
     aliasesField(
       'Other names people know the speaker by, such as Pastor Sam. Search finds the speaker under any of them. Up to 20.',
     ),
+    defineField({
+      name: 'photo',
+      title: 'Photo',
+      type: 'image',
+      description:
+        "A head-and-shoulders photo. Apps show the speaker's initials when there's none.",
+      options: {hotspot: true},
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: "Describe the photo for people who can't see it, such as Sam Jones smiling.",
+          validation: (rule) => labelLimit(rule),
+        }),
+      ],
+    }),
     sourceField('speaker'),
   ],
 })
