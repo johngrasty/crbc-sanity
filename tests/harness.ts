@@ -393,6 +393,25 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
       return declaredFields(schemaType)
     },
 
+    // The names of the inspectors a document pane offers for this type, such as AI Assist's
+    // ai-assistance, resolved through the whole plugin chain.
+    inspectors(type: string): string[] {
+      return source.document
+        .inspectors({documentId: type, documentType: type})
+        .map(({name}) => name)
+    },
+
+    // The names of the field actions each field in this type's form offers, such as Sanity's
+    // copyField and pasteField and AI Assist's sanity-assist-actions, resolved through the whole
+    // plugin chain.
+    fieldActions(type: string): string[] {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No schema type named "${type}"`)
+      return source.document
+        .unstable_fieldActions({documentId: type, documentType: type, schemaType})
+        .map(({name}) => name)
+    },
+
     // The template IDs a create menu offers, resolved through the whole config chain: the
     // global create button by default, a structure list's "+" with {type: 'structure',
     // schemaType}, or a reference field's "Create new" with {type: 'document', documentId,

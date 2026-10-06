@@ -29,6 +29,8 @@ export function readOnlyType(writer: string, definition: DocumentDefinition): Re
     // itself refuses every patch: a paste, a custom input, or the first edit to a form a create
     // URL opens.
     __experimental_actions: [],
+    // AI Assist adds no inspector, field actions or presence to the document.
+    options: {...definition.options, aiAssist: {exclude: true}},
     // Global search leaves the type out, and so does the release tool's "Add document", which
     // is the same search.
     __experimental_omnisearch_visibility: false,

@@ -248,3 +248,15 @@ test('each read-only type, and every field and array member in it, is read-only'
     for (const {path, readOnly} of fields) assert.equal(readOnly, true, `${type} ${path}`)
   }
 })
+
+test('AI Assist offers its inspector and field actions on media items, not on the read-only types', () => {
+  const studio = createHarness()
+  const assistInspector = 'ai-assistance'
+  const assistFieldActions = 'sanity-assist-actions'
+  assert.ok(studio.inspectors('mediaItem').includes(assistInspector))
+  assert.ok(studio.fieldActions('mediaItem').includes(assistFieldActions))
+  for (const type of readOnlyTypes) {
+    assert.ok(!studio.inspectors(type).includes(assistInspector), type)
+    assert.ok(!studio.fieldActions(type).includes(assistFieldActions), type)
+  }
+})
