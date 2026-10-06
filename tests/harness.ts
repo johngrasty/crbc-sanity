@@ -176,21 +176,25 @@ function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatc
 
 type ClientConfig = {apiVersion?: string; perspective?: unknown}
 
-// Content Lake's default perspective is published from API version 2025-02-19, and raw before
-// it. vX is the newest version.
-function defaultPerspective(apiVersion = '1') {
+// API version 2025-02-19 brought content releases. From then on Content Lake's default
+// perspective is published, and raw includes release versions. Before it, the default is raw,
+// and even raw leaves out versions.* documents. vX is the newest version.
+const hasReleases = (apiVersion = '1') => {
   const version = apiVersion.replace(/^v/, '')
-  return version === 'X' || version >= '2025-02-19' ? 'published' : 'raw'
+  return version === 'X' || version >= '2025-02-19'
 }
 
-// A Sanity client over the in-memory dataset that answers queries with groq-js. Without a
-// perspective it uses Content Lake's default for its API version, so a rule that forgets to ask
-// for raw misses drafts and release versions here too. Add methods as Studio code needs them.
+// A Sanity client over the in-memory dataset that answers queries with groq-js. It sees what
+// Content Lake would show at its API version, so a rule that forgets to ask for raw, or asks an
+// API version older than releases, misses documents here too. Add methods as Studio code needs
+// them.
 function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): SanityClient {
-  const perspective = config.perspective ?? defaultPerspective(config.apiVersion)
+  const releases = hasReleases(config.apiVersion)
+  const perspective = config.perspective ?? (releases ? 'published' : 'raw')
   const visible = () => {
     const documents = [...dataset.values()]
-    if (perspective === 'raw') return documents
+    if (perspective === 'raw')
+      return releases ? documents : documents.filter(({_id}) => !isVersionId(_id))
     if (perspective === 'published') {
       return documents.filter(({_id}) => !isDraftId(_id) && !isVersionId(_id))
     }
