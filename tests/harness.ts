@@ -3,25 +3,31 @@
 // actions directly.
 import {randomUUID} from 'node:crypto'
 import {evaluate, parse} from 'groq-js'
+import {assist} from '@sanity/assist'
+import {visionTool} from '@sanity/vision'
 import {
-  createSchema,
-  defaultTemplatesForSchema,
+  createMockAuthStore,
+  definePlugin,
   getDraftId,
   getPublishedId,
   getVersionId,
   isDraftId,
   isVersionId,
   pathToString,
-  prepareTemplates,
+  prepareConfig,
   resolveInitialValue,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
+  type DocumentActionsVersionType,
   type SanityClient,
   type SanityDocument,
+  type Source,
   type Workspace,
 } from 'sanity'
+import {structureTool} from 'sanity/structure'
 import {schemaTypes} from '../schemaTypes'
+import {deskStructure} from '../structure/deskStructure'
 import {
   documentActions,
   formFollowUps,
@@ -35,18 +41,69 @@ export type TestDocument = {_id: string; _type: string} & Record<string, unknown
 // and is empty for a document-level rule.
 export type Marker = {path: string; level: 'error' | 'warning' | 'info'; message: string}
 
-// Sanity schedules validation and initial values through window.requestIdleCallback, falling
-// back to window.setTimeout. window must not exist while sanity loads, because its module init
-// then reads browser events, so it's set here, after the imports.
-Object.assign(globalThis, {window: globalThis})
+// The client behind the mock auth store. Sanity needs config().url to build a Source. Nothing
+// should query it: the harness's own client answers from the dataset.
+const sourceClient = {
+  config: () => ({
+    projectId: 'test',
+    dataset: 'test',
+    apiVersion: '2025-02-19',
+    url: 'https://test.api.sanity.io/v2025-02-19',
+  }),
+  withConfig: () => sourceClient,
+  fetch: async () => {
+    throw new Error('Query the dataset through the harness client, not the Source client')
+  },
+  observable: {},
+}
 
-const schema = createSchema({name: 'default', types: schemaTypes})
+// Sanity's own config resolution, with the plugins sanity.config.ts uses. sanity-plugin-media
+// can't load in Node, so an inert plugin stands in for it. It adds no document actions,
+// templates or create-menu options. Keep this list in step with sanity.config.ts.
+const prepared = prepareConfig({
+  name: 'default',
+  projectId: 'test',
+  dataset: 'test',
+  auth: createMockAuthStore({
+    client: sourceClient as unknown as SanityClient,
+    currentUser: {
+      id: 'editor',
+      name: 'Editor',
+      email: 'editor@example.com',
+      role: 'administrator',
+      roles: [{name: 'administrator', title: 'Administrator'}],
+    },
+  }),
+  plugins: [
+    structureTool({structure: deskStructure}),
+    visionTool(),
+    definePlugin({name: 'media'})(),
+    assist(),
+  ],
+  schema: {types: schemaTypes, templates},
+  document: {actions: documentActions},
+})
 
-// The defaults Sanity's structure tool hands to the root config for a draft, in its order:
-// destructive actions last.
-const defaultActions = (
-  ['publish', 'unpublish', 'duplicate', 'restore', 'discardChanges', 'delete'] as const
-).map((action) => Object.assign((): null => null, {action}) as DocumentActionComponent)
+// Sanity reads window when a Source resolves, and its validator and initial values schedule
+// work through window.setTimeout. window must not exist while sanity loads or while
+// prepareConfig runs, so it's installed here, after both. An EventTarget accepts Sanity's
+// event listeners, and the WebSocket stub fails loudly if anything tries to connect.
+Object.assign(globalThis, {
+  window: Object.assign(new EventTarget(), {
+    setTimeout,
+    clearTimeout,
+    WebSocket: class {
+      constructor() {
+        throw new Error('The harness has no network')
+      }
+    },
+  }),
+})
+
+const source = await new Promise<Source>((resolve, reject) =>
+  prepared.workspaces[0].__internal.sources[0].source.subscribe({next: resolve, error: reject}),
+)
+const schema = source.schema
 
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
@@ -116,12 +173,6 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     getClient,
   } as unknown as ConfigContext
 
-  // Studio starts from one template per document type and passes them through the config.
-  const templateList = prepareTemplates(
-    schema,
-    templates(defaultTemplatesForSchema(schema), configContext),
-  )
-
   const store = (document: TestDocument) => dataset.set(document._id, structuredClone(document))
   documents.forEach(store)
   const touch = (document: TestDocument): TestDocument => ({
@@ -152,20 +203,24 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
   return {
     validate,
 
-    // The names of the document actions Studio shows for a draft of this type.
-    actions(type: string): string[] {
-      const context = {
-        ...configContext,
-        schemaType: type,
-        releaseId: undefined,
-        versionType: 'draft' as const,
-      }
-      return documentActions(defaultActions, context).map(actionName)
+    // The names of the document actions Studio's document pane shows for this type, resolved
+    // through the whole plugin chain. Unnamed actions show their displayName. A version or a
+    // scheduled draft belongs to the release rHarness.
+    actions(type: string, versionType: DocumentActionsVersionType): string[] {
+      const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
+      return source.document
+        .actions({
+          schemaType: type,
+          documentId: type,
+          versionType,
+          releaseId: inRelease ? 'rHarness' : undefined,
+        })
+        .map(actionName)
     },
 
     // A new document from a template, stored as a draft, as Studio stores it on the first edit.
     async create(templateId: string, params?: Record<string, unknown>): Promise<TestDocument> {
-      const template = templateList.find(({id}) => id === templateId)
+      const template = source.templates.find(({id}) => id === templateId)
       if (!template) throw new Error(`No template named "${templateId}"`)
       const value = await resolveInitialValue(schema, template, params, configContext)
       const document = touch({
@@ -204,15 +259,15 @@ export function createHarness({documents = []}: {documents?: TestDocument[]} = {
     // validation errors.
     async publish(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
-      const source = dataset.get(versionId(id, release))
-      if (!source) throw new Error(`No version to publish with _id "${versionId(id, release)}"`)
-      const problems = (await validate(source)).filter(({level}) => level === 'error')
+      const pending = dataset.get(versionId(id, release))
+      if (!pending) throw new Error(`No version to publish with _id "${versionId(id, release)}"`)
+      const problems = (await validate(pending)).filter(({level}) => level === 'error')
       if (problems.length) {
         const list = problems.map(({path, message}) => `${path}: ${message}`).join('\n')
-        throw new Error(`${source._id} has validation errors:\n${list}`)
+        throw new Error(`${pending._id} has validation errors:\n${list}`)
       }
-      dataset.delete(source._id)
-      store(touch({...source, _id: publishedId}))
+      dataset.delete(pending._id)
+      store(touch({...pending, _id: publishedId}))
       return structuredClone(dataset.get(publishedId) as TestDocument)
     },
 

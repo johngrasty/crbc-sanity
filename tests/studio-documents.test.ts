@@ -2,19 +2,114 @@ import assert from 'node:assert/strict'
 import {test} from 'node:test'
 import {createHarness} from './harness.ts'
 
-test('singletons keep only publish, discard and restore', () => {
+// What Sanity 4.22.1's plugin chain hands the root resolver for each versionType, with the
+// structure tool, tasks, canvas, releases and scheduled drafts. Unnamed actions show their
+// displayName. Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1.
+const sanityDefaults = {
+  draft: [
+    'publish',
+    'schedule',
+    'unpublish',
+    'duplicate',
+    'restore',
+    'discardChanges',
+    'TaskCreateAction',
+    'linkToCanvas',
+    'unlinkFromCanvas',
+    'editInCanvas',
+    'delete',
+  ],
+  published: [
+    'unpublish',
+    'publish',
+    'duplicate',
+    'restore',
+    'discardChanges',
+    'delete',
+    'TaskCreateAction',
+  ],
+  version: [
+    'duplicate',
+    'unpublishVersion',
+    'linkToCanvas',
+    'unlinkFromCanvas',
+    'editInCanvas',
+    'discardVersion',
+  ],
+  'scheduled-draft': ['publish', 'schedule', 'discardVersion'],
+  revision: [
+    'publish',
+    'schedule',
+    'unpublish',
+    'duplicate',
+    'restore',
+    'discardChanges',
+    'delete',
+    'TaskCreateAction',
+  ],
+}
+const versionTypes = Object.keys(sanityDefaults) as (keyof typeof sanityDefaults)[]
+
+const singletons = [
+  'homePage',
+  'aboutPage',
+  'connectPage',
+  'beliefsPage',
+  'givingPage',
+  'visitPage',
+  'servicesPage',
+  'watchPage',
+  'calendarPage',
+  'lifeGroupsPage',
+  'communityGroupsPage',
+  'settings',
+  'siteAlert',
+  'designTokens',
+  'mainMenu',
+  'footerMenu',
+  'footerSettings',
+]
+
+test('singletons keep only publish, discard and restore, in every version type', () => {
   const studio = createHarness()
-  assert.deepEqual(studio.actions('homePage'), ['publish', 'restore', 'discardChanges'])
-  assert.deepEqual(studio.actions('settings'), ['publish', 'restore', 'discardChanges'])
+  const kept = {
+    draft: ['publish', 'restore', 'discardChanges'],
+    published: ['publish', 'restore', 'discardChanges'],
+    version: [],
+    'scheduled-draft': ['publish'],
+    revision: ['publish', 'restore', 'discardChanges'],
+  }
+  for (const type of singletons) {
+    for (const versionType of versionTypes) {
+      assert.deepEqual(
+        studio.actions(type, versionType),
+        kept[versionType],
+        `${type} ${versionType}`,
+      )
+    }
+  }
 })
 
 test('pages, articles, ministries and announcements add Preview to the defaults', () => {
   const studio = createHarness()
-  const defaults = ['publish', 'unpublish', 'duplicate', 'restore', 'discardChanges', 'delete']
-  for (const type of ['page', 'article', 'ministry', 'announcement']) {
-    assert.deepEqual(studio.actions(type), [...defaults, 'PreviewAction'])
+  for (const versionType of versionTypes) {
+    for (const type of ['page', 'article', 'ministry', 'announcement']) {
+      const expected = [...sanityDefaults[versionType], 'PreviewAction']
+      assert.deepEqual(studio.actions(type, versionType), expected, `${type} ${versionType}`)
+    }
+    assert.deepEqual(studio.actions('staff', versionType), sanityDefaults[versionType])
   }
-  assert.deepEqual(studio.actions('staff'), defaults)
+})
+
+test("media items keep Sanity's actions in every version type", () => {
+  const studio = createHarness()
+  for (const versionType of versionTypes) {
+    assert.deepEqual(
+      studio.actions('mediaItem', versionType),
+      sanityDefaults[versionType],
+      versionType,
+    )
+  }
 })
 
 test('singletons have no template', async () => {
