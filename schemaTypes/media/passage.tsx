@@ -13,6 +13,7 @@ import {
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import {bookFor, books} from './books'
 import {labelLimit} from './limits'
+import {itemLimit} from './lists'
 
 // Contract section 10.2.
 const MAX_PASSAGES = 20
@@ -217,11 +218,5 @@ export const passagesField = defineField({
   description:
     'The Bible passages the sermon or service covers, up to 20. Viewers can find recordings by book on the website and in the apps.',
   of: [defineArrayMember({type: 'passage'})],
-  validation: (rule) =>
-    rule.custom((value) => {
-      const count = value?.length ?? 0
-      return count <= MAX_PASSAGES
-        ? true
-        : `Use ${MAX_PASSAGES} passages or fewer. This has ${count}.`
-    }),
+  validation: (rule) => itemLimit(rule, MAX_PASSAGES, 'passages'),
 })
