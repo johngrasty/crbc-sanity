@@ -17,6 +17,7 @@ export const singletonTypes = new Set([
   'mainMenu',
   'footerMenu',
   'footerSettings',
+  'mediaSettings',
 ])
 
 export const singletonActions = new Set(['publish', 'discardChanges', 'restore'])
