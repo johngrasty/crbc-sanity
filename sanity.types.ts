@@ -195,6 +195,19 @@ export type Hero = {
   }
 }
 
+export type MediaItem = {
+  _id: string
+  _type: 'mediaItem'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  contentId: string
+  kind: 'service' | 'sermon' | 'audio' | 'other'
+  title?: string
+  serviceDate?: string
+  serviceTimezone: string
+}
+
 export type JobOpening = {
   _id: string
   _type: 'jobOpening'
@@ -1685,6 +1698,7 @@ export type AllSanitySchemaTypes =
   | RichText
   | LogoCloud
   | Hero
+  | MediaItem
   | JobOpening
   | CustomSignUp
   | SanityImageCrop

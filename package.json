@@ -11,11 +11,12 @@
     "deploy": "sanity deploy",
     "deploy-graphql": "sanity graphql deploy",
     "check": "tsc --noEmit",
+    "contract:sync": "node scripts/sync-media-contract.ts",
     "schema:check": "sanity schema validate",
     "typegen": "sanity schema extract --enforce-required-fields && sanity typegen generate",
     "verify": "npm run check && npm run lint && npm test && npm run schema:check && npm run build",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --import ./tests/loader/register.mjs --test 'tests/*.test.mjs' 'tests/*.test.ts'"
   },
   "keywords": [
     "sanity"
@@ -25,6 +26,7 @@
     "@sanity/client": "^7.27.0",
     "@sanity/orderable-document-list": "^1.5.1",
     "@sanity/preview-url-secret": "^4.1.5",
+    "@sanity/ui": "^3.5.4",
     "@sanity/vision": "^4.14.2",
     "dotenv": "^17.2.2",
     "lucide-react": "^0.542.0",
@@ -39,7 +41,9 @@
     "@sanity/eslint-config-studio": "^5.0.2",
     "@sanity/runtime-cli": "12.4.0",
     "@types/react": "^19.1.12",
+    "esbuild": "^0.27.0",
     "eslint": "^9.35.0",
+    "groq-js": "^1.30.3",
     "lexorank": "1.0.5",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"

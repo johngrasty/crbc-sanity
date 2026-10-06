@@ -1,0 +1,23 @@
+{
+  "_id": "mediaRelease.production.mi_01J9SYNTH0000Z00000000000M",
+  "_type": "mediaRelease",
+  "environment": "production",
+  "contentId": "mi_01J9SYNTH0000Z00000000000M",
+  "kind": "video",
+  "public": true,
+  "assetId": "as_01J9SYNTH0000Z00000000000M",
+  "playbackId": "synthVodPlaybackId0020",
+  "durationSeconds": 4680,
+  "captions": [
+    {
+      "language": "en",
+      "label": "English",
+      "kind": "generated",
+      "state": "available"
+    }
+  ],
+  "publishedAt": "2026-09-27T16:30:00Z",
+  "releaseVersion": 4,
+  "mirrorGen": 1,
+  "mirrorSeq": 1042
+}

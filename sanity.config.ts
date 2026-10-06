@@ -5,9 +5,8 @@ import {media} from 'sanity-plugin-media'
 import {assist} from '@sanity/assist'
 import {schemaTypes} from './schemaTypes'
 import {deskStructure} from './structure/deskStructure'
-import {PreviewAction} from './structure/documentActions'
-import {singletonActions, singletonTypes} from './structure/singletons'
-import {previewableTypes, previewOrigin, singletonPaths} from './structure/preview'
+import {documentActions, templates} from './structure/documentConfig'
+import {previewOrigin, singletonPaths} from './structure/preview'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID
 const dataset = process.env.SANITY_STUDIO_DATASET
@@ -20,17 +19,9 @@ export default defineConfig({
   projectId,
   dataset,
   plugins: [structureTool({structure: deskStructure}), visionTool(), media(), assist()],
-  schema: {
-    types: schemaTypes,
-    templates: (templates) => templates.filter(({schemaType}) => !singletonTypes.has(schemaType)),
-  },
+  schema: {types: schemaTypes, templates},
   document: {
-    actions: (input, context) => {
-      if (singletonTypes.has(context.schemaType)) {
-        return input.filter(({action}) => action && singletonActions.has(action))
-      }
-      return previewableTypes.has(context.schemaType) ? [...input, PreviewAction] : input
-    },
+    actions: documentActions,
     // Studio re-resolves productionUrl on every debounced form change, so it must
     // never mint a preview secret here (that writes to the dataset on each pause in
     // typing). Slugged types get a secret only when the Preview action is clicked.

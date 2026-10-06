@@ -1,0 +1,16 @@
+{
+  "_id": "mediaRelease.production.mi_01J9SYNTH0000Z00000000000Y",
+  "_type": "mediaRelease",
+  "environment": "production",
+  "contentId": "mi_01J9SYNTH0000Z00000000000Y",
+  "kind": "video",
+  "public": false,
+  "assetId": null,
+  "playbackId": null,
+  "durationSeconds": null,
+  "captions": [],
+  "publishedAt": "2026-08-02T16:30:00Z",
+  "releaseVersion": 7,
+  "mirrorGen": 1,
+  "mirrorSeq": 1101
+}

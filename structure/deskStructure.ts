@@ -25,6 +25,8 @@ import {
   CalendarDays,
   Briefcase,
   Wrench,
+  Clapperboard,
+  Video,
 } from 'lucide-react'
 import {AnnouncementHelp} from '../schemaTypes/components/AnnouncementHelp'
 import {SignUpHelp} from '../schemaTypes/components/SignUpHelp'
@@ -100,6 +102,29 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 ),
               S.divider(),
               S.listItem().title('Other Pages').icon(FileText).child(S.documentTypeList('page')),
+            ]),
+        ),
+
+      S.divider(),
+
+      // Media section, read by media-ops to arm services and publish recordings
+      S.listItem()
+        .title('Media')
+        .id('media')
+        .icon(Clapperboard)
+        .child(
+          S.list()
+            .title('Media')
+            .items([
+              S.listItem()
+                .title('Media items')
+                .id('mediaItems')
+                .icon(Video)
+                .child(
+                  S.documentTypeList('mediaItem')
+                    .title('Media items')
+                    .defaultOrdering([{field: 'serviceDate', direction: 'desc'}]),
+                ),
             ]),
         ),
 
