@@ -5,6 +5,7 @@ import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
 import {publicationPolicyField} from './publicationPolicy'
 import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
+import {slugFields} from './slug'
 
 // A real day written as YYYY-MM-DD, the way Sanity stores a date field. setUTCFullYear, unlike
 // Date.UTC, doesn't read years 0 to 99 as 1900 to 1999.
@@ -110,6 +111,7 @@ export default defineType({
       ],
       group: 'details',
     }),
+    ...slugFields('mediaItem').map((field) => ({...field, group: 'details'})),
     defineField({
       name: 'description',
       title: 'Description',
