@@ -8,11 +8,15 @@ import type {
   TemplateResolver,
 } from 'sanity'
 import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {readOnlyTypeNames} from '../schemaTypes/media/readOnlyTypes'
 import {FreshIdDuplicateAction, PreviewAction} from './documentActions'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
 export const documentActions: DocumentActionsResolver = (prev, context) => {
+  // No action of any kind on the read-only types, in any version type. That includes Publish,
+  // Duplicate, Discard, the scheduled-draft Schedule, Create task and the release actions.
+  if (readOnlyTypeNames.has(context.schemaType)) return []
   if (singletonTypes.has(context.schemaType)) {
     return prev.filter(({action}) => action && singletonActions.has(action))
   }

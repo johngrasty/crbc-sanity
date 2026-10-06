@@ -161,3 +161,16 @@ test('the binding lists the environments that may write mirrors there', async ()
   )
   assert.match(unknown[0].message, /"prod"/)
 })
+
+test('the read-only types have no document actions, in any version type', () => {
+  const studio = createHarness()
+  const versionTypes = ['draft', 'published', 'version', 'scheduled-draft', 'revision'] as const
+  // The plugin chain hands the root resolver a different list for each version type, so the
+  // test checks each one. Media items still get theirs, which shows the chain ran.
+  for (const versionType of versionTypes) {
+    assert.ok(studio.actions('mediaItem', versionType).length > 0, versionType)
+    for (const type of readOnlyTypes) {
+      assert.deepEqual(studio.actions(type, versionType), [], `${type} ${versionType}`)
+    }
+  }
+})
