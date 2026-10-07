@@ -83,3 +83,58 @@ test('a release publishes a strong reference to an item in the same release', as
   await studio.publish('event', {release: 'rSpring'})
   await studio.publish('item', {release: 'rSpring'})
 })
+
+// A strong reference must name the published document itself. Sanity's publish leaves a literal
+// draft or version ID as it is, and a published document can't strongly reference unpublished
+// content, so the published "other" doesn't make drafts.other count, and neither does the draft.
+for (const target of ['drafts.other', 'versions.rSpring.other']) {
+  for (const exactExists of [false, true]) {
+    test(`publishing refuses a strong reference to ${target}, ${exactExists ? 'which exists' : 'which is missing'}`, async () => {
+      const pending = {
+        ...item('drafts.item'),
+        imported: {nested: [{_key: 'a', _type: 'reference', _ref: target}]},
+      }
+      const studio = createHarness({
+        documents: [
+          pending,
+          {_id: 'other', _type: 'mediaItem'},
+          ...(exactExists ? [{_id: target, _type: 'mediaItem'}] : []),
+        ],
+      })
+      const before = studio.documents()
+      await assert.rejects(studio.publish('item'), /strong reference to (drafts|versions)\./)
+      // A refused publish changes nothing.
+      assert.deepEqual(studio.documents(), before)
+    })
+  }
+}
+
+test('a weak reference may still name a draft', async () => {
+  const studio = createHarness({
+    documents: [
+      {
+        ...item('drafts.item'),
+        imported: {nested: [{_key: 'a', _type: 'reference', _ref: 'drafts.other', _weak: true}]},
+      },
+    ],
+  })
+  const published = await studio.publish('item')
+  assert.deepEqual(published.imported, {
+    nested: [{_key: 'a', _type: 'reference', _ref: 'drafts.other', _weak: true}],
+  })
+})
+
+// In a release, a strong reference names the item's published ID, and the item's version in
+// the same release counts. Naming the version's own ID doesn't.
+test('a release refuses a strong reference written as the version ID', async () => {
+  const studio = createHarness({
+    documents: [
+      item('versions.rSpring.item'),
+      event('versions.rSpring.event', {_type: 'reference', _ref: 'versions.rSpring.item'}),
+    ],
+  })
+  await assert.rejects(
+    studio.publish('event', {release: 'rSpring'}),
+    /strong reference to versions\.rSpring\.item/,
+  )
+})

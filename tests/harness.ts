@@ -704,10 +704,11 @@ export function createHarness({
     _updatedAt: new Date().toISOString(),
   })
 
-  // Whether a referenced document exists, as Studio and Content Lake see it from a document in
-  // this release, or outside any release: when it's published. For a document in a release, the
+  // Whether a referenced document exists, as Studio's validation sees it from a document in this
+  // release, or outside any release: when it's published. For a document in a release, the
   // referenced document's version in that release decides first: a version the release deletes,
-  // with _system.delete, doesn't exist, and any other version does.
+  // with _system.delete, doesn't exist, and any other version does. Validation reads the published
+  // ID of whatever ID it's given. publish also requires the reference to name a published ID.
   const referenceExists = (id: string, release?: string) => {
     const version = release === undefined ? undefined : dataset.get(getVersionId(id, release))
     if (version) return (version._system as {delete?: boolean} | undefined)?.delete !== true
@@ -1100,8 +1101,10 @@ export function createHarness({
         throw new Error(`${pending._id} has validation errors:\n${list}`)
       }
       const published = strengthenOnPublish({...pending, _id: publishedId}) as TestDocument
+      // Content Lake checks the ID the reference names. It must be a published ID, never a draft
+      // or version ID, and that document must exist, or have a version in this release.
       const missing = [...new Set(strongReferences(published))].filter(
-        (ref) => ref !== publishedId && !referenceExists(ref, release),
+        (ref) => ref !== publishedId && !(isPublishedId(ref) && referenceExists(ref, release)),
       )
       if (missing.length) {
         throw new Error(
