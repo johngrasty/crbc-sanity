@@ -113,19 +113,20 @@ async function copyFields(type: EditorialType): Promise<Record<string, unknown>>
 // Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, without
 // schedule. The fresh-ID Duplicate takes Sanity's action name, so it shows as duplicate in
 // Sanity's place. Tasks and canvas actions stay.
+const editorialDraftActions = [
+  'publish',
+  'unpublish',
+  'duplicate',
+  'restore',
+  'discardChanges',
+  'TaskCreateAction',
+  'linkToCanvas',
+  'unlinkFromCanvas',
+  'editInCanvas',
+  'delete',
+]
 const editorialActions = {
-  draft: [
-    'publish',
-    'unpublish',
-    'duplicate',
-    'restore',
-    'discardChanges',
-    'TaskCreateAction',
-    'linkToCanvas',
-    'unlinkFromCanvas',
-    'editInCanvas',
-    'delete',
-  ],
+  draft: editorialDraftActions,
   published: [
     'unpublish',
     'publish',
@@ -135,14 +136,10 @@ const editorialActions = {
     'delete',
     'TaskCreateAction',
   ],
-  version: [
-    'duplicate',
-    'unpublishVersion',
-    'linkToCanvas',
-    'unlinkFromCanvas',
-    'editInCanvas',
-    'discardVersion',
-  ],
+  // Releases are off (structure/documentConfig.ts), so the releases plugin that trims a version's
+  // list doesn't load, and a version gets the draft's list. Studio opens a version only in a
+  // release perspective, which needs releases, so no editor sees this list.
+  version: editorialDraftActions,
   // Sanity offers no Duplicate on a scheduled draft, so there's nothing to replace. Publish now
   // is gone too.
   'scheduled-draft': ['discardVersion'],

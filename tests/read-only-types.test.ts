@@ -386,3 +386,10 @@ test("the harness locks the form for the action flags as Studio's form does", as
     assert.equal(opened.title === 'Stepped', expected.stored, `open ${type}`)
   }
 })
+
+test('the workspace turns Content Releases off and keeps scheduled drafts', () => {
+  // On a plan with Content Releases, a release could unpublish a mirror. Sanity skips
+  // validation for a version marked to unpublish, so the ID rule wouldn't stop it. With
+  // releases off, Sanity doesn't load the releases plugin, and no chip menu offers a new release.
+  assert.deepEqual(createHarness().versioning(), {releases: false, scheduledDrafts: true})
+})

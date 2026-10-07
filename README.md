@@ -46,6 +46,9 @@ them, with every required field and its null states. `sanity.types.ts` types the
 documents as Studio's form sees them, with every field optional and never null. Read mirror
 documents with the types in `mirror.types.ts`, and commit it when it changes.
 
+Content Releases are off in `structure/documentConfig.ts`, and turning them on needs a fresh
+review of the mirror types and slug history.
+
 For browser QA, sign in to the local Studio and check the following:
 
 - Home, page settings, menus and footer open their fixed document IDs. The New document

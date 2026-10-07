@@ -70,6 +70,7 @@ import {
   formComponents,
   formFollowUps,
   newDocumentOptions,
+  releases,
   templates,
   type DocumentPatch,
   type FormFollowUp,
@@ -214,6 +215,7 @@ const prepared = prepareConfig({
       templates(prev, context).filter(({schemaType}) => !probeTypes.has(schemaType)),
   },
   form: {components: formComponents},
+  releases,
   document: {actions: documentActions, newDocumentOptions},
 })
 
@@ -741,6 +743,17 @@ export function createHarness({
           const options = field.type.options as {aiAssist?: {exclude?: boolean}} | undefined
           return {name: field.name, assistExcluded: options?.aiAssist?.exclude === true}
         }),
+      }
+    },
+
+    // Whether the workspace turns on Content Releases and scheduled drafts, as the resolved
+    // Source has them. Sanity loads the releases plugin only while releases are on, and its
+    // release tool while either is (lib/index.js:78134-78135). Releases are on unless the
+    // config turns them off.
+    versioning(): {releases: boolean; scheduledDrafts: boolean} {
+      return {
+        releases: source.releases?.enabled ?? true,
+        scheduledDrafts: source.scheduledDrafts?.enabled ?? true,
       }
     },
 

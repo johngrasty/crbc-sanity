@@ -9,6 +9,7 @@ import {
   documentActions,
   formComponents,
   newDocumentOptions,
+  releases,
   templates,
 } from './structure/documentConfig'
 import {previewOrigin, singletonPaths} from './structure/preview'
@@ -26,6 +27,7 @@ export default defineConfig({
   plugins: [structureTool({structure: deskStructure}), visionTool(), media(), assist()],
   schema: {types: schemaTypes, templates},
   form: {components: formComponents},
+  releases,
   document: {
     actions: documentActions,
     newDocumentOptions,
