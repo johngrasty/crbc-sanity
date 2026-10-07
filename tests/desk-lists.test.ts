@@ -6,7 +6,7 @@ import {createHarness} from './harness.ts'
 // no API version. Opening every filtered list in the Media section gives no such warning.
 test('the filtered lists in the Media section set an API version', async () => {
   const studio = createHarness()
-  const warn = mock.method(console, 'warn', () => {})
+  const warn = mock.method(console, 'warn', () => undefined)
   try {
     for (const path of [
       ['media', 'serviceEvents', 'upcomingEvents'],
