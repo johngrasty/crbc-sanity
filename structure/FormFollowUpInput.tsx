@@ -7,7 +7,6 @@ import {
   isDraftId,
   isVersionId,
   set,
-  stringToPath,
   unset,
   useEditState,
   type InputProps,
@@ -15,6 +14,7 @@ import {
   type SanityDocumentLike,
 } from 'sanity'
 import type {DocumentPatch, FormFollowUp} from './documentConfig'
+import {parsePatchPath} from './patchPath'
 
 // The one patch the form applies to the version it shows, from every step in order, or null
 // when there's nothing to change. The runner and the harness both call this. It's null while the
@@ -36,10 +36,10 @@ export function followUpPatch(
   return merged.set || merged.unset ? merged : null
 }
 
-// Patch paths are in Sanity's string form, so a step can reach into an array item by its _key.
+// The harness reads patch paths with the same parsePatchPath.
 const formPatches = ({set: values = {}, unset: paths = []}: DocumentPatch) => [
-  ...Object.entries(values).map(([path, value]) => set(value, stringToPath(path))),
-  ...paths.map((path) => unset(stringToPath(path))),
+  ...Object.entries(values).map(([path, value]) => set(value, parsePatchPath(path))),
+  ...paths.map((path) => unset(parsePatchPath(path))),
 ]
 
 function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}) {
