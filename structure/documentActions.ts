@@ -43,6 +43,9 @@ export const FreshIdDuplicateAction: DocumentActionComponent = (props) => {
     },
   }
 }
+// Sanity's name for Duplicate. Sanity copies it into the action's state, and its Canvas guard
+// disables any action without a name it knows on a document linked to Canvas.
+FreshIdDuplicateAction.action = 'duplicate'
 FreshIdDuplicateAction.displayName = 'FreshIdDuplicateAction'
 
 export const PreviewAction: DocumentActionComponent = (props) => {

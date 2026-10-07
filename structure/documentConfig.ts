@@ -10,7 +10,12 @@ import {
   type TemplateResolver,
 } from 'sanity'
 import {CalendarClock} from 'lucide-react'
-import {editorialIdFor, newEditorialId} from '../schemaTypes/media/editorialId'
+import {
+  editorialIdFor,
+  editorialIds,
+  idToKeep,
+  newEditorialId,
+} from '../schemaTypes/media/editorialId'
 import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
 import type {ZonedStart} from '../schemaTypes/media/zonedStart'
@@ -31,10 +36,13 @@ export const documentActions: DocumentActionsResolver = (prev, context) => {
     return prev.filter(({action}) => action && singletonActions.has(action))
   }
   // Sanity's Duplicate copies every field, the editorial ID too. The editorial types get the
-  // fresh-ID Duplicate in its place. This goes by type name, so a type gets it once it's listed
-  // in editorialIds.
+  // fresh-ID Duplicate in its place. They also lose Schedule, because a scheduled draft is
+  // validated only when Schedule is clicked and then publishes without another check. This goes
+  // by type name, so a type gets both once it's listed in editorialIds.
   if (editorialIdFor(context.schemaType)) {
-    return prev.map((action) => (action.action === 'duplicate' ? FreshIdDuplicateAction : action))
+    return prev
+      .filter((action) => action.action !== 'schedule')
+      .map((action) => (action.action === 'duplicate' ? FreshIdDuplicateAction : action))
   }
   return previewableTypes.has(context.schemaType) ? [...prev, PreviewAction] : prev
 }
@@ -90,16 +98,19 @@ export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step keeps fields of a draft or release version in step as the editor works.
-// It gets the version before the latest change, the version now and the published document, and
-// returns a patch for the version, or null when the version needs nothing. The form runs every
-// step registered for the type after each change, including another editor's, and once when the
-// document loads, with previous the same as version. The harness's edit and open run them too.
-// Each step owns its own fields, returns null once there's nothing left to change, and returns
-// the same patch in every open form, because two editors' forms can both apply it.
+// It gets the version before the latest change, the version now, the published document and the
+// stored draft, and returns a patch for the version, or null when the version needs nothing.
+// When the draft is the version shown, draft is the stored copy, which may lag the form. The
+// form runs every step registered for the type after each change, including another editor's,
+// and once when the document loads, with previous the same as version. The harness's edit and
+// open run them too. Each step owns its own fields, returns null once there's nothing left to
+// change, and returns the same patch in every open form, because two editors' forms can both
+// apply it.
 export type FormFollowUp = (versions: {
   previous: SanityDocumentLike
   version: SanityDocumentLike
   published: SanityDocumentLike | null
+  draft: SanityDocumentLike | null
 }) => DocumentPatch | null
 
 // When an edit moves a service event's start onto a standing slot, the length becomes the slot's,
@@ -117,10 +128,25 @@ const fillSlotLength: FormFollowUp = ({previous, version}) => {
   return untouched ? {set: {expectedDurationMinutes: slot.expectedDurationMinutes}} : null
 }
 
-// Each type's follow-up steps, in order. Every type with a slug keeps its slug history.
+// A draft or release version keeps its document's ID. A paste, a history restore or an API write
+// that changes it goes back as soon as the form opens or changes, so Unpublish can't carry a
+// changed ID to the next publish. Before the first publish, a release version keeps its draft's
+// ID.
+const keepId: FormFollowUp = ({version, published, draft}) => {
+  const id = editorialIdFor(version._type)
+  if (!id) return null
+  const kept = idToKeep(version._id, {published: published?.[id.field], draft: draft?.[id.field]})
+  return kept && version[id.field] !== kept.id ? {set: {[id.field]: kept.id}} : null
+}
+
+// Each type's follow-up steps, in order. Every type with a slug keeps its slug history, and then
+// every editorial type keeps its ID.
 export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
   serviceEvent: [fillSlotLength],
   ...Object.fromEntries(Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]])),
+}
+for (const type of Object.keys(editorialIds)) {
+  formFollowUps[type] = [...(formFollowUps[type] ?? []), keepId]
 }
 
 // The form components sanity.config.ts passes to Sanity. They run each type's follow-up steps in
