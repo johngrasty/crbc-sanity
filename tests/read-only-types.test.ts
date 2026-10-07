@@ -172,8 +172,9 @@ test("a draft or release version of a read-only document is an error, so it can'
       const errors = errorsAt(await studio.validate(_id), '')
       assert.equal(errors.length, 1, _id)
       assert.ok(errors[0].message.startsWith(`${writers[sample._type]} writes this document`), _id)
-      // The chip menu's Discard version removes a stray draft or version, never the published one.
-      assert.match(errors[0].message, /choose Discard version\.$/, _id)
+      // With scheduled drafts off there's no releases tool, so version chips have no Discard
+      // version menu, and these types have no Discard action. Only a developer can remove one.
+      assert.match(errors[0].message, /Ask a developer to remove it\.$/, _id)
     }
     await assert.rejects(studio.publish(sample._id), /validation errors/)
     await assert.rejects(studio.publish(sample._id, {release: 'rSpring'}), /validation errors/)
@@ -433,11 +434,16 @@ test("the harness locks the form for the action flags as Studio's form does", as
   }
 })
 
-test('the workspace turns Content Releases off and keeps scheduled drafts', () => {
-  // On a plan with Content Releases, a release could unpublish a mirror. Sanity skips
-  // validation for a version marked to unpublish, so the ID rule wouldn't stop it. With
-  // releases off, Sanity doesn't load the releases plugin, and no chip menu offers a new release.
-  assert.deepEqual(createHarness().versioning(), {releases: false, scheduledDrafts: true})
+test('the workspace turns Content Releases and scheduled drafts off, and has no releases tool', () => {
+  // A release could unpublish a mirror. Sanity skips validation for a version marked to
+  // unpublish, so the ID rule wouldn't stop it. A scheduled draft is a one-document release, and
+  // once someone unschedules it, every release path is back. With both off, Sanity loads neither
+  // plugin nor the releases tool, so nothing in Studio creates a release or a version.
+  assert.deepEqual(createHarness().versioning(), {
+    releases: false,
+    scheduledDrafts: false,
+    releasesTool: false,
+  })
 })
 
 test("readOnlyType keeps a wrapped type's own rule and input", async () => {
