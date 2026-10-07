@@ -1,0 +1,167 @@
+// The five editorial ID fields (contract section 2). Each is the contract prefix plus a ULID,
+// set once when the document is created and never changed in Studio.
+import {Button, Card, Code, Stack, Text} from '@sanity/ui'
+import {
+  defineField,
+  getDraftId,
+  getPublishedId,
+  isVersionId,
+  set,
+  useEditState,
+  useFormValue,
+  type StringInputProps,
+} from 'sanity'
+import {ID_PREFIXES, isId, type IdKind} from '../../media-contract/src/ids'
+
+type EditorialIdKind = Extract<IdKind, 'content' | 'series' | 'speaker' | 'topic' | 'event'>
+
+type EditorialId = {field: string; kind: EditorialIdKind; label: string; noun: string}
+
+// One entry per document type. Templates and validation read this table.
+export const editorialIds = {
+  mediaItem: {field: 'contentId', kind: 'content', label: 'content ID', noun: 'media item'},
+  series: {field: 'seriesId', kind: 'series', label: 'series ID', noun: 'series'},
+  speaker: {field: 'speakerId', kind: 'speaker', label: 'speaker ID', noun: 'speaker'},
+  topic: {field: 'topicId', kind: 'topic', label: 'topic ID', noun: 'topic'},
+  serviceEvent: {field: 'eventId', kind: 'event', label: 'event ID', noun: 'service event'},
+} as const satisfies Record<string, EditorialId>
+
+export type EditorialType = keyof typeof editorialIds
+
+export const editorialIdFor = (type: string): EditorialId | undefined =>
+  Object.hasOwn(editorialIds, type) ? editorialIds[type as EditorialType] : undefined
+
+const apiVersion = '2025-02-19'
+
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+
+// A ULID: 48 bits of millisecond time, then 80 random bits, in Crockford base32.
+function ulid(): string {
+  let time = ''
+  for (let rest = Date.now(), i = 0; i < 10; i++, rest = Math.floor(rest / 32)) {
+    time = CROCKFORD[rest % 32] + time
+  }
+  let random = ''
+  let bits = 0
+  let buffer = 0
+  for (const byte of crypto.getRandomValues(new Uint8Array(10))) {
+    buffer = (buffer << 8) | byte
+    bits += 8
+    while (bits >= 5) {
+      bits -= 5
+      random += CROCKFORD[(buffer >> bits) & 31]
+    }
+    buffer &= (1 << bits) - 1
+  }
+  return time + random
+}
+
+export const newEditorialId = (kind: EditorialIdKind): string => ID_PREFIXES[kind] + ulid()
+
+// The ID a draft or release version has to keep, and where it comes from, or undefined when the
+// version may carry any free ID. The published document's ID comes first. A release version of
+// a document with no published ID keeps its draft's.
+export function idToKeep(
+  documentId: string,
+  {published, draft}: {published?: unknown; draft?: unknown},
+): {id: string; from: 'published' | 'draft'} | undefined {
+  if (typeof published === 'string' && published) return {id: published, from: 'published'}
+  if (isVersionId(documentId) && typeof draft === 'string' && draft) {
+    return {id: draft, from: 'draft'}
+  }
+  return undefined
+}
+
+// The ID the input's Assign button sets on a version: the ID it has to keep, so a draft
+// restored from before the item had an ID gets the published one back, else a fresh one.
+export function idToAssign(
+  documentId: string,
+  kind: EditorialIdKind,
+  ids: {published?: unknown; draft?: unknown},
+): string {
+  return idToKeep(documentId, ids)?.id ?? newEditorialId(kind)
+}
+
+function idInput(type: EditorialType, {field, kind, label, noun}: EditorialId) {
+  function EditorialIdInput({value, onChange, readOnly}: StringInputProps) {
+    const documentId = String(useFormValue(['_id']) ?? '')
+    const {draft, published} = useEditState(getPublishedId(documentId), type)
+    if (value) {
+      return (
+        <Card padding={3} radius={2} border tone="transparent">
+          <Code size={1}>{value}</Code>
+        </Card>
+      )
+    }
+    const assign = () =>
+      onChange(
+        set(idToAssign(documentId, kind, {published: published?.[field], draft: draft?.[field]})),
+      )
+    return (
+      <Stack space={3}>
+        <Text size={1} muted>
+          This {noun} has no {label} yet.
+        </Text>
+        <Button mode="ghost" text="Assign an ID" disabled={readOnly} onClick={assign} />
+      </Stack>
+    )
+  }
+  return EditorialIdInput
+}
+
+// The ID field for one of the five editorial types.
+export function editorialIdField(type: EditorialType) {
+  const id = editorialIds[type]
+  return defineField({
+    name: id.field,
+    title: id.label[0].toUpperCase() + id.label.slice(1),
+    type: 'string',
+    description: `Apps, links and bookmarks use this ID to find the ${id.noun}. Studio assigns it when you create the ${id.noun}, and it never changes.`,
+    readOnly: ({value}) => Boolean(value),
+    // AI Assist offers a field unless its readOnly is literally true, so an empty ID could be
+    // filled with text that fails the format rule and then can't be cleared.
+    options: {aiAssist: {exclude: true}},
+    components: {input: idInput(type, id)},
+    validation: (rule) => [
+      rule.required().error(`Assign an ID. Apps and links can't find this ${id.noun} without one.`),
+      rule.custom(async (value, context) => {
+        if (!value) return true
+        if (!isId(id.kind, value)) {
+          return `This ${id.label} isn't in the right format, ${ID_PREFIXES[id.kind]} and 26 letters or digits. Ask a developer to fix it.`
+        }
+        if (!context.document) return true
+        // The raw perspective sees every published, draft and release version.
+        // sanity::versionOf leaves out this document's own versions.
+        const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
+        const others = `*[_type == $type && ${id.field} == $value && !sanity::versionOf($publishedId)]`
+        const publishedId = getPublishedId(context.document._id)
+        const {published, draft, takenByPublished, takenByAny} = await client.fetch(
+          `{
+            "published": *[_id == $publishedId][0].${id.field},
+            "draft": *[_id == $draftId][0].${id.field},
+            "takenByPublished": ${others}[!(_id in path("drafts.**")) && !(_id in path("versions.**"))] | order(_id asc)[0]._id,
+            "takenByAny": ${others} | order(_id asc)[0]._id
+          }`,
+          {type, value, publishedId, draftId: getDraftId(publishedId)},
+        )
+        // Catches an ID changed by paste or through the API before it can publish.
+        const kept = idToKeep(context.document._id, {published, draft})
+        if (kept?.from === 'published' && kept.id !== value) {
+          return `The published ${id.noun} has the ${id.label} ${kept.id}. IDs never change, so discard this change.`
+        }
+        // Before the first publish the draft's ID wins, wherever the change was made. Opening the
+        // release version runs the form's ID step, which sets it to match.
+        if (kept?.from === 'draft' && kept.id !== value) {
+          return `The draft of this ${id.noun} has the ${id.label} ${kept.id}. Open this version and Studio gives it the draft's ID.`
+        }
+        // A published document owns its ID, so only another published document can take it from
+        // its owner. A draft that copies the ID is blocked, and doesn't block the owner.
+        const taken = published === value ? takenByPublished : takenByAny
+        if (taken) {
+          return `The ${id.noun} ${taken} already uses this ${id.label}. Ask a developer to fix it.`
+        }
+        return true
+      }),
+    ],
+  })
+}

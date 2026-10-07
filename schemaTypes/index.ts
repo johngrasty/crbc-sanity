@@ -28,6 +28,14 @@ import footerSettings from './singletons/footer'
 import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
+import mediaItem from './media/mediaItem'
+import serviceEvent from './media/serviceEvent'
+import series from './media/series'
+import speaker from './media/speaker'
+import topic from './media/topic'
+import mediaSettings from './media/mediaSettings'
+import {readOnlyTypes} from './media/readOnlyTypes'
+import passage from './media/passage'
 
 export const schemaTypes = [
   // Documents
@@ -56,6 +64,13 @@ export const schemaTypes = [
   ministry,
   customSignUp,
   jobOpening,
+  mediaItem,
+  serviceEvent,
+  series,
+  speaker,
+  topic,
+  mediaSettings,
+  ...readOnlyTypes,
   // Objects (Sections)
   hero,
   logoCloud,
@@ -63,4 +78,5 @@ export const schemaTypes = [
   richText,
   bentoCard,
   statistic,
+  passage,
 ]

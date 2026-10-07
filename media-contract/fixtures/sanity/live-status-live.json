@@ -1,0 +1,34 @@
+{
+  "_id": "liveStatus.production.main",
+  "_type": "liveStatus",
+  "environment": "production",
+  "channel": "main",
+  "resourceId": "lr_main",
+  "sessionState": "live",
+  "takenDown": false,
+  "playableFrom": "2026-10-11T12:40:00Z",
+  "endedAt": null,
+  "event": {
+    "eventId": "ev_01J9SYNTH0000Z000000000001",
+    "contentId": "mi_01J9SYNTH0000Z000000000034",
+    "title": "Synthetic Sunday Service",
+    "scheduledStart": "2026-10-11T13:00:00Z",
+    "seriesTitle": "Faith That Works"
+  },
+  "nextEvent": {
+    "eventId": "ev_01J9SYNTH0000Z000000000001",
+    "contentId": "mi_01J9SYNTH0000Z000000000034",
+    "title": "Synthetic Sunday Service",
+    "scheduledStart": "2026-10-11T13:00:00Z",
+    "seriesTitle": "Faith That Works"
+  },
+  "playback": {
+    "hls": "https://stream.mux.com/synthLivePlaybackId0001.m3u8?token=SYNTHETIC-TOKEN",
+    "hlsRoku": "https://stream.mux.com/synthLivePlaybackId0001.m3u8?token=SYNTHETIC-TOKEN",
+    "expiresAt": "2026-10-11T19:00:00Z"
+  },
+  "observedAt": "2026-10-11T12:59:00Z",
+  "staleAfterSeconds": 180,
+  "mirrorGen": 1,
+  "mirrorSeq": 1200
+}

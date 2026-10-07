@@ -1,0 +1,18 @@
+{
+  "_id": "liveStatus.staging.main",
+  "_type": "liveStatus",
+  "environment": "staging",
+  "channel": "main",
+  "resourceId": null,
+  "sessionState": null,
+  "takenDown": false,
+  "playableFrom": null,
+  "endedAt": null,
+  "event": null,
+  "nextEvent": null,
+  "playback": null,
+  "observedAt": null,
+  "staleAfterSeconds": 2700,
+  "mirrorGen": 1,
+  "mirrorSeq": 1
+}

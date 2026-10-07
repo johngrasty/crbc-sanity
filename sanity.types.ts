@@ -13,6 +13,83 @@
  */
 
 // Source: schema.json
+export type Passage = {
+  _type: 'passage'
+  book:
+    | 'Gen'
+    | 'Exod'
+    | 'Lev'
+    | 'Num'
+    | 'Deut'
+    | 'Josh'
+    | 'Judg'
+    | 'Ruth'
+    | '1Sam'
+    | '2Sam'
+    | '1Kgs'
+    | '2Kgs'
+    | '1Chr'
+    | '2Chr'
+    | 'Ezra'
+    | 'Neh'
+    | 'Esth'
+    | 'Job'
+    | 'Ps'
+    | 'Prov'
+    | 'Eccl'
+    | 'Song'
+    | 'Isa'
+    | 'Jer'
+    | 'Lam'
+    | 'Ezek'
+    | 'Dan'
+    | 'Hos'
+    | 'Joel'
+    | 'Amos'
+    | 'Obad'
+    | 'Jonah'
+    | 'Mic'
+    | 'Nah'
+    | 'Hab'
+    | 'Zeph'
+    | 'Hag'
+    | 'Zech'
+    | 'Mal'
+    | 'Matt'
+    | 'Mark'
+    | 'Luke'
+    | 'John'
+    | 'Acts'
+    | 'Rom'
+    | '1Cor'
+    | '2Cor'
+    | 'Gal'
+    | 'Eph'
+    | 'Phil'
+    | 'Col'
+    | '1Thess'
+    | '2Thess'
+    | '1Tim'
+    | '2Tim'
+    | 'Titus'
+    | 'Phlm'
+    | 'Heb'
+    | 'Jas'
+    | '1Pet'
+    | '2Pet'
+    | '1John'
+    | '2John'
+    | '3John'
+    | 'Jude'
+    | 'Rev'
+  chapterStart: number
+  verseStart?: number
+  chapterEnd?: number
+  verseEnd?: number
+  display: string
+  generatedDisplay?: string
+}
+
 export type Statistic = {
   _type: 'statistic'
   label: string
@@ -195,6 +272,365 @@ export type Hero = {
   }
 }
 
+export type MediaOpsBinding = {
+  _id: string
+  _type: 'mediaOpsBinding'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environments?: Array<'dev' | 'staging' | 'production'>
+}
+
+export type LiveStatus = {
+  _id: string
+  _type: 'liveStatus'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environment?: 'dev' | 'staging' | 'production'
+  channel?: string
+  resourceId?: string
+  sessionState?:
+    | 'armed'
+    | 'connecting'
+    | 'live'
+    | 'reconnecting'
+    | 'interrupted'
+    | 'ending'
+    | 'ended'
+    | 'abandoned'
+    | 'cancelled'
+  takenDown?: boolean
+  playableFrom?: string
+  endedAt?: string
+  event?: {
+    eventId?: string
+    contentId?: string
+    title?: string
+    scheduledStart?: string
+    seriesTitle?: string
+  }
+  nextEvent?: {
+    eventId?: string
+    contentId?: string
+    title?: string
+    scheduledStart?: string
+    seriesTitle?: string
+  }
+  playback?: {
+    hls?: string
+    hlsRoku?: string
+    expiresAt?: string
+  }
+  observedAt?: string
+  staleAfterSeconds?: 180 | 2700
+  mirrorGen?: number
+  mirrorSeq?: number
+}
+
+export type MediaRelease = {
+  _id: string
+  _type: 'mediaRelease'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environment?: 'dev' | 'staging' | 'production'
+  contentId?: string
+  kind?: 'video' | 'nonvideo'
+  public?: boolean
+  assetId?: string
+  playbackId?: string
+  durationSeconds?: number
+  captions?: Array<{
+    language?: string
+    label?: string
+    kind?: 'live' | 'generated' | 'uploaded'
+    state?: 'requested' | 'processing' | 'available'
+    _key: string
+  }>
+  publishedAt?: string
+  releaseVersion?: number
+  mirrorGen?: number
+  mirrorSeq?: number
+}
+
+export type MediaSettings = {
+  _id: string
+  _type: 'mediaSettings'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  socialTitleTemplate: string
+  socialDescriptionFooter?: string
+}
+
+export type Topic = {
+  _id: string
+  _type: 'topic'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  topicId: string
+  label: string
+  aliases?: Array<string>
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
+export type Speaker = {
+  _id: string
+  _type: 'speaker'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  speakerId: string
+  name: string
+  aliases?: Array<string>
+  photo?: {
+    asset?: {
+      _ref: string
+      _type: 'reference'
+      _weak?: boolean
+      [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+    }
+    media?: unknown
+    hotspot?: SanityImageHotspot
+    crop?: SanityImageCrop
+    alt?: string
+    _type: 'image'
+  }
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
+export type SanityImageCrop = {
+  _type: 'sanity.imageCrop'
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+export type SanityImageHotspot = {
+  _type: 'sanity.imageHotspot'
+  x: number
+  y: number
+  height: number
+  width: number
+}
+
+export type Series = {
+  _id: string
+  _type: 'series'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  seriesId: string
+  title: string
+  slug?: Slug
+  slugHistory?: Array<
+    {
+      _key: string
+    } & Slug
+  >
+  description?: string
+  artwork?: {
+    thumbnail?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+    banner?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+  }
+  ordering: 'newestFirst' | 'oldestFirst' | 'manual'
+  manualOrder?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'mediaItem'
+  }>
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
+export type Slug = {
+  _type: 'slug'
+  current: string
+  source?: string
+}
+
+export type ServiceEvent = {
+  _id: string
+  _type: 'serviceEvent'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  eventId: string
+  mediaItem: {
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    [internalGroqTypeReferenceTo]?: 'mediaItem'
+  }
+  scheduledStart?: {
+    local: string
+    timeZone: string
+    offset?: string
+    utc?: string
+  }
+  expectedDurationMinutes: number
+  cancelled?: boolean
+  requestedDestinations?: Array<{
+    platform: 'youtube' | 'facebook'
+    accountLabel: string
+    visibility: 'public' | 'unlisted' | 'private'
+    _type: 'requestedDestination'
+    _key: string
+  }>
+  socialGoLiveLeadMinutes?: number
+  resourceId: string
+}
+
+export type MediaItem = {
+  _id: string
+  _type: 'mediaItem'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  contentId: string
+  kind: 'service' | 'sermon' | 'audio' | 'other'
+  title?: string
+  slug?: Slug
+  slugHistory?: Array<
+    {
+      _key: string
+    } & Slug
+  >
+  description?: string
+  series?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'series'
+  }>
+  serviceDate?: string
+  serviceTimezone: string
+  speakers?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'speaker'
+  }>
+  topics?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'topic'
+  }>
+  passages?: Array<
+    {
+      _key: string
+    } & Passage
+  >
+  artwork?: {
+    thumbnail?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+    banner?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+  }
+  documents?: Array<{
+    label: string
+    file: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.fileAsset'
+      }
+      media?: unknown
+      _type: 'file'
+    }
+    _type: 'mediaDocument'
+    _key: string
+  }>
+  audioEnclosure?: {
+    url: string
+    mimeType: 'audio/mpeg' | 'audio/mp4' | 'audio/aac'
+    bytes: number
+    guid: string
+  }
+  publicationPolicy: 'auto' | 'manual'
+  publishAt?: string
+  editorHold?: {
+    active?: boolean
+    note?: string
+  }
+  rightsHold?: {
+    active?: boolean
+    note?: string
+  }
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
 export type JobOpening = {
   _id: string
   _type: 'jobOpening'
@@ -247,22 +683,6 @@ export type CustomSignUp = {
   registrationUrl: string
   active?: boolean
   featured?: boolean
-}
-
-export type SanityImageCrop = {
-  _type: 'sanity.imageCrop'
-  top: number
-  bottom: number
-  left: number
-  right: number
-}
-
-export type SanityImageHotspot = {
-  _type: 'sanity.imageHotspot'
-  x: number
-  y: number
-  height: number
-  width: number
 }
 
 export type Ministry = {
@@ -348,12 +768,6 @@ export type Ministry = {
   }>
   pcoTag?: string
   featured?: boolean
-}
-
-export type Slug = {
-  _type: 'slug'
-  current: string
-  source?: string
 }
 
 export type Resource = {
@@ -1680,17 +2094,27 @@ export type Geopoint = {
 }
 
 export type AllSanitySchemaTypes =
+  | Passage
   | Statistic
   | BentoCard
   | RichText
   | LogoCloud
   | Hero
-  | JobOpening
-  | CustomSignUp
+  | MediaOpsBinding
+  | LiveStatus
+  | MediaRelease
+  | MediaSettings
+  | Topic
+  | Speaker
   | SanityImageCrop
   | SanityImageHotspot
-  | Ministry
+  | Series
   | Slug
+  | ServiceEvent
+  | MediaItem
+  | JobOpening
+  | CustomSignUp
+  | Ministry
   | Resource
   | Article
   | FooterMenu

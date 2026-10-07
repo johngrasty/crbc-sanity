@@ -1,0 +1,7 @@
+{
+  "timezone": "America/New_York",
+  "slots": [
+    { "slot": "sunday-morning", "label": "Sunday morning", "weekday": "sunday", "localStart": "09:00", "expectedDurationMinutes": 80 },
+    { "slot": "wednesday-night", "label": "Wednesday night", "weekday": "wednesday", "localStart": "18:30", "expectedDurationMinutes": 50 }
+  ]
+}
