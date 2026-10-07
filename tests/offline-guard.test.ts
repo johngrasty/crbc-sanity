@@ -23,6 +23,7 @@ const guard = fileURLToPath(new URL('./loader/offline.cjs', import.meta.url))
 const scratch = mkdtempSync(join(tmpdir(), 'offline-guard-'))
 let children = 0
 const setupModule = join(scratch, 'worker-setup.cjs')
+const dnsSetupModule = join(scratch, 'dns-setup.cjs')
 
 let hits = 0
 const ports: Record<string, number> = {}
@@ -52,6 +53,14 @@ before(async () => {
     setupModule,
     `require('node:net').connect(${ports.PORT}, '127.0.0.1').on('error', () => {})\n`,
   )
+  // A setup module whose DNS query reaches the native resolver as soon as it loads, so a guard
+  // that loads after it is too late.
+  writeFileSync(
+    dnsSetupModule,
+    `const dns = require('node:dns')
+dns.setServers(['127.0.0.1:${ports.UDP}'])
+dns.resolve4('guard.invalid', () => {})\n`,
+  )
 })
 after(() => {
   tcp.close()
@@ -61,11 +70,12 @@ after(() => {
   rmSync(scratch, {recursive: true, force: true})
 })
 
-// Puts the receivers' ports in place of PORT, PORT6, UDP and UDP6, and the setup module's path,
-// as a string literal, in place of SETUP.
+// Puts the receivers' ports in place of PORT, PORT6, UDP and UDP6, and the setup modules' paths,
+// as string literals, in place of SETUP and DNS_SETUP.
+const setupPaths: Record<string, string> = {SETUP: setupModule, DNS_SETUP: dnsSetupModule}
 const withPorts = (code: string) =>
-  code.replaceAll(/\b(PORT6|PORT|UDP6|UDP|SETUP)\b/g, (name) =>
-    name === 'SETUP' ? JSON.stringify(setupModule) : String(ports[name]),
+  code.replaceAll(/\b(PORT6|PORT|UDP6|UDP|SETUP|DNS_SETUP)\b/g, (name) =>
+    name in setupPaths ? JSON.stringify(setupPaths[name]) : String(ports[name]),
   )
 
 // Runs code in a child process, with or without the guard, and reports its exit status and how
@@ -81,7 +91,7 @@ async function attempt(
     import dns from 'node:dns'
     import net from 'node:net'
     import tls from 'node:tls'
-    import {Worker} from 'node:worker_threads'
+    import {SHARE_ENV, Worker} from 'node:worker_threads'
     const servers = ['127.0.0.1:${ports.UDP}']
     const inWorker = (body, options) =>
       new Worker(new URL('data:text/javascript,' + encodeURIComponent(body)), options)
@@ -237,6 +247,12 @@ const cases: {name: string; code: string; observable: boolean}[] = [
     code: `inWorker('0', {env: {...process.env, NODE_OPTIONS: '--require ' + JSON.stringify(SETUP)}})`,
     observable: true,
   },
+  {
+    name: 'SHARE_ENV worker with NODE_OPTIONS set by the test',
+    code: `process.env.NODE_OPTIONS = '--require ' + JSON.stringify(DNS_SETUP)
+      inWorker('0', {env: SHARE_ENV, execArgv: []})`,
+    observable: true,
+  },
 ]
 
 for (const {name, code, observable} of cases) {
@@ -270,8 +286,9 @@ test('the offline guard leaves Unix sockets open, because they are local IPC', a
 })
 
 test('the guard runs before a preload listed ahead of it on the command line', async () => {
-  // Node runs --require preloads before --import preloads, whatever their order.
-  const before = ['--import', setupModule]
+  // Node runs --require preloads before --import preloads, whatever their order. The setup
+  // module's DNS query reaches the native resolver as it loads, so a guard loaded after it fails.
+  const before = ['--import', dnsSetupModule]
   const open = await attempt('0', {guarded: false, before})
   assert.ok(open.hits > 0, 'without the guard, the setup module should reach the receiver')
   const guarded = await attempt('0', {guarded: true, before})
