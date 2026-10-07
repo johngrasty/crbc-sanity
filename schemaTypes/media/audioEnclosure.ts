@@ -3,6 +3,7 @@
 // because the GUID names the original's episode.
 import {defineField, getPublishedId} from 'sanity'
 import type {FormFollowUp} from '../../structure/documentConfig'
+import {otherHolder} from './uniqueValue'
 import {urlRule} from './url'
 
 const apiVersion = '2025-02-19'
@@ -80,18 +81,16 @@ export const audioEnclosureField = defineField({
         'The ID podcast apps use to tell episodes apart. Once the item is published, keep it the same, or apps treat the item as a new episode.',
       validation: (rule) => [
         rule.required(),
-        // Two items with one GUID would be one episode to podcast apps. The raw perspective sees
-        // every published, draft and release version, and sanity::versionOf leaves out this
-        // item's own versions.
+        // Two items with one GUID would be one episode to podcast apps.
         rule.custom(async (guid, context) => {
-          if (!guid || !context.document) return true
-          const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
-          const taken = await client.fetch(
-            `count(*[_type == "mediaItem" && audioEnclosure.guid == $guid && !sanity::versionOf($publishedId)]) > 0`,
-            {guid, publishedId: getPublishedId(context.document._id)},
-          )
-          return taken
-            ? 'Another media item already uses this GUID, so podcast apps would mix up the two episodes. Use a different GUID.'
+          if (!guid) return true
+          const holder = await otherHolder(context, {
+            type: 'mediaItem',
+            field: 'audioEnclosure.guid',
+            value: guid,
+          })
+          return holder
+            ? `The media item ${holder} already uses this GUID, so podcast apps would mix up the two episodes. Use a different GUID.`
             : true
         }),
         // A draft or release version that changes the published item's GUID.
