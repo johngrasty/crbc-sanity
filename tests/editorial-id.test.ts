@@ -82,7 +82,7 @@ test("a release version of an item that was never published must keep its draft'
   const studio = createHarness({documents: [item('drafts.n', P), item('versions.rSpring.n', Q)]})
   assert.deepEqual(idErrors(await studio.validate('drafts.n')), [])
   assert.deepEqual(idErrors(await studio.validate('versions.rSpring.n')), [
-    `The draft of this media item has the content ID ${P}. IDs never change, so discard this change.`,
+    `The draft of this media item has the content ID ${P}. Open this version and Studio gives it the draft's ID.`,
   ])
   await assert.rejects(studio.publish('n', {release: 'rSpring'}), /contentId/)
 
