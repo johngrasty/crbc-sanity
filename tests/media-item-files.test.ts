@@ -89,6 +89,52 @@ test('a document without a label or a file is an error', async () => {
   assert.equal(errorsAt(empty, 'documents[_key=="d0"].label').length, 1)
 })
 
+// A document's file needs an uploaded asset, or the website has nothing to download. Each broken
+// shape gets one error, and the item can't publish.
+test("a document's file must point at an uploaded file, and any type of file will do", async () => {
+  const docx: TestDocument = {_id: `file-${'3b9d'.repeat(10)}-docx`, _type: 'sanity.fileAsset'}
+  const reference = (_ref?: unknown) => ({
+    _type: 'reference',
+    ...(_ref === undefined ? {} : {_ref}),
+  })
+  const broken: Record<string, unknown> = {
+    'a null asset': {_type: 'file', asset: null},
+    'no asset': {_type: 'file'},
+    'a reference without a _ref': {_type: 'file', asset: reference()},
+    'a reference with an empty _ref': {_type: 'file', asset: reference('')},
+    'a reference to a file that was never uploaded': {
+      _type: 'file',
+      asset: reference(`file-${'0'.repeat(40)}-pdf`),
+    },
+  }
+  for (const [name, file] of Object.entries(broken)) {
+    const draft = {
+      ...item({documents: [{_key: 'd0', _type: 'mediaDocument', label: 'Notes', file}]}),
+      _id: 'drafts.item',
+    }
+    const studio = createHarness({documents: [fileAsset, docx, draft]})
+    assert.equal(errors(await studio.validate(draft._id)).length, 1, name)
+    await assert.rejects(studio.publish('item'), name)
+  }
+
+  const uploaded = {
+    ...item({
+      documents: [
+        {
+          _key: 'd0',
+          _type: 'mediaDocument',
+          label: 'Handout',
+          file: {_type: 'file', asset: reference(docx._id)},
+        },
+      ],
+    }),
+    _id: 'drafts.item',
+  }
+  const studio = createHarness({documents: [fileAsset, docx, uploaded]})
+  assert.deepEqual(errors(await studio.validate(uploaded._id)), [])
+  await studio.publish('item')
+})
+
 test('a document label holds up to 200 characters, counted as code points', async () => {
   const studio = createHarness({documents: [fileAsset]})
   const [document] = documentsOf(1)

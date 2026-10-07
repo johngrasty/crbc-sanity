@@ -26,7 +26,17 @@ export const documentsField = defineField({
           name: 'file',
           title: 'File',
           type: 'file',
-          validation: (rule) => rule.required(),
+          validation: (rule) => [
+            rule.required(),
+            // Sanity's own checks catch a missing file, a missing asset and a broken asset
+            // reference, each with one marker. They pass an asset set to null, which a paste or
+            // an API write can leave, and which gives the website nothing to download.
+            rule.custom((file) =>
+              (file as {asset?: unknown} | undefined)?.asset === null
+                ? 'This document has no file. Upload it again, or remove the document.'
+                : true,
+            ),
+          ],
         }),
       ],
     }),
