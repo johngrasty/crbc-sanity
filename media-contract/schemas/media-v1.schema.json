@@ -1094,6 +1094,10 @@
                   "state"
                 ],
                 "properties": {
+                  "_key": {
+                    "type": "string",
+                    "description": "Erratum E21. Sanity's array item key, unique within the array. media-ops writes the item's language. The public API never returns it."
+                  },
                   "language": {
                     "type": "string"
                   },
