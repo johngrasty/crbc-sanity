@@ -1,5 +1,6 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
+import {artworkField} from './artwork'
 import {audioEnclosureField} from './audioEnclosure'
 import {documentsField} from './documents'
 import {itemLimit, noRepeats, referencedId} from './lists'
@@ -212,6 +213,7 @@ export default defineType({
       group: 'peopleAndScripture',
     }),
     {...passagesField, group: 'peopleAndScripture'},
+    {...artworkField('mediaItem'), group: 'artwork'},
     {...documentsField, group: 'artwork'},
     {...audioEnclosureField, group: 'artwork'},
     {...publicationPolicyField, group: 'publishing'},

@@ -204,3 +204,52 @@ test('a GUID on an item that was never published, or published without audio, is
   const draft = await withoutAudio.edit('item', {set: {audioEnclosure}})
   assert.deepEqual(warningsAt(await withoutAudio.validate(draft._id), 'audioEnclosure.guid'), [])
 })
+
+// Sanity names an image asset by its hash, its width and height, and its format.
+const imageAsset = (width: number, height: number): TestDocument => ({
+  _id: `image-${'5e1f'.repeat(10)}-${width}x${height}-jpg`,
+  _type: 'sanity.imageAsset',
+})
+const picture = (asset: TestDocument, fields: Record<string, unknown> = {}) => ({
+  _type: 'image',
+  asset: {_type: 'reference', _ref: asset._id},
+  ...fields,
+})
+
+test("a media item's thumbnail and banner have alt text, and a thumbnail that isn't 16:9 is a warning", async () => {
+  const widescreen = imageAsset(1920, 1080)
+  const square = imageAsset(1200, 1200)
+  const wide = imageAsset(3000, 1000)
+  const studio = createHarness({documents: [widescreen, square, wide]})
+  const artworkMarkers = async (artwork: Record<string, unknown>) =>
+    (await studio.validate(item({artwork}))).filter(({path}) => path.startsWith('artwork'))
+
+  const alt = 'The pulpit at sunrise'
+  assert.deepEqual(
+    await artworkMarkers({thumbnail: picture(widescreen, {alt}), banner: picture(wide, {alt})}),
+    [],
+  )
+  assert.deepEqual(
+    (await artworkMarkers({thumbnail: picture(square)})).map(({path, level}) => [path, level]),
+    [['artwork.thumbnail', 'warning']],
+  )
+  for (const image of ['thumbnail', 'banner']) {
+    const asset = image === 'thumbnail' ? widescreen : wide
+    const markers = await artworkMarkers({[image]: picture(asset, {alt: '😀'.repeat(201)})})
+    assert.deepEqual(errorsAt(markers, `artwork.${image}.alt`).length, 1, image)
+  }
+})
+
+test("a media item's artwork, documents and podcast audio sit under Artwork and files, and its import source under Source", async () => {
+  const studio = createHarness()
+  const groups = studio.groups('mediaItem')
+  assert.deepEqual(
+    groups.map(({name}) => name),
+    ['details', 'peopleAndScripture', 'artwork', 'publishing', 'source'],
+  )
+  const group = (name: string) => groups.find((candidate) => candidate.name === name)
+  assert.equal(group('artwork')?.title, 'Artwork and files')
+  assert.deepEqual(group('artwork')?.fields, ['artwork', 'documents', 'audioEnclosure'])
+  assert.equal(group('source')?.title, 'Source')
+  assert.deepEqual(group('source')?.fields, ['source'])
+})
