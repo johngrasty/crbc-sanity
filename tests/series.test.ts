@@ -455,3 +455,17 @@ test('a manual order lists each media item once', async () => {
     ['manualOrder[_key=="d"]', 'error'],
   ])
 })
+
+test('the form shows the manual order only when the series uses manual order', async () => {
+  const studio = createHarness()
+  const manualOrder = [reference('a', 'item')]
+  for (const ordering of ['newestFirst', 'oldestFirst', undefined]) {
+    assert.deepEqual(studio.hiddenFields(series({ordering, manualOrder})), [
+      'manualOrder',
+      'source',
+    ])
+  }
+  assert.deepEqual(studio.hiddenFields(series({ordering: 'manual'})), ['source'])
+  // The import source shows once the importer has set it.
+  assert.deepEqual(studio.hiddenFields(series({ordering: 'manual', source})), [])
+})
