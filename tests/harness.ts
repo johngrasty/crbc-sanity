@@ -34,6 +34,7 @@ import {
   pathToString,
   prepareConfig,
   prepareForPreview,
+  resolveConditionalProperty,
   resolveInitialValue,
   resolveInitialValueForType,
   validateDocument,
@@ -472,6 +473,43 @@ const hasReleases = (apiVersion = '1') => {
   return version === 'X' || version >= '2025-02-19'
 }
 
+// What a perspective stack such as ['drafts'] or ['rSpring', 'drafts'] shows, as Content Lake
+// does: each document once, as its first version the stack names, falling back to the published
+// document. It goes by its published _id, and _originalId is the _id of the version shown. A
+// release outside the stack, and a draft when the stack leaves out drafts, don't show.
+function overlay(documents: TestDocument[], stack: string[]): TestDocument[] {
+  const byId = new Map(documents.map((document) => [document._id, document]))
+  const publishedIds = new Set(documents.map(({_id}) => getPublishedId(_id)))
+  const layerId = (id: string, layer: string) =>
+    layer === 'published' ? id : layer === 'drafts' ? getDraftId(id) : getVersionId(id, layer)
+  return [...publishedIds].flatMap((id) => {
+    const shown = [...stack, 'published'].map((layer) => byId.get(layerId(id, layer))).find(Boolean)
+    if (!shown) return []
+    if ((shown._system as {delete?: boolean} | undefined)?.delete === true) {
+      throw new Error("The test client doesn't model a release version that deletes its document")
+    }
+    return [{...shown, _id: id, _originalId: shown._id}]
+  })
+}
+
+// A perspective as a stack, or undefined for raw and published, which show stored documents.
+// Content Lake takes drafts and stacks from API version 2025-02-19. The client refuses anything
+// else it can't model: previewDrafts, the older name for drafts, raw inside a stack, or an empty
+// release name.
+function perspectiveStack(perspective: unknown, releases: boolean): string[] | undefined {
+  if (perspective === 'raw' || perspective === 'published') return undefined
+  const stack = perspective === 'drafts' ? ['drafts'] : perspective
+  const unsupported = () =>
+    new Error(`The test client doesn't support the ${JSON.stringify(perspective)} perspective`)
+  if (!Array.isArray(stack) || !releases) throw unsupported()
+  for (const layer of stack) {
+    if (typeof layer !== 'string' || !layer || ['raw', 'previewDrafts'].includes(layer)) {
+      throw unsupported()
+    }
+  }
+  return stack
+}
+
 // A Sanity client over the in-memory dataset that answers queries with groq-js. It sees what
 // Content Lake would show at its API version, so a rule that forgets to ask for raw, or asks an
 // API version older than releases, misses documents here too. Add methods as Studio code needs
@@ -479,16 +517,13 @@ const hasReleases = (apiVersion = '1') => {
 function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): SanityClient {
   const releases = hasReleases(config.apiVersion)
   const perspective = config.perspective ?? (releases ? 'published' : 'raw')
+  const stack = perspectiveStack(perspective, releases)
   const visible = () => {
     const documents = [...dataset.values()]
+    if (stack) return overlay(documents, stack)
     if (perspective === 'raw')
       return releases ? documents : documents.filter(({_id}) => !isVersionId(_id))
-    if (perspective === 'published') {
-      return documents.filter(({_id}) => !isDraftId(_id) && !isVersionId(_id))
-    }
-    throw new Error(
-      `The test client doesn't support the ${JSON.stringify(perspective)} perspective`,
-    )
+    return documents.filter(({_id}) => !isDraftId(_id) && !isVersionId(_id))
   }
   const client = {
     config: () => ({projectId: 'test', dataset: 'test', ...config, perspective}),
@@ -694,6 +729,26 @@ export function createHarness({
       const schemaType = schema.get(type)
       if (!schemaType) throw new Error(`No schema type named "${type}"`)
       return {readOnly: schemaType.readOnly, notice: formNotice(schemaType)}
+    },
+
+    // The names of the top-level fields a document's form hides, in field order. Takes a
+    // document, or the _id of one in the dataset. Each field's hidden callback gets the document
+    // as its parent, as Sanity's form gives it (lib/index.js:57543-57575).
+    hiddenFields(document: TestDocument | string): string[] {
+      const value = typeof document === 'string' ? dataset.get(document) : document
+      if (!value) throw new Error(`No document with _id "${document}"`)
+      const schemaType = schema.get(value._type) as ObjectSchemaType | undefined
+      if (!schemaType) throw new Error(`No schema type named "${value._type}"`)
+      return schemaType.fields
+        .filter(({name, type}) =>
+          resolveConditionalProperty(type.hidden, {
+            document: value as SanityDocument,
+            parent: value,
+            value: value[name],
+            currentUser: null,
+          }),
+        )
+        .map(({name}) => name)
     },
 
     // The names of every registered document type, plugin types included.
@@ -1065,16 +1120,32 @@ export function createHarness({
     },
 
     // The _ids Studio's search finds for text among these types, best match first, as Sanity
-    // ranks them. Without types that's the global search, over searchTypes(), and with a
-    // reference field's target types it's that field's picker. It sees published documents, as
-    // the client's default perspective does.
-    async search(text: string, types: string[] = globalSearchTypes()): Promise<string[]> {
-      const search = createSearch(
-        types.map((type) => schema.get(type) as SchemaType),
-        getClient({apiVersion: '2025-02-19'}),
-        {unique: true, strategy: source.search.strategy},
-      )
-      const {hits} = await firstValueFrom(search(text))
+    // runs and ranks it. Without types it searches every type global search covers,
+    // searchTypes(). Without a perspective it's the global search, which reads every version
+    // through raw and shows each document once: its draft, else the published document, else a
+    // release version (lib/index.js:52244, 52844 and 2969). With a perspective stack it's a
+    // reference field's picker for those types, which searches in the editor's perspective:
+    // ['drafts'] by default, ['published'], or a release first, such as ['rSpring', 'drafts']
+    // (lib/index.js:17118 and 18346-18355). Its rows go by published _id.
+    async search(
+      text: string,
+      types: string[] = globalSearchTypes(),
+      {perspective}: {perspective?: string[]} = {},
+    ): Promise<string[]> {
+      const schemaTypes = types.map((type) => schema.get(type) as SchemaType)
+      const client = getClient({apiVersion: '2025-02-19'})
+      const {strategy} = source.search
+      const search = perspective
+        ? createSearch(schemaTypes, client, {
+            tag: 'search.reference',
+            strategy,
+            perspective,
+          })(text, {perspective, limit: 101})
+        : createSearch(schemaTypes, client, {tag: 'search.global', unique: true, strategy})(text, {
+            perspective: 'raw',
+            limit: 1000,
+          })
+      const {hits} = await firstValueFrom(search)
       return hits.map(({hit}) => hit._id)
     },
 

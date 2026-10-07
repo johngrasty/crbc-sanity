@@ -143,8 +143,9 @@ const editorialActions = {
     'editInCanvas',
     'discardVersion',
   ],
-  // Sanity offers no Duplicate on a scheduled draft, so there's nothing to replace.
-  'scheduled-draft': ['publish', 'discardVersion'],
+  // Sanity offers no Duplicate on a scheduled draft, so there's nothing to replace. Publish now
+  // is gone too.
+  'scheduled-draft': ['discardVersion'],
   revision: [
     'publish',
     'unpublish',
@@ -186,6 +187,17 @@ test('the editorial types offer no scheduling in any version type', () => {
     for (const versionType of versionTypes) {
       assert.ok(!studio.actions(type, versionType).includes('schedule'), `${type} ${versionType}`)
     }
+  }
+})
+
+// On a scheduled draft, publish is Sanity's Publish now, which publishes without checking
+// validation (/tmp/studio-spec/reviews/ids-fable-5.1-r2.md, finding 8). Delete stays, so an
+// editor can still move a stray scheduled draft back to the draft.
+test('a scheduled draft of an editorial type offers only Delete, not Publish now', () => {
+  const studio = createHarness()
+  for (const type of editorialTypes) {
+    assert.deepEqual(studio.actions(type, 'scheduled-draft'), ['discardVersion'], type)
+    assert.ok(studio.actions(type, 'draft').includes('publish'), type)
   }
 })
 

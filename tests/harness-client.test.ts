@@ -48,6 +48,12 @@ test('the published perspective shows only published documents at any API versio
   assert.deepEqual(await seen('2025-02-19', 'published'), published)
 })
 
+// Content Lake's drafts perspective shows each document once, under its published _id.
+test('the drafts perspective shows each document once from API version 2025-02-19', async () => {
+  assert.deepEqual(await seen('2025-02-19', 'drafts'), published)
+  assert.deepEqual(await seen('vX', 'drafts'), published)
+})
+
 test('no create menu offers the probe type, which only the harness registers', async () => {
   const studio = createHarness()
   assert.ok(!studio.createMenu().includes('harnessClientProbe'))
