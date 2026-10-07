@@ -16,6 +16,7 @@ import {
   idToKeep,
   newEditorialId,
 } from '../schemaTypes/media/editorialId'
+import {passageDisplayPatch} from '../schemaTypes/media/passage'
 import {readOnlyTypeNames} from '../schemaTypes/media/readOnlyTypes'
 import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
@@ -101,8 +102,8 @@ export const templates: TemplateResolver = (prev) =>
 export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter(({templateId}) => !singletonsWithTemplates.has(templateId))
 
-// A patch for one document version. Keys in set and entries in unset are field paths such as
-// title or editorHold.note.
+// A patch for one document version. Keys in set and entries in unset are paths in Sanity's string
+// form, such as title, editorHold.note or passages[_key=="a"].display.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step keeps fields of a draft or release version in step as the editor works.
@@ -147,11 +148,16 @@ const keepId: FormFollowUp = ({version, published, draft}) => {
   return kept && version[id.field] !== kept.id ? {set: {[id.field]: kept.id}} : null
 }
 
-// Each type's follow-up steps, in order. Every type with a slug keeps its slug history, and then
-// every editorial type keeps its ID.
+// Each type's follow-up steps, in order. Every type with a slug keeps its slug history, a media item
+// fills in its passages' display text, and then every editorial type keeps its ID.
+const slugSteps: Partial<Record<string, FormFollowUp[]>> = Object.fromEntries(
+  Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]]),
+)
+
 export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
   serviceEvent: [fillSlotLength],
-  ...Object.fromEntries(Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]])),
+  ...slugSteps,
+  mediaItem: [...(slugSteps.mediaItem ?? []), passageDisplayPatch],
 }
 for (const type of Object.keys(editorialIds)) {
   formFollowUps[type] = [...(formFollowUps[type] ?? []), keepId]

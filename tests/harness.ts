@@ -10,8 +10,7 @@ import type {ClientPerspective} from '@sanity/client'
 import {createElement, isValidElement, type ReactNode} from 'react'
 import {renderToStaticMarkup} from 'react-dom/server'
 import {defer, firstValueFrom} from 'rxjs'
-import {ThemeProvider} from '@sanity/ui'
-import {buildTheme} from '@sanity/ui/theme'
+import {studioTheme, ThemeProvider} from '@sanity/ui'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
@@ -37,13 +36,17 @@ import {
   prepareForPreview,
   resolveInitialValue,
   resolveInitialValueForType,
+  stringToPath,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
   type InputProps,
+  type KeyedSegment,
   type NewDocumentCreationContext,
   type ObjectSchemaType,
+  type Path,
+  type PathSegment,
   type PreviewableType,
   type SanityClient,
   type SanityDocument,
@@ -288,7 +291,6 @@ function formAccepts(type: SchemaType, action: 'create' | 'update') {
 // The text a document type's own input shows above the fields. The harness can't mount
 // Studio's form, so it renders the type's components.input to static HTML, inside the theme
 // Studio provides, with the fields Sanity renders through renderDefault stubbed out.
-const theme = buildTheme()
 const entities: Record<string, string> = {amp: '&', lt: '<', gt: '>', quot: '"', '#x27': "'"}
 function formNotice(schemaType: SchemaType): string | undefined {
   const Input = schemaType.components?.input
@@ -296,7 +298,7 @@ function formNotice(schemaType: SchemaType): string | undefined {
   const fields = '[fields]'
   const props = {schemaType, readOnly: true, renderDefault: () => fields} as unknown as InputProps
   const html = renderToStaticMarkup(
-    createElement(ThemeProvider, {theme}, createElement(Input, props)),
+    createElement(ThemeProvider, {theme: studioTheme}, createElement(Input, props)),
   )
   if (!html.includes(fields))
     throw new Error(`The ${schemaType.name} input doesn't render its fields`)
@@ -379,24 +381,61 @@ const actionDetail = (action: DocumentActionComponent): ActionDetail => ({
   keptWhenLinkedToCanvas: Boolean(action.action && canvasActions.includes(action.action)),
 })
 
-// Applies set, then unset, as Sanity does. Paths are dotted field names.
+type Container = Record<string, unknown> | unknown[]
+
+// The array index a path segment names, or -1 when there's no such item. Only an index or a
+// {_key} names one.
+function indexIn(items: unknown[], segment: PathSegment): number {
+  if (typeof segment === 'number') return segment
+  if (!segment || typeof segment !== 'object' || Array.isArray(segment)) return -1
+  const {_key} = segment as KeyedSegment
+  return items.findIndex((item) => (item as {_key?: unknown} | null)?._key === _key)
+}
+
+// The value holding a path's last segment. A set creates missing objects on the way, as Sanity
+// does. A keyed segment needs its item to exist, as in Sanity, where a set or unset on a missing
+// item changes nothing.
+function parentAt(document: TestDocument, path: Path, create: boolean): Container | undefined {
+  let target: unknown = document
+  for (const segment of path.slice(0, -1)) {
+    if (Array.isArray(target)) {
+      target = target[indexIn(target, segment)]
+    } else if (target && typeof target === 'object' && typeof segment === 'string') {
+      const object = target as Record<string, unknown>
+      if (create) object[segment] ??= {}
+      target = object[segment]
+    } else {
+      return undefined
+    }
+  }
+  return target && typeof target === 'object' ? (target as Container) : undefined
+}
+
+// Applies set, then unset, as Sanity does. Paths are in Sanity's string form, such as title,
+// editorHold.note or passages[_key=="a"].display.
 function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatch): TestDocument {
   const next = structuredClone(document)
   for (const [path, value] of Object.entries(set)) {
-    const keys = path.split('.')
-    const field = keys.pop() as string
-    let target: Record<string, unknown> = next
-    for (const key of keys) target = (target[key] ??= {}) as Record<string, unknown>
-    target[field] = structuredClone(value)
+    const segments = stringToPath(path)
+    const last = segments[segments.length - 1]
+    const parent = parentAt(next, segments, true)
+    if (Array.isArray(parent)) {
+      const index = indexIn(parent, last)
+      if (index >= 0) parent[index] = structuredClone(value)
+    } else if (parent && typeof last === 'string') {
+      parent[last] = structuredClone(value)
+    }
   }
   for (const path of unset) {
-    const keys = path.split('.')
-    const field = keys.pop() as string
-    const parent = keys.reduce<unknown>(
-      (value, key) => (value as Record<string, unknown>)?.[key],
-      next,
-    )
-    if (parent && typeof parent === 'object') delete (parent as Record<string, unknown>)[field]
+    const segments = stringToPath(path)
+    const last = segments[segments.length - 1]
+    const parent = parentAt(next, segments, false)
+    if (Array.isArray(parent)) {
+      const index = indexIn(parent, last)
+      if (index >= 0) parent.splice(index, 1)
+    } else if (parent && typeof last === 'string') {
+      delete parent[last]
+    }
   }
   return next
 }
@@ -1039,9 +1078,10 @@ export function createHarness({
       return hits.map(({hit}) => hit._id)
     },
 
-    // The preview of a document, or of the _id of one in the dataset, from its type's preview
-    // config, as Sanity prepares it. Only the fields the preview selects reach it.
-    preview(document: TestDocument | string): Preview {
+    // The preview of a document, of an object value such as an array item's row, or of the _id
+    // of a document in the dataset, from its type's preview config, as Sanity prepares it. Only
+    // the fields the preview selects reach it.
+    preview(document: ({_type: string} & Record<string, unknown>) | string): Preview {
       const value = typeof document === 'string' ? dataset.get(document) : document
       if (!value) throw new Error(`No document with _id "${document}"`)
       const type = schema.get(value._type) as PreviewableType
@@ -1060,6 +1100,36 @@ export function createHarness({
       return [...dataset.values()]
         .sort((a, b) => a._id.localeCompare(b._id))
         .map((document) => structuredClone(document))
+    },
+
+    // The tabs of a document type's form, in order, each with the fields it holds in the order
+    // the form shows them. Studio adds an All fields tab of its own.
+    groups(type: string): {name: string; title?: string; fields: string[]}[] {
+      const schemaType = schema.get(type) as ObjectSchemaType | undefined
+      if (!schemaType) throw new Error(`No type named "${type}"`)
+      return (schemaType.groups ?? []).map(({name, title, fields = []}) => ({
+        name,
+        title,
+        fields: fields.map((field) => field.name),
+      }))
+    },
+
+    // The values a list field offers, in order, each with the title its dropdown or radio
+    // buttons show. A plain value shows as itself.
+    choices(type: string, field: string): {title: string; value: unknown}[] {
+      const fieldType = (schema.get(type) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type
+      const list = (fieldType?.options as {list?: unknown[]} | undefined)?.list
+      if (!list) throw new Error(`${type}.${field} has no list of values`)
+      return list.map((option) =>
+        option && typeof option === 'object' && 'value' in option
+          ? {
+              title: String((option as {title?: unknown}).title ?? option.value),
+              value: option.value,
+            }
+          : {title: String(option), value: option},
+      )
     },
   }
 }

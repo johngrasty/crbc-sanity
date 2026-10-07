@@ -7,6 +7,7 @@ import {
   isDraftId,
   isVersionId,
   set,
+  stringToPath,
   unset,
   useEditState,
   type InputProps,
@@ -35,9 +36,10 @@ export function followUpPatch(
   return merged.set || merged.unset ? merged : null
 }
 
+// Patch paths are in Sanity's string form, so a step can reach into an array item by its _key.
 const formPatches = ({set: values = {}, unset: paths = []}: DocumentPatch) => [
-  ...Object.entries(values).map(([path, value]) => set(value, path.split('.'))),
-  ...paths.map((path) => unset(path.split('.'))),
+  ...Object.entries(values).map(([path, value]) => set(value, stringToPath(path))),
+  ...paths.map((path) => unset(stringToPath(path))),
 ]
 
 function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}) {
