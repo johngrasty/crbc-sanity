@@ -167,6 +167,23 @@ const clientProbe = defineType({
   ],
 })
 
+// One probe type for each kind of action flags, for the form lock's tests: none, which enables
+// every action, an empty list, only create and only update.
+const actionProbes = (
+  [
+    ['harnessActionsDefault', undefined],
+    ['harnessActionsNone', []],
+    ['harnessActionsCreate', ['create']],
+    ['harnessActionsUpdate', ['update']],
+  ] as const
+).map(([name, actions]) => ({
+  ...defineType({name, type: 'document', fields: [defineField({name: 'title', type: 'string'})]}),
+  ...(actions && {__experimental_actions: [...actions]}),
+}))
+
+// The harness's own types have no template, so no create menu or create call offers them.
+const probeTypes = new Set<string>([clientProbe, ...actionProbes].map(({name}) => name))
+
 // Sanity's own config resolution, with the plugins sanity.config.ts uses. sanity-plugin-media
 // can't load in Node, so an inert plugin stands in for it. It adds no document actions,
 // templates or create-menu options. Keep this list in step with sanity.config.ts.
@@ -191,9 +208,9 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {
-    types: [...schemaTypes, clientProbe],
+    types: [...schemaTypes, clientProbe, ...actionProbes],
     templates: (prev, context) =>
-      templates(prev, context).filter(({schemaType}) => schemaType !== clientProbe.name),
+      templates(prev, context).filter(({schemaType}) => !probeTypes.has(schemaType)),
   },
   form: {components: formComponents},
   document: {actions: documentActions, newDocumentOptions},
@@ -277,15 +294,23 @@ function textOf(node: ReactNode): string {
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
-// Whether Studio's document form accepts a patch. The form locks itself, throws "Attempted to
-// patch a read-only document" and sends nothing when the type's __experimental_actions leave
-// out update, or leave out create for a document that doesn't exist yet (lib/index.js:58356
-// and 58498). A type without the flag allows every action. This copies isActionEnabled from
-// @sanity/schema/_internal (lib/_internal.js:504-519), which isn't one of the Studio's
-// dependencies.
-function formAccepts(type: SchemaType, action: 'create' | 'update') {
-  const actions = '__experimental_actions' in type ? type.__experimental_actions : undefined
-  return actions === undefined || actions.includes(action)
+// The value a document form shows: a stored document, or the initial value of one nothing
+// stores yet, which may have no _id.
+export type FormValue = {_id?: string; _type: string} & Record<string, unknown>
+
+// Whether a type's action flags lock Studio's document form, so that every patch throws
+// "Attempted to patch a read-only document" and sends nothing. The form needs update enabled
+// whatever it shows, and create as well while the value it shows has no _id
+// (lib/index.js:58356, with the throwing handler at 58498). A type without
+// __experimental_actions enables every action, as isActionEnabled in @sanity/schema/_internal
+// decides (lib/_internal.js:504-519). That package isn't a Studio dependency, so this copies
+// it. This is only the action flags' part of the lock. The form also locks while it loads,
+// without permission, in the published perspective, and for a release the document isn't in.
+// The harness models those only where a call says so.
+function actionsLockForm(type: SchemaType, shown: FormValue): boolean {
+  const flags = '__experimental_actions' in type ? type.__experimental_actions : undefined
+  const enabled = (action: 'create' | 'update') => flags === undefined || flags.includes(action)
+  return !enabled('update') || (!shown._id && !enabled('create'))
 }
 
 // The text a document type's own input shows above the fields. The harness can't mount
@@ -800,26 +825,26 @@ export function createHarness({
     // does. A missing version starts from the published document, or for a release from the
     // draft when nothing is published. When nothing is stored at all, the first patch starts
     // from initialValue, what the form shows, such as intent()'s initialValue for a create URL.
-    // Like the form, edit refuses a patch the type's __experimental_actions don't allow. Then
+    // Like the form, edit refuses a patch while the type's action flags lock it. Then
     // the form applies the type's follow-up steps, with the version as it was before the patch
     // and the stored draft.
     async edit(
       id: string,
       patch: DocumentPatch,
-      {release, initialValue}: {release?: string; initialValue?: TestDocument} = {},
+      {release, initialValue}: {release?: string; initialValue?: FormValue} = {},
     ): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const target = versionId(id, release)
       const published = dataset.get(publishedId) ?? null
       const draft = dataset.get(getDraftId(publishedId)) ?? null
       const base = dataset.get(target) ?? published ?? (release ? draft : null)
-      const start = base ?? (initialValue ? {...initialValue, _id: publishedId} : null)
-      if (!start) throw new Error(`No document to edit with _id "${publishedId}"`)
-      const schemaType = schema.get(start._type)
-      if (schemaType && !formAccepts(schemaType, base ? 'update' : 'create')) {
+      const shown = base ?? initialValue
+      if (!shown) throw new Error(`No document to edit with _id "${publishedId}"`)
+      const schemaType = schema.get(shown._type)
+      if (schemaType && actionsLockForm(schemaType, shown)) {
         throw new Error('Attempted to patch a read-only document')
       }
-      const previous = {...start, _id: target}
+      const previous: TestDocument = {...shown, _id: target}
       let version = applyPatch(previous, patch)
       const followUp = followUpPatch(followUpSteps(version._type), {
         previous,
@@ -835,7 +860,7 @@ export function createHarness({
     // Opens the document's form, as an editor does, and returns the document it shows. Without
     // release the form shows the draft, else the published document. With release it shows that
     // release's version, else the draft or the published document, and then it's read-only. It's
-    // read-only too when the type's __experimental_actions leave out update. Once loaded, the
+    // read-only too when the type's action flags lock the form. Once loaded, the
     // form applies the type's follow-up steps unless it's read-only. Like Sanity, a patch on the
     // published document writes a draft made from it.
     async open(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
@@ -845,7 +870,7 @@ export function createHarness({
       const shown = version ?? dataset.get(getDraftId(publishedId)) ?? published
       if (!shown) throw new Error(`No document to open with _id "${publishedId}"`)
       const schemaType = schema.get(shown._type)
-      const locked = schemaType !== undefined && !formAccepts(schemaType, 'update')
+      const locked = schemaType !== undefined && actionsLockForm(schemaType, shown)
       const readOnly = (release !== undefined && !version) || locked
       const followUp = followUpPatch(followUpSteps(shown._type), {
         previous: shown,

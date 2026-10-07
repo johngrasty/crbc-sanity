@@ -338,3 +338,51 @@ test('the form says who writes a read-only document, above its fields', () => {
   )
   assert.equal(studio.form('mediaItem').notice, undefined)
 })
+
+test("the harness locks the form for the action flags as Studio's form does", async () => {
+  // The harness registers a probe type for each set of flags. Studio's form refuses every patch
+  // unless update is enabled. While the value it shows has no _id, it needs create too.
+  const cases = [
+    {type: 'harnessActionsDefault', stored: true, initial: true, initialWithoutId: true},
+    {type: 'harnessActionsNone', stored: false, initial: false, initialWithoutId: false},
+    {type: 'harnessActionsUpdate', stored: true, initial: true, initialWithoutId: false},
+    {type: 'harnessActionsCreate', stored: false, initial: false, initialWithoutId: false},
+  ]
+  const patch = {set: {title: 'Changed'}}
+  // Whether the form takes the patch. A refused patch writes nothing.
+  const accepts = async (
+    seeded: TestDocument[],
+    edit: (studio: ReturnType<typeof createHarness>) => Promise<unknown>,
+  ) => {
+    const studio = createHarness({documents: seeded})
+    try {
+      await edit(studio)
+      assert.equal(studio.documents().find(({_id}) => _id === 'drafts.doc')?.title, 'Changed')
+      return true
+    } catch (error) {
+      assert.match(String(error), /^Error: Attempted to patch a read-only document$/)
+      assert.deepEqual(studio.documents(), seeded)
+      return false
+    }
+  }
+  for (const {type, ...expected} of cases) {
+    const stored = {_id: 'doc', _type: type}
+    const actual = {
+      stored: await accepts([stored], (studio) => studio.edit('doc', patch)),
+      initial: await accepts([], (studio) =>
+        studio.edit('doc', patch, {initialValue: {_id: 'doc', _type: type}}),
+      ),
+      initialWithoutId: await accepts([], (studio) =>
+        studio.edit('doc', patch, {initialValue: {_type: type}}),
+      ),
+    }
+    assert.deepEqual(actual, expected, type)
+
+    // Opening a stored draft runs the follow-up steps only when the form takes patches.
+    const step = () => ({set: {title: 'Stepped'}})
+    const draft = {_id: 'drafts.doc', _type: type}
+    const studio = createHarness({documents: [draft], followUps: {[type]: [step]}})
+    const opened = await studio.open('doc')
+    assert.equal(opened.title === 'Stepped', expected.stored, `open ${type}`)
+  }
+})
