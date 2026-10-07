@@ -475,53 +475,98 @@ test('a manual order is checked only while the series uses manual order', async 
   ])
 })
 
-// Sanity's own reference check on each entry waits for manual order too, so an item that was never
-// published, or one that's gone, can't block Publish from a hidden field.
-test("a hidden manual order doesn't block publishing, and its checks come back with manual order", async () => {
+// An editor can switch away from manual order with an unpublished item still in the saved order.
+// Content Lake won't publish a strong reference to an item that isn't published, so the order
+// shows with an error. "gone" is an item that was picked while it was a draft, then deleted.
+const unsettledOrder = [
+  weakReference('new', 'new', 'mediaItem'),
+  weakReference('gone', 'gone', 'mediaItem'),
+]
+const savedOrderMessage =
+  "This saved manual order lists an item that isn't published. Publish it or remove it from the order."
+
+test('a saved manual order with an unpublished or missing item shows and blocks publishing under another order', async () => {
   for (const ordering of ['newestFirst', 'oldestFirst']) {
     const studio = createHarness({
       documents: [
-        series({
-          _id: 'drafts.gospel',
-          slug: slug('john'),
-          ordering,
-          manualOrder: [weakReference('new', 'new', 'mediaItem'), reference('gone', 'gone')],
-        }),
+        series({_id: 'drafts.gospel', slug: slug('john'), ordering, manualOrder: unsettledOrder}),
         mediaItem('drafts.new', ['gospel']),
       ],
     })
-    assert.deepEqual(
-      markersUnder(await studio.validate('drafts.gospel'), 'manualOrder'),
-      [],
-      ordering,
-    )
-    await studio.publish('gospel')
-
-    await studio.edit('gospel', {set: {ordering: 'manual'}})
     const markers = (await studio.validate('drafts.gospel')).filter(({path}) =>
-      path.startsWith('manualOrder['),
+      path.startsWith('manualOrder'),
     )
     assert.deepEqual(
-      markers
-        .map(({path, level, message}) => [path, level, message])
-        .sort((a, b) => a.join().localeCompare(b.join())),
+      markers.map(({path, level, message}) => [path, level, message]),
       [
-        ['manualOrder[_key=="gone"]', 'error', 'Referenced document must be published'],
-        ['manualOrder[_key=="new"]', 'error', 'Referenced document must be published'],
-        [
-          'manualOrder[_key=="new"]',
-          'warning',
-          "Only this media item's unpublished draft lists this series. Publish the item to add it to the series.",
-        ],
+        ['manualOrder[_key=="new"]', 'error', savedOrderMessage],
+        ['manualOrder[_key=="gone"]', 'error', savedOrderMessage],
       ],
       ordering,
     )
-    await assert.rejects(
-      studio.publish('gospel'),
-      /Referenced document must be published/,
-      ordering,
-    )
+    assert.ok(!studio.hiddenFields('drafts.gospel').includes('manualOrder'), ordering)
+    await assert.rejects(studio.publish('gospel'), /saved manual order lists an item/, ordering)
+
+    // Taking both out hides the order again and lets the series publish.
+    await studio.edit('gospel', {unset: ['manualOrder[_key=="new"]', 'manualOrder[_key=="gone"]']})
+    assert.ok(studio.hiddenFields('drafts.gospel').includes('manualOrder'), ordering)
+    await studio.publish('gospel')
   }
+})
+
+test('publishing the item settles a saved manual order', async () => {
+  const studio = createHarness({
+    documents: [
+      series({
+        _id: 'drafts.gospel',
+        slug: slug('john'),
+        manualOrder: [weakReference('new', 'new', 'mediaItem')],
+      }),
+      {
+        ...mediaItem('drafts.new'),
+        contentId: `mi_${ULID}`,
+        kind: 'service',
+        serviceTimezone: 'America/New_York',
+        publicationPolicy: 'auto',
+      },
+    ],
+  })
+  await assert.rejects(studio.publish('gospel'), /saved manual order lists an item/)
+  await studio.publish('new')
+  assert.deepEqual(markersUnder(await studio.validate('drafts.gospel'), 'manualOrder'), [])
+  await studio.publish('gospel')
+})
+
+test("with manual order, the order uses Sanity's message and checks that each item lists the series", async () => {
+  const studio = createHarness({
+    documents: [
+      series({
+        _id: 'drafts.gospel',
+        slug: slug('john'),
+        ordering: 'manual',
+        manualOrder: unsettledOrder,
+      }),
+      mediaItem('drafts.new', ['gospel']),
+    ],
+  })
+  const markers = (await studio.validate('drafts.gospel')).filter(({path}) =>
+    path.startsWith('manualOrder['),
+  )
+  assert.deepEqual(
+    markers
+      .map(({path, level, message}) => [path, level, message])
+      .sort((a, b) => a.join().localeCompare(b.join())),
+    [
+      ['manualOrder[_key=="gone"]', 'error', 'Referenced document must be published'],
+      ['manualOrder[_key=="new"]', 'error', 'Referenced document must be published'],
+      [
+        'manualOrder[_key=="new"]',
+        'warning',
+        "Only this media item's unpublished draft lists this series. Publish the item to add it to the series.",
+      ],
+    ],
+  )
+  await assert.rejects(studio.publish('gospel'), /Referenced document must be published/)
 })
 
 // Only the importer or the API can write one, so it's an error whichever order the series uses.
@@ -536,6 +581,12 @@ test("a manual order entry that isn't a reference is an error in any ordering", 
         .filter(({path}) => path.startsWith('manualOrder['))
         .map(({path, level, message}) => [path, level, message]),
       [['manualOrder[_key=="x"]', 'error', 'Must be a reference to a document']],
+      ordering,
+    )
+    assert.ok(
+      !studio
+        .hiddenFields(series({ordering, manualOrder: [{_key: 'x', _type: 'reference'}]}))
+        .includes('manualOrder'),
       ordering,
     )
   }

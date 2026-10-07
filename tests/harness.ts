@@ -318,6 +318,39 @@ function textOf(node: ReactNode): string {
   )
 }
 
+// A reference, as Sanity tells one apart: an object with a string _ref.
+const isReferenceValue = (value: unknown): value is {_ref: string; _weak?: unknown} =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as {_ref?: unknown})._ref === 'string'
+
+// What Sanity's publish writes for a value. A reference picked while its document was
+// unpublished carries _weak and _strengthenOnPublish. Publishing drops _strengthenOnPublish, and
+// drops _weak too unless the field is weak, which the marker records (lib/index.js:5611-5613).
+// Other references stay as they are.
+function strengthenOnPublish(value: unknown): unknown {
+  if (isReferenceValue(value)) {
+    const {_strengthenOnPublish: marker, ...rest} = value as Record<string, unknown>
+    if (!marker) return value
+    if ((marker as {weak?: unknown}).weak) return rest
+    const {_weak: _dropped, ...strong} = rest
+    return strong
+  }
+  if (Array.isArray(value)) return value.map(strengthenOnPublish)
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, strengthenOnPublish(child)]),
+  )
+}
+
+// The _ref of every strong reference in a value, at any depth: every reference without _weak.
+function strongReferences(value: unknown): string[] {
+  if (isReferenceValue(value)) return value._weak === true ? [] : [value._ref]
+  if (Array.isArray(value)) return value.flatMap(strongReferences)
+  if (typeof value !== 'object' || value === null) return []
+  return Object.values(value).flatMap(strongReferences)
+}
+
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
@@ -671,6 +704,16 @@ export function createHarness({
     _updatedAt: new Date().toISOString(),
   })
 
+  // Whether a referenced document exists, as Studio and Content Lake see it from a document in
+  // this release, or outside any release: when it's published. For a document in a release, the
+  // referenced document's version in that release decides first: a version the release deletes,
+  // with _system.delete, doesn't exist, and any other version does.
+  const referenceExists = (id: string, release?: string) => {
+    const version = release === undefined ? undefined : dataset.get(getVersionId(id, release))
+    if (version) return (version._system as {delete?: boolean} | undefined)?.delete !== true
+    return dataset.has(getPublishedId(id))
+  }
+
   // Runs Sanity's own validateDocument, as Studio does in the form, against the dataset.
   // Takes a document, or the _id of one in the dataset.
   async function validate(document: TestDocument | string): Promise<Marker[]> {
@@ -680,19 +723,11 @@ export function createHarness({
     if (!schema.get(value._type)) throw new Error(`No schema type named "${value._type}"`)
     // Without i18n on the workspace, Sanity falls back to its English messages.
     const workspace = {schema, getClient} as unknown as Workspace
-    // As in Studio, a referenced document exists when it's published. For a document in a
-    // release, the referenced document's version in that release decides first: a version the
-    // release deletes, with _system.delete, doesn't exist, and any other version does.
     const release = getVersionFromId(value._id)
-    const exists = (id: string) => {
-      const version = release === undefined ? undefined : dataset.get(getVersionId(id, release))
-      if (version) return (version._system as {delete?: boolean} | undefined)?.delete !== true
-      return dataset.has(getPublishedId(id))
-    }
     const markers = await validateDocument({
       document: value as SanityDocument,
       workspace,
-      getDocumentExists: async ({id}) => exists(id),
+      getDocumentExists: async ({id}) => referenceExists(id, release),
       environment: 'studio',
     })
     return markers.map(({path, level, message}) => ({path: pathToString(path), level, message}))
@@ -1051,7 +1086,10 @@ export function createHarness({
 
     // Makes the draft, or with release the version in that release, the published document, as
     // the Publish button or publishing a release does. Like Studio, it refuses a version with
-    // validation errors.
+    // validation errors. Then it writes what Sanity's publish writes, with each reference picked
+    // while its document was unpublished made strong. Like Content Lake, it refuses a strong
+    // reference to a document that isn't published. A release publishes as one transaction, so
+    // a version in the same release counts.
     async publish(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const pending = dataset.get(versionId(id, release))
@@ -1061,8 +1099,17 @@ export function createHarness({
         const list = problems.map(({path, message}) => `${path}: ${message}`).join('\n')
         throw new Error(`${pending._id} has validation errors:\n${list}`)
       }
+      const published = strengthenOnPublish({...pending, _id: publishedId}) as TestDocument
+      const missing = [...new Set(strongReferences(published))].filter(
+        (ref) => ref !== publishedId && !referenceExists(ref, release),
+      )
+      if (missing.length) {
+        throw new Error(
+          `Content Lake refuses ${publishedId}: it has a strong reference to ${missing.join(', ')}, which isn't published`,
+        )
+      }
       dataset.delete(pending._id)
-      store(touch({...pending, _id: publishedId}))
+      store(touch(published))
       return structuredClone(dataset.get(publishedId) as TestDocument)
     },
 

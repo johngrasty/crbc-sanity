@@ -26,8 +26,8 @@ const orderings = [
 
 const apiVersion = '2025-02-19'
 
-// The manual order counts only while the series uses it. The field is hidden otherwise, so an
-// editor couldn't see or fix what its rules report.
+// The manual order counts only while the series uses it, so its repeat and membership checks wait
+// for manual order.
 const usesManualOrder = ({document}: ValidationContext) =>
   (document as {ordering?: unknown} | undefined)?.ordering === 'manual'
 
@@ -83,10 +83,18 @@ const listingRule = (rule: ArrayRule<unknown[]>, listing: Listing, message: stri
 const withoutReferenceCheck = (rule: ReferenceRule) =>
   (rule as unknown as Rule).clone().reset() as unknown as ReferenceRule
 
-// An entry in the manual order. Sanity's own reference check would run while the order is hidden
-// too, so an item that was never published, or one that's gone, would block Publish from a field
-// the editor can't see. This rule makes the same checks with Sanity's messages, and checks that
-// the item is published only while the series uses manual order. The reference stays strong.
+// An entry that may stop the series from publishing: one that isn't a reference, or one Studio
+// stored while its item wasn't published, which carries _weak or _strengthenOnPublish. Content
+// Lake refuses to store a strong reference to a document that doesn't exist, in a draft too, so
+// every other entry points at a published item. An entry whose item has published since keeps
+// those marks until the series publishes, so it counts here without an error.
+const mayBlockPublish = (entry: unknown) =>
+  !isReference(entry) || entry._weak === true || entry._strengthenOnPublish !== undefined
+
+// An entry in the manual order. Publishing strengthens every entry, and Content Lake won't publish
+// a strong reference to an item that isn't published, in any ordering. So this rule makes Sanity's
+// own reference checks always. With another order the field is otherwise hidden, so its message
+// says the saved order is the problem.
 const orderEntry = defineArrayMember({
   type: 'reference',
   to: [{type: 'mediaItem'}],
@@ -94,12 +102,13 @@ const orderEntry = defineArrayMember({
     withoutReferenceCheck(rule).custom(async (entry, context) => {
       if (!entry) return true
       if (!isReference(entry)) return 'Must be a reference to a document'
-      if (!usesManualOrder(context)) return true
       if (!context.getDocumentExists) {
         throw new Error('getDocumentExists was not provided in the validation context')
       }
-      const published = await context.getDocumentExists({id: entry._ref})
-      return published ? true : 'Referenced document must be published'
+      if (await context.getDocumentExists({id: entry._ref})) return true
+      return usesManualOrder(context)
+        ? 'Referenced document must be published'
+        : "This saved manual order lists an item that isn't published. Publish it or remove it from the order."
     }),
 })
 
@@ -146,9 +155,13 @@ export default defineType({
       title: 'Manual order',
       type: 'array',
       description:
-        'Drag the media items into the order viewers see them in. Each item must also list this series in its own Series field.',
+        'Drag the media items into the order viewers see them in. Each item must also list this series in its own Series field. The website uses this order only when Order is Manual order.',
       of: [orderEntry],
-      hidden: ({document}) => document?.ordering !== 'manual',
+      // With another order, the saved order shows only when an entry would stop the series from
+      // publishing, so the editor can see the error and fix it.
+      hidden: ({document}) =>
+        document?.ordering !== 'manual' &&
+        !(Array.isArray(document?.manualOrder) && document.manualOrder.some(mayBlockPublish)),
       validation: (rule) => [
         rule.custom((order, context) =>
           usesManualOrder(context)
