@@ -71,8 +71,8 @@ import {
   formComponents,
   formFollowUps,
   newDocumentOptions,
-  releases,
   templates,
+  versioningOptions,
   type DocumentPatch,
   type FormFollowUp,
 } from '../structure/documentConfig'
@@ -239,7 +239,7 @@ const prepared = prepareConfig({
       templates(prev, context).filter(({schemaType}) => !probeTypes.has(schemaType)),
   },
   form: {components: formComponents},
-  releases,
+  ...versioningOptions,
   document: {actions: documentActions, newDocumentOptions},
 })
 
@@ -786,13 +786,16 @@ export function createHarness({
     },
 
     // Whether the workspace turns on Content Releases and scheduled drafts, as the resolved
-    // Source has them. Sanity loads the releases plugin only while releases are on, and its
-    // release tool while either is (lib/index.js:78134-78135). Releases are on unless the
-    // config turns them off.
-    versioning(): {releases: boolean; scheduledDrafts: boolean} {
+    // Source has them, and whether it loads the releases tool. Sanity loads the releases plugin
+    // only while releases are on, and the releases tool while either is
+    // (lib/index.js:78134-78135). Both are on unless the config turns them off.
+    versioning(): {releases: boolean; scheduledDrafts: boolean; releasesTool: boolean} {
       return {
         releases: source.releases?.enabled ?? true,
         scheduledDrafts: source.scheduledDrafts?.enabled ?? true,
+        // The tool's name in Sanity's schedules plugin, SCHEDULES_TOOL_NAME. Version chips open
+        // their right-click menu only while it's loaded.
+        releasesTool: source.tools.some(({name}) => name === 'releases'),
       }
     },
 

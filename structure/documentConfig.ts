@@ -27,13 +27,17 @@ import {formFollowUpInput} from './FormFollowUpInput'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
-// Content Releases stay off, whatever the plan allows. A release could unpublish a mirror
-// document: Sanity skips validation for a version marked to unpublish, so the published-ID rule
-// in readOnlyType wouldn't stop it, and Sanity has no per-type release setting. With releases
-// off, Sanity doesn't load the releases plugin and no version menu offers a new release.
-// Scheduled drafts stay on. Turning releases on needs a fresh review of the mirror types and of
-// slug history. See /tmp/studio-spec/reviews/mirrors-fable-5.1.md, finding 1.
-export const releases = {enabled: false}
+// Content Releases and scheduled drafts stay off, whatever the plan allows. A release could
+// unpublish a mirror document: Sanity skips validation for a version marked to unpublish, so the
+// published-ID rule in readOnlyType wouldn't stop it, and Sanity has no per-type release setting.
+// A scheduled draft is a one-document release, and once someone unschedules it, every release
+// path is back for it. With both off, Sanity loads neither plugin nor the releases tool, so
+// nothing in Studio creates a release or a version, and version chips have no right-click menu.
+// Turning either on needs a fresh review of the mirror types and of slug history.
+export const versioningOptions = {
+  releases: {enabled: false},
+  scheduledDrafts: {enabled: false},
+}
 
 export const documentActions: DocumentActionsResolver = (prev, context) => {
   // No action of any kind on the read-only types, in any version type. That includes Publish,

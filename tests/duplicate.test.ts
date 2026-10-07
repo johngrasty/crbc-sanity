@@ -136,13 +136,20 @@ const editorialActions = {
     'delete',
     'TaskCreateAction',
   ],
-  // Releases are off (structure/documentConfig.ts), so the releases plugin that trims a version's
-  // list doesn't load, and a version gets the draft's list. Studio opens a version only in a
-  // release perspective, which needs releases, so no editor sees this list.
+  // Releases and scheduled drafts are off (structure/documentConfig.ts), so neither plugin loads.
+  // Nothing trims a version's list, so a version gets the draft's, and nothing replaces a scheduled
+  // draft's, so it gets the structure tool's defaults. Studio opens either only inside a release,
+  // which it can no longer make, so no editor sees these lists. The editorial filter still takes
+  // Publish now and Schedule off a scheduled draft.
   version: editorialDraftActions,
-  // Sanity offers no Duplicate on a scheduled draft, so there's nothing to replace. Publish now
-  // is gone too.
-  'scheduled-draft': ['discardVersion'],
+  'scheduled-draft': [
+    'unpublish',
+    'duplicate',
+    'restore',
+    'discardChanges',
+    'delete',
+    'TaskCreateAction',
+  ],
   revision: [
     'publish',
     'unpublish',
@@ -169,8 +176,7 @@ test("the editorial types swap Sanity's Duplicate for the fresh-ID one in every 
         .actionDetails(type, versionType)
         .filter(({action}) => action === 'duplicate')
         .map(({component}) => component)
-      const expected = versionType === 'scheduled-draft' ? [] : ['FreshIdDuplicateAction']
-      assert.deepEqual(duplicates, expected, `${type} ${versionType}`)
+      assert.deepEqual(duplicates, ['FreshIdDuplicateAction'], `${type} ${versionType}`)
     }
   }
 })
@@ -188,12 +194,13 @@ test('the editorial types offer no scheduling in any version type', () => {
 })
 
 // On a scheduled draft, publish is Sanity's Publish now, which publishes without checking
-// validation (/tmp/studio-spec/reviews/ids-fable-5.1-r2.md, finding 8). Delete stays, so an
-// editor can still move a stray scheduled draft back to the draft.
-test('a scheduled draft of an editorial type offers only Delete, not Publish now', () => {
+// validation (/tmp/studio-spec/reviews/ids-fable-5.1-r2.md, finding 8). Scheduled drafts are off,
+// so Studio can't make or open one, but the filter still keeps Publish now off in case they
+// come back.
+test('a scheduled draft of an editorial type offers no Publish now', () => {
   const studio = createHarness()
   for (const type of editorialTypes) {
-    assert.deepEqual(studio.actions(type, 'scheduled-draft'), ['discardVersion'], type)
+    assert.ok(!studio.actions(type, 'scheduled-draft').includes('publish'), type)
     assert.ok(studio.actions(type, 'draft').includes('publish'), type)
   }
 })

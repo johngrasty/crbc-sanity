@@ -6,8 +6,10 @@ const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
 
 // What Sanity 4.22.1's plugin chain hands the root resolver for each versionType, with the
-// structure tool, tasks, canvas and scheduled drafts. Unnamed actions show their displayName.
-// Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1.
+// structure tool, tasks, canvas and legacy Scheduled Publishing. Unnamed actions show their
+// displayName. Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1. schedule is the
+// legacy ScheduleAction, which shows nothing until a workspace turns Scheduled Publishing on or the
+// dataset has used it, and neither has.
 const draftDefaults = [
   'publish',
   'schedule',
@@ -32,11 +34,21 @@ const sanityDefaults = {
     'delete',
     'TaskCreateAction',
   ],
-  // Releases are off (structure/documentConfig.ts), so the releases plugin that trims a version's
-  // list doesn't load, and a version gets the draft's list. Studio opens a version only in a
-  // release perspective, which needs releases, so no editor sees this list.
+  // Releases and scheduled drafts are off (structure/documentConfig.ts), so neither plugin loads.
+  // Nothing trims a version's list, so a version gets the draft's, and nothing replaces a scheduled
+  // draft's, so it gets the structure tool's defaults. Studio opens either only inside a release,
+  // which it can no longer make, so no editor sees these lists.
   version: draftDefaults,
-  'scheduled-draft': ['publish', 'schedule', 'discardVersion'],
+  'scheduled-draft': [
+    'publish',
+    'schedule',
+    'unpublish',
+    'duplicate',
+    'restore',
+    'discardChanges',
+    'delete',
+    'TaskCreateAction',
+  ],
   revision: [
     'publish',
     'schedule',
@@ -75,9 +87,9 @@ test('singletons keep only publish, discard and restore, in every version type',
   const kept = {
     draft: ['publish', 'restore', 'discardChanges'],
     published: ['publish', 'restore', 'discardChanges'],
-    // With releases off, a version gets the draft's list. See sanityDefaults.
+    // With releases and scheduled drafts off, these get the defaults too. See sanityDefaults.
     version: ['publish', 'restore', 'discardChanges'],
-    'scheduled-draft': ['publish'],
+    'scheduled-draft': ['publish', 'restore', 'discardChanges'],
     revision: ['publish', 'restore', 'discardChanges'],
   }
   for (const type of singletons) {
