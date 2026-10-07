@@ -574,6 +574,11 @@ export type MediaItem = {
     active?: boolean
     note?: string
   }
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
 }
 
 export type JobOpening = {
