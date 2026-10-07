@@ -295,6 +295,48 @@ test("a thumbnail more than 2% from 16:9 is a warning, by the asset's own width 
   assert.match(warningsAt(markers, 'artwork.thumbnail')[0].message, /1600 × 1200/)
 })
 
+// A whole-document paste or an API write can store one. The shape warning mustn't soften
+// Sanity's own check that a thumbnail is an image.
+test("a thumbnail that isn't an image is an error, on a series and on a media item", async () => {
+  for (const thumbnail of [123, 'easter.jpg', true, []]) {
+    const label = JSON.stringify(thumbnail)
+    const studio = createHarness({
+      documents: [series({_id: 'drafts.gospel', slug: slug('john'), artwork: {thumbnail}})],
+    })
+    const item = await studio.create('mediaItem')
+    await studio.edit(item._id, {set: {artwork: {thumbnail}}})
+    for (const _id of ['drafts.gospel', item._id]) {
+      const markers = (await studio.validate(_id)).filter(({path}) => path.startsWith('artwork'))
+      assert.deepEqual(
+        markers.map(({path, level}) => [path, level]),
+        [['artwork.thumbnail', 'error']],
+        `${_id} ${label}`,
+      )
+      await assert.rejects(studio.publish(_id), /artwork\.thumbnail/, `${_id} ${label}`)
+    }
+  }
+})
+
+test('a thumbnail that is a picture of another shape still publishes, with the warning', async () => {
+  const studio = createHarness({
+    documents: [
+      ...assets([1600, 1200]),
+      series({_id: 'drafts.gospel', slug: slug('john'), artwork: {thumbnail: picture(1600, 1200)}}),
+    ],
+  })
+  const item = await studio.create('mediaItem')
+  await studio.edit(item._id, {set: {artwork: {thumbnail: picture(1600, 1200)}}})
+  for (const _id of ['drafts.gospel', item._id]) {
+    const markers = (await studio.validate(_id)).filter(({path}) => path.startsWith('artwork'))
+    assert.deepEqual(
+      markers.map(({path, level}) => [path, level]),
+      [['artwork.thumbnail', 'warning']],
+      _id,
+    )
+    await studio.publish(_id)
+  }
+})
+
 test('a banner can have any shape, and artwork can be left out', async () => {
   const studio = createHarness({documents: assets([3000, 1000], [1080, 1920])})
   for (const artwork of [
@@ -431,6 +473,72 @@ test('a manual order is checked only while the series uses manual order', async 
     ['manualOrder[_key=="b"]', 'error'],
     ['manualOrder[_key=="b"]', 'error'],
   ])
+})
+
+// Sanity's own reference check on each entry waits for manual order too, so an item that was never
+// published, or one that's gone, can't block Publish from a hidden field.
+test("a hidden manual order doesn't block publishing, and its checks come back with manual order", async () => {
+  for (const ordering of ['newestFirst', 'oldestFirst']) {
+    const studio = createHarness({
+      documents: [
+        series({
+          _id: 'drafts.gospel',
+          slug: slug('john'),
+          ordering,
+          manualOrder: [weakReference('new', 'new', 'mediaItem'), reference('gone', 'gone')],
+        }),
+        mediaItem('drafts.new', ['gospel']),
+      ],
+    })
+    assert.deepEqual(
+      markersUnder(await studio.validate('drafts.gospel'), 'manualOrder'),
+      [],
+      ordering,
+    )
+    await studio.publish('gospel')
+
+    await studio.edit('gospel', {set: {ordering: 'manual'}})
+    const markers = (await studio.validate('drafts.gospel')).filter(({path}) =>
+      path.startsWith('manualOrder['),
+    )
+    assert.deepEqual(
+      markers
+        .map(({path, level, message}) => [path, level, message])
+        .sort((a, b) => a.join().localeCompare(b.join())),
+      [
+        ['manualOrder[_key=="gone"]', 'error', 'Referenced document must be published'],
+        ['manualOrder[_key=="new"]', 'error', 'Referenced document must be published'],
+        [
+          'manualOrder[_key=="new"]',
+          'warning',
+          "Only this media item's unpublished draft lists this series. Publish the item to add it to the series.",
+        ],
+      ],
+      ordering,
+    )
+    await assert.rejects(
+      studio.publish('gospel'),
+      /Referenced document must be published/,
+      ordering,
+    )
+  }
+})
+
+// Only the importer or the API can write one, so it's an error whichever order the series uses.
+test("a manual order entry that isn't a reference is an error in any ordering", async () => {
+  const studio = createHarness()
+  for (const ordering of ['newestFirst', 'oldestFirst', 'manual']) {
+    const markers = await studio.validate(
+      series({ordering, manualOrder: [{_key: 'x', _type: 'reference'}]}),
+    )
+    assert.deepEqual(
+      markers
+        .filter(({path}) => path.startsWith('manualOrder['))
+        .map(({path, level, message}) => [path, level, message]),
+      [['manualOrder[_key=="x"]', 'error', 'Must be a reference to a document']],
+      ordering,
+    )
+  }
 })
 
 test('a manual order lists each media item once', async () => {
