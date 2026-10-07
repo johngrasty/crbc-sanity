@@ -127,16 +127,22 @@ denyDns(dns.promises.Resolver.prototype, {promises: true})
 // Every worker gets the guard first. Workers run --require preloads in the order given, before
 // --import preloads and the worker's code, including eval workers, which skip --import. So the
 // guard goes first among the worker's own arguments, inherited or given, such as execArgv: [].
-// A worker also applies NODE_OPTIONS from its environment before those arguments, so when the
-// worker's environment has NODE_OPTIONS, the guard goes first there too. Workers also get the
-// report file in their environment. With SHARE_ENV the worker shares this process's environment,
-// which already has the report file.
+// A worker also applies NODE_OPTIONS from its environment before those arguments, so the guard
+// goes first there too: in a copied environment that has NODE_OPTIONS, and, for SHARE_ENV, in
+// this process's own NODE_OPTIONS, which the worker shares. The main process reads NODE_OPTIONS
+// only at startup, so changing it here affects only workers and child processes started later.
+// Workers also get the report file in their environment. SHARE_ENV already has it.
+const guardOption = `--require ${JSON.stringify(guardFile)}`
+const guardFirst = (options) =>
+  options.startsWith(guardOption) ? options : `${guardOption} ${options}`
+
 function workerEnv(env) {
-  if (typeof env === 'symbol') return env
-  const copy = {...(env ?? process.env), [REPORT]: process.env[REPORT]}
-  if (copy.NODE_OPTIONS) {
-    copy.NODE_OPTIONS = `--require ${JSON.stringify(guardFile)} ${copy.NODE_OPTIONS}`
+  if (typeof env === 'symbol') {
+    if (process.env.NODE_OPTIONS) process.env.NODE_OPTIONS = guardFirst(process.env.NODE_OPTIONS)
+    return env
   }
+  const copy = {...(env ?? process.env), [REPORT]: process.env[REPORT]}
+  if (copy.NODE_OPTIONS) copy.NODE_OPTIONS = guardFirst(copy.NODE_OPTIONS)
   return copy
 }
 
