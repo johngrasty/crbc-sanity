@@ -3,6 +3,7 @@
 // series, speakers and topics share this field: {...sourceField('series'), group: 'source'}.
 import {defineField, getPublishedId} from 'sanity'
 import {editorialIds, type EditorialType} from './editorialId'
+import {urlRule} from './url'
 
 const apiVersion = '2025-02-19'
 
@@ -39,10 +40,7 @@ export function sourceField(type: Exclude<EditorialType, 'serviceEvent'>) {
         name: 'sourceUrl',
         title: 'Source page',
         type: 'url',
-        validation: (rule) =>
-          rule
-            .uri({scheme: ['http', 'https']})
-            .error('Use a web address that starts with http:// or https://.'),
+        validation: (rule) => urlRule(rule),
       }),
       defineField({name: 'originalPublishedAt', title: 'First published', type: 'datetime'}),
     ],
