@@ -271,6 +271,88 @@ export type Hero = {
   }
 }
 
+export type MediaOpsBinding = {
+  _id: string
+  _type: 'mediaOpsBinding'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environments?: Array<'dev' | 'staging' | 'production'>
+}
+
+export type LiveStatus = {
+  _id: string
+  _type: 'liveStatus'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environment?: 'dev' | 'staging' | 'production'
+  channel?: string
+  resourceId?: string
+  sessionState?:
+    | 'armed'
+    | 'connecting'
+    | 'live'
+    | 'reconnecting'
+    | 'interrupted'
+    | 'ending'
+    | 'ended'
+    | 'abandoned'
+    | 'cancelled'
+  takenDown?: boolean
+  playableFrom?: string
+  endedAt?: string
+  event?: {
+    eventId?: string
+    contentId?: string
+    title?: string
+    scheduledStart?: string
+    seriesTitle?: string
+  }
+  nextEvent?: {
+    eventId?: string
+    contentId?: string
+    title?: string
+    scheduledStart?: string
+    seriesTitle?: string
+  }
+  playback?: {
+    hls?: string
+    hlsRoku?: string
+    expiresAt?: string
+  }
+  observedAt?: string
+  staleAfterSeconds?: 180 | 2700
+  mirrorGen?: number
+  mirrorSeq?: number
+}
+
+export type MediaRelease = {
+  _id: string
+  _type: 'mediaRelease'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  environment?: 'dev' | 'staging' | 'production'
+  contentId?: string
+  kind?: 'video' | 'nonvideo'
+  public?: boolean
+  assetId?: string
+  playbackId?: string
+  durationSeconds?: number
+  captions?: Array<{
+    language?: string
+    label?: string
+    kind?: 'live' | 'generated' | 'uploaded'
+    state?: 'requested' | 'processing' | 'available'
+    _key: string
+  }>
+  publishedAt?: string
+  releaseVersion?: number
+  mirrorGen?: number
+  mirrorSeq?: number
+}
+
 export type MediaSettings = {
   _id: string
   _type: 'mediaSettings'
@@ -1898,6 +1980,9 @@ export type AllSanitySchemaTypes =
   | RichText
   | LogoCloud
   | Hero
+  | MediaOpsBinding
+  | LiveStatus
+  | MediaRelease
   | MediaSettings
   | Topic
   | Speaker

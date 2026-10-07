@@ -34,6 +34,7 @@ import series from './media/series'
 import speaker from './media/speaker'
 import topic from './media/topic'
 import mediaSettings from './media/mediaSettings'
+import {readOnlyTypes} from './media/readOnlyTypes'
 import passage from './media/passage'
 
 export const schemaTypes = [
@@ -69,6 +70,7 @@ export const schemaTypes = [
   speaker,
   topic,
   mediaSettings,
+  ...readOnlyTypes,
   // Objects (Sections)
   hero,
   logoCloud,
