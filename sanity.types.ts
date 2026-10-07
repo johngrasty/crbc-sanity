@@ -87,6 +87,7 @@ export type Passage = {
   chapterEnd?: number
   verseEnd?: number
   display: string
+  generatedDisplay?: string
 }
 
 export type Statistic = {
