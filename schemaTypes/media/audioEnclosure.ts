@@ -114,11 +114,14 @@ export const audioEnclosureField = defineField({
   ],
 })
 
-// The form step that takes off podcast audio with none of its four fields. Sanity's form leaves an
-// empty object behind when an editor clears every field, and the four required fields would then
-// block Publish with nothing left to remove. Opening an item an API write left that way fixes it
-// too. An item has podcast audio once any of the four has a value.
-export const emptyAudioPatch: FormFollowUp = ({version}) =>
-  version.audioEnclosure === undefined || hasAudio(version.audioEnclosure)
-    ? null
-    : {unset: ['audioEnclosure']}
+// The form step that takes podcast audio off when an edit clears its last field, to nothing, null
+// or an empty string. Sanity's form leaves an empty object behind, and its four required fields
+// would then block Publish with nothing left to remove. When a form opens, previous is the
+// version itself, so the step never writes then. An empty object an API write left stays, and
+// shows its errors, until an editor changes it.
+export const emptyAudioPatch: FormFollowUp = ({previous, version}) =>
+  version.audioEnclosure !== undefined &&
+  !hasAudio(version.audioEnclosure) &&
+  hasAudio(previous.audioEnclosure)
+    ? {unset: ['audioEnclosure']}
+    : null
