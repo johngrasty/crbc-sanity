@@ -42,11 +42,13 @@ export const documentActions: DocumentActionsResolver = (prev, context) => {
   }
   // Sanity's Duplicate copies every field, the editorial ID too. The editorial types get the
   // fresh-ID Duplicate in its place. They also lose Schedule, because a scheduled draft is
-  // validated only when Schedule is clicked and then publishes without another check. This goes
-  // by type name, so a type gets both once it's listed in editorialIds.
+  // validated only when Schedule is clicked and then publishes without another check. On a
+  // scheduled draft they lose Publish now as well, which skips validation, and keep Delete. This
+  // goes by type name, so a type gets all of it once it's listed in editorialIds.
   if (editorialIdFor(context.schemaType)) {
+    const scheduled = context.versionType === 'scheduled-draft'
     return prev
-      .filter((action) => action.action !== 'schedule')
+      .filter(({action}) => action !== 'schedule' && !(scheduled && action === 'publish'))
       .map((action) => (action.action === 'duplicate' ? FreshIdDuplicateAction : action))
   }
   return previewableTypes.has(context.schemaType) ? [...prev, PreviewAction] : prev
