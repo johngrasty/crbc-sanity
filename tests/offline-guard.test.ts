@@ -1,4 +1,4 @@
-// The offline guard in tests/loader/offline.mjs, checked from outside. Each case runs a child
+// The offline guard in tests/loader/offline.cjs, checked from outside. Each case runs a child
 // process that makes one network attempt and catches the error, as Sanity's getCurrentUser does.
 // Without the guard, the attempt reaches a receiver in this process, which shows the receiver
 // works. With the guard, the child exits nonzero and nothing arrives. The receivers listen on
@@ -16,12 +16,13 @@ import {after, before, test} from 'node:test'
 import {setTimeout as wait} from 'node:timers/promises'
 import {fileURLToPath} from 'node:url'
 
-const guard = fileURLToPath(new URL('./loader/offline.mjs', import.meta.url))
+const guard = fileURLToPath(new URL('./loader/offline.cjs', import.meta.url))
 
 // Children run from files here rather than with -e, because a worker inherits its process's
 // arguments, and -e with --input-type would break it.
 const scratch = mkdtempSync(join(tmpdir(), 'offline-guard-'))
 let children = 0
+const setupModule = join(scratch, 'worker-setup.cjs')
 
 let hits = 0
 const ports: Record<string, number> = {}
@@ -46,6 +47,11 @@ before(async () => {
   ports.PORT6 = (tcp6.address() as net.AddressInfo).port
   ports.UDP = udp.address().port
   ports.UDP6 = udp6.address().port
+  // A worker setup module that connects to the TCP receiver, for the preload cases.
+  writeFileSync(
+    setupModule,
+    `require('node:net').connect(${ports.PORT}, '127.0.0.1').on('error', () => {})\n`,
+  )
 })
 after(() => {
   tcp.close()
@@ -55,14 +61,20 @@ after(() => {
   rmSync(scratch, {recursive: true, force: true})
 })
 
-// Puts the receivers' ports in place of PORT, PORT6, UDP and UDP6.
+// Puts the receivers' ports in place of PORT, PORT6, UDP and UDP6, and the setup module's path,
+// as a string literal, in place of SETUP.
 const withPorts = (code: string) =>
-  code.replaceAll(/\b(PORT6|PORT|UDP6|UDP)\b/g, (name) => String(ports[name]))
+  code.replaceAll(/\b(PORT6|PORT|UDP6|UDP|SETUP)\b/g, (name) =>
+    name === 'SETUP' ? JSON.stringify(setupModule) : String(ports[name]),
+  )
 
 // Runs code in a child process, with or without the guard, and reports its exit status and how
 // many connections and packets the receivers saw. The child exits after half a second at most,
 // so a DNS query nobody answers doesn't hang it.
-async function attempt(code: string, {guarded}: {guarded: boolean}) {
+async function attempt(
+  code: string,
+  {guarded, before = []}: {guarded: boolean; before?: string[]},
+) {
   hits = 0
   const source = `
     import dgram from 'node:dgram'
@@ -79,7 +91,7 @@ async function attempt(code: string, {guarded}: {guarded: boolean}) {
   `
   const file = join(scratch, `child-${++children}.mjs`)
   writeFileSync(file, source)
-  const args = [...(guarded ? ['--import', guard] : []), file]
+  const args = [...before, ...(guarded ? ['--require', guard] : []), file]
   const child = spawn(process.execPath, args, {stdio: ['ignore', 'ignore', 'pipe']})
   let stderr = ''
   child.stderr.on('data', (chunk) => (stderr += chunk))
@@ -215,6 +227,16 @@ const cases: {name: string; code: string; observable: boolean}[] = [
     code: `new Worker("import net from 'node:net'; net.connect(PORT, '127.0.0.1').on('error', () => {})", {eval: true, execArgv: ['--input-type=module']}).on('error', ${ignore})`,
     observable: true,
   },
+  {
+    name: 'worker setup module loaded with --require',
+    code: `inWorker('0', {execArgv: ['--require', SETUP]})`,
+    observable: true,
+  },
+  {
+    name: "worker setup module in the worker's NODE_OPTIONS",
+    code: `inWorker('0', {env: {...process.env, NODE_OPTIONS: '--require ' + JSON.stringify(SETUP)}})`,
+    observable: true,
+  },
 ]
 
 for (const {name, code, observable} of cases) {
@@ -245,4 +267,15 @@ test('the offline guard leaves Unix sockets open, because they are local IPC', a
   } finally {
     server.close()
   }
+})
+
+test('the guard runs before a preload listed ahead of it on the command line', async () => {
+  // Node runs --require preloads before --import preloads, whatever their order.
+  const before = ['--import', setupModule]
+  const open = await attempt('0', {guarded: false, before})
+  assert.ok(open.hits > 0, 'without the guard, the setup module should reach the receiver')
+  const guarded = await attempt('0', {guarded: true, before})
+  assert.notEqual(guarded.status, 0, `the child should fail. stderr: ${guarded.stderr}`)
+  assert.match(guarded.stderr, /Tests run offline/)
+  assert.equal(guarded.hits, 0, 'the setup module reached the receiver through the guard')
 })
