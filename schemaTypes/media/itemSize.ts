@@ -1,9 +1,11 @@
-// The size check for media items (contract section 10.2, spec proposal S3). The public API serves
-// an item only when its ItemDetail fits in 200,000 bytes of compact UTF-8 JSON. Studio can't build
+// The size check for media items (contract section 10.2, erratum E19). The public API serves an
+// item only when its ItemDetail fits in 200,000 bytes of compact UTF-8 JSON. Studio can't build
 // that response, so it measures the stored item the same way and adds a fixed allowance for each
-// value the website expands from another document or computes. Each allowance is the size of the
-// longest value the contract's JSON Schema allows in that place, measured with the same counter, so
-// the estimate never comes in under the response. The website's itemFits stays the final check.
+// value the website expands from another document or computes. Each allowance is the longest value
+// the contract's JSON Schema allows in that place, measured with the same counter, except where a
+// comment below assumes what Sanity and Postgres produce: an ASCII lqip and MIME type, and at most
+// nine digits of a second. The schema allows values past those, so this is an estimate, not a
+// bound, and the website's itemFits stays the final check.
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import {ITEM_MAX_BYTES} from '../../media-contract/src/size'
 import {serializedSize} from './bytes'
