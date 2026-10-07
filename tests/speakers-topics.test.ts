@@ -453,7 +453,7 @@ test('the Media section lists speakers and topics after media items, A to Z', as
   )
 })
 
-// A reference field's picker searches its target type the same way.
+// The global search, with published documents only.
 test("Studio's search finds a speaker or topic under any of its aliases", async () => {
   const studio = createHarness({
     documents: [
@@ -468,4 +468,75 @@ test("Studio's search finds a speaker or topic under any of its aliases", async 
   assert.deepEqual(await studio.search('ann', ['speaker']), ['guest'])
   assert.deepEqual(await studio.search('mercy', ['topic']), ['grace'])
   assert.deepEqual(await studio.search('mercy', ['speaker', 'topic']), ['grace'])
+})
+
+// An editor's new speakers and topics, and their edits, are drafts until they publish.
+const drafted: TestDocument[] = [
+  {_id: 'drafts.new-speaker', _type: 'speaker', name: 'Ann Lee', aliases: ['Sister Ann']},
+  {_id: 'drafts.new-topic', _type: 'topic', label: 'Hope', aliases: ['Expectation']},
+  {_id: 'pastor', _type: 'speaker', name: 'Sam Jones', aliases: ['Pastor Sam']},
+  {_id: 'drafts.pastor', _type: 'speaker', name: 'Sam Jones', aliases: ['Pastor Sam', 'Preacher']},
+]
+
+// Global search reads every version through the raw perspective, then shows each document once:
+// its draft, else its published version, else a release version.
+test("Studio's global search finds draft-only speakers and topics, and aliases added in a draft", async () => {
+  const studio = createHarness({documents: drafted})
+  assert.deepEqual(await studio.search('sister', ['speaker']), ['drafts.new-speaker'])
+  assert.deepEqual(await studio.search('expectation', ['topic']), ['drafts.new-topic'])
+  assert.deepEqual(await studio.search('preacher', ['speaker']), ['drafts.pastor'])
+})
+
+test("Studio's global search shows the draft when both versions match", async () => {
+  const studio = createHarness({documents: drafted})
+  assert.deepEqual(await studio.search('pastor', ['speaker']), ['drafts.pastor'])
+})
+
+// A reference field's picker searches in the editor's perspective: drafts over published by
+// default, or a release over drafts over published. Each row has the published _id.
+test("a reference field's picker finds draft speakers and topics in the drafts perspective", async () => {
+  const studio = createHarness({
+    documents: [
+      ...drafted,
+      {_id: 'versions.rSpring.guest', _type: 'speaker', name: 'Guest', aliases: ['Visitor']},
+    ],
+  })
+  const drafts = {perspective: ['drafts']}
+  assert.deepEqual(await studio.search('sister', ['speaker'], drafts), ['new-speaker'])
+  assert.deepEqual(await studio.search('expectation', ['topic'], drafts), ['new-topic'])
+  assert.deepEqual(await studio.search('preacher', ['speaker'], drafts), ['pastor'])
+  assert.deepEqual(await studio.search('pastor', ['speaker'], drafts), ['pastor'])
+  assert.deepEqual(await studio.search('visitor', ['speaker'], drafts), [])
+  // The published perspective leaves drafts out.
+  const published = {perspective: ['published']}
+  assert.deepEqual(await studio.search('sister', ['speaker'], published), [])
+  assert.deepEqual(await studio.search('preacher', ['speaker'], published), [])
+})
+
+test("a reference field's picker finds a release's speakers and topics in that release's perspective", async () => {
+  const studio = createHarness({
+    documents: [
+      ...drafted,
+      // The release renames the alias the draft added, so its version wins over the draft.
+      {_id: 'versions.rSpring.pastor', _type: 'speaker', name: 'Sam Jones', aliases: ['Elder Sam']},
+      {_id: 'versions.rSpring.guest', _type: 'speaker', name: 'Guest', aliases: ['Visitor']},
+      {_id: 'versions.rSpring.lent', _type: 'topic', label: 'Lent', aliases: ['Fasting']},
+      {_id: 'versions.rAutumn.harvest', _type: 'topic', label: 'Harvest', aliases: ['Thanks']},
+    ],
+  })
+  const spring = {perspective: ['rSpring', 'drafts']}
+  assert.deepEqual(await studio.search('elder', ['speaker'], spring), ['pastor'])
+  assert.deepEqual(await studio.search('preacher', ['speaker'], spring), [])
+  assert.deepEqual(await studio.search('visitor', ['speaker'], spring), ['guest'])
+  assert.deepEqual(await studio.search('fasting', ['topic'], spring), ['lent'])
+  // Drafts still show under the release, and other releases don't.
+  assert.deepEqual(await studio.search('sister', ['speaker'], spring), ['new-speaker'])
+  assert.deepEqual(await studio.search('thanks', ['topic'], spring), [])
+})
+
+test("the harness refuses a search perspective it can't model", async () => {
+  const studio = createHarness({documents: drafted})
+  for (const perspective of [['raw'], ['previewDrafts']]) {
+    await assert.rejects(studio.search('sam', ['speaker'], {perspective}), /perspective/)
+  }
 })
