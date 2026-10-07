@@ -22,6 +22,7 @@ export type PassageValue = {
   chapterEnd?: number
   verseEnd?: number
   display?: string
+  generatedDisplay?: string
 }
 
 const isMissing = (value: unknown): value is undefined | null =>
@@ -56,22 +57,33 @@ export function referenceText(passage: PassageValue | undefined): string | undef
   return `${name} ${start}${end}`
 }
 
-// The display text a change to a passage should leave, or undefined to leave it as it is. When
-// the reference changes, an empty display text gets the new reference. So does one that still
-// reads as Studio wrote it for the reference before the change. Wording an editor chose stays.
-export function displayAfterChange(
+// The fields a change to a passage should set so its display text follows the reference, or
+// null to leave it. Studio owns the display text while it's empty, while it's the text Studio
+// last wrote there, kept in generatedDisplay, or while it reads as Studio writes the reference
+// before the change. Wording an editor typed is none of these, so it stays. When the reference
+// has no text for a while, such as a range into a later chapter waiting for its end verse, or a
+// cleared book, the display text stays and generatedDisplay records that it's still Studio's.
+// Nothing happens unless the reference's text changed, so opening a document writes nothing.
+export function displayUpdate(
   before: PassageValue | undefined,
   after: PassageValue | undefined,
-): string | undefined {
+): Pick<PassageValue, 'display' | 'generatedDisplay'> | null {
   const previous = referenceText(before)
   const next = referenceText(after)
-  if (next === undefined || next === previous || after?.display === next) return undefined
-  return !after?.display?.trim() || after.display === previous ? next : undefined
+  if (!after || next === previous) return null
+  const {display, generatedDisplay} = after
+  const owned = !display?.trim() || display === generatedDisplay || display === previous
+  if (!owned) return null
+  if (next === undefined) {
+    return display?.trim() && display !== generatedDisplay ? {generatedDisplay: display} : null
+  }
+  if (display === next && generatedDisplay === next) return null
+  return {display: next, generatedDisplay: next}
 }
 
 // The media item's follow-up step: as an editor changes a passage's reference, Studio fills in
-// its display text or keeps it in step, as displayAfterChange decides. A passage counts as the
-// same one by its _key, and a new or pasted one is compared with no passage at all. When the form
+// its display text or keeps it in step, as displayUpdate decides. A passage counts as the same
+// one by its _key, and a new or pasted one is compared with no passage at all. When the form
 // loads, previous is the same as version, so nothing changes.
 export const passageDisplayPatch: FormFollowUp = ({previous, version}) => {
   type Item = PassageValue & {_key?: unknown}
@@ -80,9 +92,10 @@ export const passageDisplayPatch: FormFollowUp = ({previous, version}) => {
   const set: Record<string, string> = {}
   for (const item of items(version.passages)) {
     if (typeof item?._key !== 'string') continue
-    const display = displayAfterChange(before.get(item._key), item)
-    if (display === undefined) continue
-    set[patchPath(['passages', {_key: item._key}, 'display'])] = display
+    const update = displayUpdate(before.get(item._key), item)
+    for (const [field, value] of Object.entries(update ?? {})) {
+      set[patchPath(['passages', {_key: item._key}, field])] = value
+    }
   }
   return Object.keys(set).length ? {set} : null
 }
@@ -181,6 +194,16 @@ export default defineType({
       description:
         'What viewers read, such as James 1:2-4. Studio fills it in from the book, chapters and verses, and you can change the wording.',
       validation: (rule) => [rule.required(), labelLimit(rule)],
+    }),
+    // The display text Studio last wrote, so it knows the display text is still its own after
+    // the reference passes through a state with no text. It's Studio's bookkeeping, not part of
+    // the contract's passage, so readers that build the public item leave it out.
+    defineField({
+      name: 'generatedDisplay',
+      title: 'Display text Studio wrote',
+      type: 'string',
+      hidden: true,
+      readOnly: true,
     }),
   ],
   // The row shows what viewers read, with the reference under it when the wording differs.
