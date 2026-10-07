@@ -42,6 +42,11 @@ const formPatches = ({set: values = {}, unset: paths = []}: DocumentPatch) => [
   ...paths.map((path) => unset(parsePatchPath(path))),
 ]
 
+// How many times the runner sends one patch for one document and one _rev. See FollowUps.
+const MAX_SENDS_PER_REVISION = 3
+
+type SendCounts = {id: string; rev: unknown; byPatch: Map<string, number>}
+
 // What the runner reads about the document's stored versions. In Studio that's Sanity's
 // useEditState. DOM tests pass their own, because jsdom has no document store.
 export type UseStoredVersions = (
@@ -62,7 +67,7 @@ function FollowUps({steps, useStoredVersions, ...props}: FollowUpsProps) {
     schemaType.name,
   )
   const previous = useRef(version)
-  const lastSent = useRef<{rev: unknown; patch: string} | null>(null)
+  const sends = useRef<SendCounts | null>(null)
 
   // Patching during render throws, so the steps run in an effect. It runs after each change to
   // the form value, including a remote edit, and when the published document or the draft
@@ -82,13 +87,21 @@ function FollowUps({steps, useStoredVersions, ...props}: FollowUpsProps) {
       readOnly: Boolean(readOnly),
     })
     if (!patch) return
-    // When the server refuses a write, Sanity resets the value to the server's head, with the same
-    // _rev, and the steps compute the same patch again. Send it once for each revision. A patch
-    // that applied changes the value, so this never holds back a real write.
-    const sending = {rev: version._rev, patch: JSON.stringify(patch)}
-    const last = lastSent.current
-    if (last && last.rev === sending.rev && last.patch === sending.patch) return
-    lastSent.current = sending
+    // When the server refuses a write, Sanity resets the value to the server's head, the steps
+    // compute the same patch again, and the runner would resend it forever. A local edit can need
+    // the same patch again too, and the form value keeps the head's _rev through local edits, so
+    // the two look alike. So the runner sends one patch at most three times for one document and
+    // one _rev, and the count starts again when the _rev changes.
+    const counts = sends.current
+    const current =
+      counts && counts.id === version._id && counts.rev === version._rev
+        ? counts
+        : {id: version._id, rev: version._rev, byPatch: new Map<string, number>()}
+    sends.current = current
+    const text = JSON.stringify(patch)
+    const sent = current.byPatch.get(text) ?? 0
+    if (sent >= MAX_SENDS_PER_REVISION) return
+    current.byPatch.set(text, sent + 1)
     onChange(formPatches(patch))
   }, [draft, steps, onChange, published, readOnly, ready, version])
 
