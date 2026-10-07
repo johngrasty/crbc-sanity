@@ -105,6 +105,8 @@ export default defineType({
       name: 'ordering',
       title: 'Order',
       type: 'string',
+      description:
+        'How the website and apps list the recordings in this series. Manual order lets you drag them into place.',
       options: {list: orderings, layout: 'radio'},
       initialValue: 'newestFirst',
       validation: (rule) => rule.required(),
