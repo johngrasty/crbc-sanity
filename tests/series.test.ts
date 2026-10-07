@@ -295,6 +295,48 @@ test("a thumbnail more than 2% from 16:9 is a warning, by the asset's own width 
   assert.match(warningsAt(markers, 'artwork.thumbnail')[0].message, /1600 × 1200/)
 })
 
+// A whole-document paste or an API write can store one. The shape warning mustn't soften
+// Sanity's own check that a thumbnail is an image.
+test("a thumbnail that isn't an image is an error, on a series and on a media item", async () => {
+  for (const thumbnail of [123, 'easter.jpg', true, []]) {
+    const label = JSON.stringify(thumbnail)
+    const studio = createHarness({
+      documents: [series({_id: 'drafts.gospel', slug: slug('john'), artwork: {thumbnail}})],
+    })
+    const item = await studio.create('mediaItem')
+    await studio.edit(item._id, {set: {artwork: {thumbnail}}})
+    for (const _id of ['drafts.gospel', item._id]) {
+      const markers = (await studio.validate(_id)).filter(({path}) => path.startsWith('artwork'))
+      assert.deepEqual(
+        markers.map(({path, level}) => [path, level]),
+        [['artwork.thumbnail', 'error']],
+        `${_id} ${label}`,
+      )
+      await assert.rejects(studio.publish(_id), /artwork\.thumbnail/, `${_id} ${label}`)
+    }
+  }
+})
+
+test('a thumbnail that is a picture of another shape still publishes, with the warning', async () => {
+  const studio = createHarness({
+    documents: [
+      ...assets([1600, 1200]),
+      series({_id: 'drafts.gospel', slug: slug('john'), artwork: {thumbnail: picture(1600, 1200)}}),
+    ],
+  })
+  const item = await studio.create('mediaItem')
+  await studio.edit(item._id, {set: {artwork: {thumbnail: picture(1600, 1200)}}})
+  for (const _id of ['drafts.gospel', item._id]) {
+    const markers = (await studio.validate(_id)).filter(({path}) => path.startsWith('artwork'))
+    assert.deepEqual(
+      markers.map(({path, level}) => [path, level]),
+      [['artwork.thumbnail', 'warning']],
+      _id,
+    )
+    await studio.publish(_id)
+  }
+})
+
 test('a banner can have any shape, and artwork can be left out', async () => {
   const studio = createHarness({documents: assets([3000, 1000], [1080, 1920])})
   for (const artwork of [

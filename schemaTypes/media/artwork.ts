@@ -2,7 +2,7 @@
 // lists, YouTube and Facebook, and a wide banner for the top of its page. Series and media items
 // share this field: artworkField('series') or {...artworkField('mediaItem'), group: 'artwork'}.
 import {tryGetImageDimensions} from '@sanity/asset-utils'
-import {defineField} from 'sanity'
+import {ConcreteRuleClass, defineField} from 'sanity'
 import {labelLimit} from './limits'
 
 type ArtworkType = 'mediaItem' | 'series'
@@ -59,7 +59,11 @@ export function artworkField(type: ArtworkType) {
         description: thumbnail,
         options: {hotspot: true},
         fields: [altField],
-        validation: (rule) => rule.custom(thumbnailShape).warning(),
+        // The rule Sanity hands the field checks that the value is an image, and .warning() would
+        // soften that check too. So that rule stays an error, and the shape warning starts from a
+        // bare rule with no checks of its own. ConcreteRuleClass is Sanity's Rule class, exported
+        // but tagged internal.
+        validation: (rule) => [rule, new ConcreteRuleClass().custom(thumbnailShape).warning()],
       }),
       defineField({
         name: 'banner',
