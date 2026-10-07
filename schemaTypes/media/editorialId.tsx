@@ -146,10 +146,13 @@ export function editorialIdField(type: EditorialType) {
         )
         // Catches an ID changed by paste or through the API before it can publish.
         const kept = idToKeep(context.document._id, {published, draft})
-        if (kept && kept.id !== value) {
-          const holder =
-            kept.from === 'published' ? `The published ${id.noun}` : `The draft of this ${id.noun}`
-          return `${holder} has the ${id.label} ${kept.id}. IDs never change, so discard this change.`
+        if (kept?.from === 'published' && kept.id !== value) {
+          return `The published ${id.noun} has the ${id.label} ${kept.id}. IDs never change, so discard this change.`
+        }
+        // Before the first publish the draft's ID wins, wherever the change was made. Opening the
+        // release version runs the form's ID step, which sets it to match.
+        if (kept?.from === 'draft' && kept.id !== value) {
+          return `The draft of this ${id.noun} has the ${id.label} ${kept.id}. Open this version and Studio gives it the draft's ID.`
         }
         // A published document owns its ID, so only another published document can take it from
         // its owner. A draft that copies the ID is blocked, and doesn't block the owner.
