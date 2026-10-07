@@ -7,6 +7,14 @@ import {urlRule} from './url'
 
 const apiVersion = '2025-02-19'
 
+// True when podcast audio has a value in any of its four fields.
+function hasAudio(audio: unknown): boolean {
+  const fields = (audio ?? {}) as Record<string, unknown>
+  return ['url', 'mimeType', 'bytes', 'guid'].some(
+    (field) => fields[field] !== undefined && fields[field] !== null && fields[field] !== '',
+  )
+}
+
 const formats = [
   {title: 'MP3 (audio/mpeg)', value: 'audio/mpeg'},
   {title: 'M4A (audio/mp4)', value: 'audio/mp4'},
@@ -19,6 +27,22 @@ export const audioEnclosureField = defineField({
   type: 'object',
   description:
     'The audio file podcast apps play for this item. Fill in all four fields, or leave them all empty.',
+  // A draft or release version that takes the published item's podcast audio off.
+  validation: (rule) =>
+    rule
+      .custom(async (audio, context) => {
+        if (hasAudio(audio) || !context.document) return true
+        const publishedId = getPublishedId(context.document._id)
+        if (context.document._id === publishedId) return true
+        const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
+        const published: unknown = await client.fetch(`*[_id == $publishedId][0].audioEnclosure`, {
+          publishedId,
+        })
+        return hasAudio(published)
+          ? 'Podcast apps will drop this episode, because the published item has podcast audio and this version has none. Put it back unless you mean to take the episode down.'
+          : true
+      })
+      .warning(),
   fields: [
     defineField({
       name: 'url',
@@ -95,12 +119,7 @@ export const audioEnclosureField = defineField({
 // empty object behind when an editor clears every field, and the four required fields would then
 // block Publish with nothing left to remove. Opening an item an API write left that way fixes it
 // too. An item has podcast audio once any of the four has a value.
-export const emptyAudioPatch: FormFollowUp = ({version}) => {
-  const audio = version.audioEnclosure
-  if (audio === undefined) return null
-  const fields = (audio ?? {}) as Record<string, unknown>
-  const filled = ['url', 'mimeType', 'bytes', 'guid'].some(
-    (field) => fields[field] !== undefined && fields[field] !== null && fields[field] !== '',
-  )
-  return filled ? null : {unset: ['audioEnclosure']}
-}
+export const emptyAudioPatch: FormFollowUp = ({version}) =>
+  version.audioEnclosure === undefined || hasAudio(version.audioEnclosure)
+    ? null
+    : {unset: ['audioEnclosure']}

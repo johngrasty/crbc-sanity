@@ -196,9 +196,34 @@ test("changing a published item's podcast GUID is a warning, in a draft or a rel
   }
 })
 
+test('taking the podcast audio off a published item is a warning, in a draft or a release version', async () => {
+  for (const release of [undefined, 'rSpring']) {
+    const studio = createHarness({documents: [item({audioEnclosure})]})
+    const kept = await studio.edit('item', {set: {title: 'Easter'}}, {release})
+    assert.deepEqual(warningsAt(await studio.validate(kept._id), 'audioEnclosure'), [], kept._id)
+    const removed = await studio.edit('item', {unset: ['audioEnclosure']}, {release})
+    const markers = await studio.validate(removed._id)
+    assert.equal(warningsAt(markers, 'audioEnclosure').length, 1, removed._id)
+    assert.deepEqual(errors(markers), [], removed._id)
+  }
+  // Clearing all four fields takes the audio off too.
+  const studio = createHarness({documents: [item({audioEnclosure})]})
+  const cleared = await studio.edit('item', {
+    unset: [
+      'audioEnclosure.url',
+      'audioEnclosure.mimeType',
+      'audioEnclosure.bytes',
+      'audioEnclosure.guid',
+    ],
+  })
+  assert.equal(warningsAt(await studio.validate(cleared._id), 'audioEnclosure').length, 1)
+})
+
 test('a GUID on an item that was never published, or published without audio, is no warning', async () => {
   const studio = createHarness({documents: [{...item({audioEnclosure}), _id: 'drafts.item'}]})
   assert.deepEqual(warningsAt(await studio.validate('drafts.item'), 'audioEnclosure.guid'), [])
+  const unpublished = await studio.edit('item', {unset: ['audioEnclosure']})
+  assert.deepEqual(warningsAt(await studio.validate(unpublished._id), 'audioEnclosure'), [])
 
   const withoutAudio = createHarness({documents: [item()]})
   const draft = await withoutAudio.edit('item', {set: {audioEnclosure}})
