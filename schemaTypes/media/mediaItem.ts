@@ -124,6 +124,28 @@ export default defineType({
       validation: (rule) => characterLimit(rule, 5000),
       group: 'details',
     }),
+    // Contract section 10.2 allows 10 series on an item. media-ops holds the recording until the
+    // item has one, as it does for the title and date, so a missing series is a warning.
+    defineField({
+      name: 'series',
+      title: 'Series',
+      type: 'array',
+      description:
+        'The series this recording belongs to, up to 10. Put the main series first, because YouTube and Facebook titles use the first one.',
+      of: [{type: 'reference', to: [{type: 'series'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 10, 'series'),
+        noRepeats(rule, referencedId, 'This series is already on the item.'),
+        rule
+          .custom((value) =>
+            value?.length
+              ? true
+              : "Add a series. The recording won't publish until the item has one.",
+          )
+          .warning(),
+      ],
+      group: 'details',
+    }),
     defineField({
       name: 'serviceDate',
       title: 'Service date',
