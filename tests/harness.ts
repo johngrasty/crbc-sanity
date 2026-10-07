@@ -36,7 +36,6 @@ import {
   prepareForPreview,
   resolveInitialValue,
   resolveInitialValueForType,
-  stringToPath,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
@@ -75,6 +74,7 @@ import {
   type FormFollowUp,
 } from '../structure/documentConfig'
 import {followUpPatch} from '../structure/FormFollowUpInput'
+import {parsePatchPath} from '../structure/patchPath'
 
 export type {FormFollowUp}
 
@@ -416,7 +416,7 @@ function parentAt(document: TestDocument, path: Path, create: boolean): Containe
 function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatch): TestDocument {
   const next = structuredClone(document)
   for (const [path, value] of Object.entries(set)) {
-    const segments = stringToPath(path)
+    const segments = parsePatchPath(path)
     const last = segments[segments.length - 1]
     const parent = parentAt(next, segments, true)
     if (Array.isArray(parent)) {
@@ -427,7 +427,7 @@ function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatc
     }
   }
   for (const path of unset) {
-    const segments = stringToPath(path)
+    const segments = parsePatchPath(path)
     const last = segments[segments.length - 1]
     const parent = parentAt(next, segments, false)
     if (Array.isArray(parent)) {

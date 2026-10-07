@@ -1,15 +1,10 @@
 // A scripture passage on a media item (contract section 3): a book, chapters and verses, and the
 // text viewers read. The website and apps browse and filter by book.
 import {BookOpen} from 'lucide-react'
-import {
-  defineArrayMember,
-  defineField,
-  defineType,
-  pathToString,
-  type ValidationContext,
-} from 'sanity'
+import {defineArrayMember, defineField, defineType, type ValidationContext} from 'sanity'
 import contract from '../../media-contract/schemas/media-v1.schema.json' with {type: 'json'}
 import type {FormFollowUp} from '../../structure/documentConfig'
+import {patchPath} from '../../structure/patchPath'
 import {bookFor, books} from './books'
 import {labelLimit} from './limits'
 import {itemLimit} from './lists'
@@ -87,7 +82,7 @@ export const passageDisplayPatch: FormFollowUp = ({previous, version}) => {
     if (typeof item?._key !== 'string') continue
     const display = displayAfterChange(before.get(item._key), item)
     if (display === undefined) continue
-    set[pathToString(['passages', {_key: item._key}, 'display'])] = display
+    set[patchPath(['passages', {_key: item._key}, 'display'])] = display
   }
   return Object.keys(set).length ? {set} : null
 }
