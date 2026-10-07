@@ -195,6 +195,26 @@ const cases: {name: string; code: string; observable: boolean}[] = [
       getnameinfo(request, '127.0.0.1', 22)`,
     observable: false,
   },
+  {
+    name: 'worker with inherited arguments',
+    code: `inWorker("import net from 'node:net'; net.connect(PORT, '127.0.0.1').on('error', () => {})")`,
+    observable: true,
+  },
+  {
+    name: 'worker with execArgv: []',
+    code: `inWorker("import net from 'node:net'; net.connect(PORT, '127.0.0.1').on('error', () => {})", {execArgv: []})`,
+    observable: true,
+  },
+  {
+    name: 'eval worker',
+    code: `new Worker("require('node:net').connect(PORT, '127.0.0.1').on('error', () => {})", {eval: true}).on('error', ${ignore})`,
+    observable: true,
+  },
+  {
+    name: 'module eval worker',
+    code: `new Worker("import net from 'node:net'; net.connect(PORT, '127.0.0.1').on('error', () => {})", {eval: true, execArgv: ['--input-type=module']}).on('error', ${ignore})`,
+    observable: true,
+  },
 ]
 
 for (const {name, code, observable} of cases) {
