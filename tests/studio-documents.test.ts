@@ -6,22 +6,23 @@ const errorsAt = (markers: Marker[], path: string) =>
   markers.filter((marker) => marker.level === 'error' && marker.path === path)
 
 // What Sanity 4.22.1's plugin chain hands the root resolver for each versionType, with the
-// structure tool, tasks, canvas, releases and scheduled drafts. Unnamed actions show their
-// displayName. Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1.
+// structure tool, tasks, canvas and scheduled drafts. Unnamed actions show their displayName.
+// Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1.
+const draftDefaults = [
+  'publish',
+  'schedule',
+  'unpublish',
+  'duplicate',
+  'restore',
+  'discardChanges',
+  'TaskCreateAction',
+  'linkToCanvas',
+  'unlinkFromCanvas',
+  'editInCanvas',
+  'delete',
+]
 const sanityDefaults = {
-  draft: [
-    'publish',
-    'schedule',
-    'unpublish',
-    'duplicate',
-    'restore',
-    'discardChanges',
-    'TaskCreateAction',
-    'linkToCanvas',
-    'unlinkFromCanvas',
-    'editInCanvas',
-    'delete',
-  ],
+  draft: draftDefaults,
   published: [
     'unpublish',
     'publish',
@@ -31,14 +32,10 @@ const sanityDefaults = {
     'delete',
     'TaskCreateAction',
   ],
-  version: [
-    'duplicate',
-    'unpublishVersion',
-    'linkToCanvas',
-    'unlinkFromCanvas',
-    'editInCanvas',
-    'discardVersion',
-  ],
+  // Releases are off (structure/documentConfig.ts), so the releases plugin that trims a version's
+  // list doesn't load, and a version gets the draft's list. Studio opens a version only in a
+  // release perspective, which needs releases, so no editor sees this list.
+  version: draftDefaults,
   'scheduled-draft': ['publish', 'schedule', 'discardVersion'],
   revision: [
     'publish',
@@ -78,7 +75,8 @@ test('singletons keep only publish, discard and restore, in every version type',
   const kept = {
     draft: ['publish', 'restore', 'discardChanges'],
     published: ['publish', 'restore', 'discardChanges'],
-    version: [],
+    // With releases off, a version gets the draft's list. See sanityDefaults.
+    version: ['publish', 'restore', 'discardChanges'],
     'scheduled-draft': ['publish'],
     revision: ['publish', 'restore', 'discardChanges'],
   }

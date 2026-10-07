@@ -37,6 +37,7 @@ const readOnlyTypes = Object.keys(writers)
 type JsonSchema = {
   $ref?: string
   type?: string | string[]
+  enum?: unknown[]
   properties?: Record<string, JsonSchema>
   items?: JsonSchema
   allOf?: JsonSchema[]
@@ -66,6 +67,25 @@ function schemaFields(schema: JsonSchema, prefix = '', found = new Map<string, s
     if (!name.startsWith('_')) schemaFields(property, prefix ? `${prefix}.${name}` : name, found)
   }
   if (schema.items) schemaFields(schema.items, `${prefix}[]`, found)
+  return found
+}
+
+// The values each field of a JSON Schema definition can take, where the contract lists them,
+// without null. For example kind gives video and nonvideo.
+function schemaEnums(schema: JsonSchema, prefix = '', found = new Map<string, unknown[]>()) {
+  if (schema.$ref) schemaEnums(definitions[schema.$ref.replace('#/$defs/', '')], prefix, found)
+  for (const branch of [...(schema.allOf ?? []), ...(schema.oneOf ?? [])]) {
+    schemaEnums(branch, prefix, found)
+  }
+  if (prefix && schema.enum)
+    found.set(
+      prefix,
+      schema.enum.filter((value) => value !== null),
+    )
+  for (const [name, property] of Object.entries(schema.properties ?? {})) {
+    if (!name.startsWith('_')) schemaEnums(property, prefix ? `${prefix}.${name}` : name, found)
+  }
+  if (schema.items) schemaEnums(schema.items, `${prefix}[]`, found)
   return found
 }
 
@@ -106,6 +126,30 @@ test('the mirror types declare every field of their contract definitions, with i
   }
 })
 
+test("each list of choices on the read-only types is the contract's list of values", () => {
+  // Without a validation function a list checks nothing, so only this test catches a list that
+  // drifts from the contract. The lists set the generated types' unions and the inputs' titles.
+  const studio = createHarness()
+  const lists = (type: string) =>
+    Object.fromEntries(
+      studio
+        .fields(type)
+        .filter(({list}) => list)
+        .map(({path, list}) => [path, list]),
+    )
+  for (const [type, definition] of [
+    ['mediaRelease', 'SanityMediaRelease'],
+    ['liveStatus', 'SanityLiveStatus'],
+  ]) {
+    assert.deepEqual(lists(type), Object.fromEntries(schemaEnums(definitions[definition])), type)
+  }
+  const environments = definitions.Environment.enum
+  assert.deepEqual(lists('mediaOpsBinding'), {
+    environments,
+    'environments[]': environments,
+  })
+})
+
 test('the mirror types declare every field the fixtures use', () => {
   const studio = createHarness()
   for (const fixture of fixtures) {
@@ -128,6 +172,8 @@ test("a draft or release version of a read-only document is an error, so it can'
       const errors = errorsAt(await studio.validate(_id), '')
       assert.equal(errors.length, 1, _id)
       assert.ok(errors[0].message.startsWith(`${writers[sample._type]} writes this document`), _id)
+      // The chip menu's Discard version removes a stray draft or version, never the published one.
+      assert.match(errors[0].message, /choose Discard version\.$/, _id)
     }
     await assert.rejects(studio.publish(sample._id), /validation errors/)
     await assert.rejects(studio.publish(sample._id, {release: 'rSpring'}), /validation errors/)
@@ -337,4 +383,78 @@ test('the form says who writes a read-only document, above its fields', () => {
     "An admin writes this document. Editors can't change it.",
   )
   assert.equal(studio.form('mediaItem').notice, undefined)
+})
+
+test("the harness locks the form for the action flags as Studio's form does", async () => {
+  // The harness registers a probe type for each set of flags. Studio's form refuses every patch
+  // unless update is enabled. While the value it shows has no _id, it needs create too.
+  const cases = [
+    {type: 'harnessActionsDefault', stored: true, initial: true, initialWithoutId: true},
+    {type: 'harnessActionsNone', stored: false, initial: false, initialWithoutId: false},
+    {type: 'harnessActionsUpdate', stored: true, initial: true, initialWithoutId: false},
+    {type: 'harnessActionsCreate', stored: false, initial: false, initialWithoutId: false},
+  ]
+  const patch = {set: {title: 'Changed'}}
+  // Whether the form takes the patch. A refused patch writes nothing.
+  const accepts = async (
+    seeded: TestDocument[],
+    edit: (studio: ReturnType<typeof createHarness>) => Promise<unknown>,
+  ) => {
+    const studio = createHarness({documents: seeded})
+    try {
+      await edit(studio)
+      assert.equal(studio.documents().find(({_id}) => _id === 'drafts.doc')?.title, 'Changed')
+      return true
+    } catch (error) {
+      assert.match(String(error), /^Error: Attempted to patch a read-only document$/)
+      assert.deepEqual(studio.documents(), seeded)
+      return false
+    }
+  }
+  for (const {type, ...expected} of cases) {
+    const stored = {_id: 'doc', _type: type}
+    const actual = {
+      stored: await accepts([stored], (studio) => studio.edit('doc', patch)),
+      initial: await accepts([], (studio) =>
+        studio.edit('doc', patch, {initialValue: {_id: 'doc', _type: type}}),
+      ),
+      initialWithoutId: await accepts([], (studio) =>
+        studio.edit('doc', patch, {initialValue: {_type: type}}),
+      ),
+    }
+    assert.deepEqual(actual, expected, type)
+
+    // Opening a stored draft runs the follow-up steps only when the form takes patches.
+    const step = () => ({set: {title: 'Stepped'}})
+    const draft = {_id: 'drafts.doc', _type: type}
+    const studio = createHarness({documents: [draft], followUps: {[type]: [step]}})
+    const opened = await studio.open('doc')
+    assert.equal(opened.title === 'Stepped', expected.stored, `open ${type}`)
+  }
+})
+
+test('the workspace turns Content Releases off and keeps scheduled drafts', () => {
+  // On a plan with Content Releases, a release could unpublish a mirror. Sanity skips
+  // validation for a version marked to unpublish, so the ID rule wouldn't stop it. With
+  // releases off, Sanity doesn't load the releases plugin, and no chip menu offers a new release.
+  assert.deepEqual(createHarness().versioning(), {releases: false, scheduledDrafts: true})
+})
+
+test("readOnlyType keeps a wrapped type's own rule and input", async () => {
+  // The harness registers harnessReadOnlyProbe, wrapped in readOnlyType, with a document rule and
+  // an input of its own. The three read-only types have neither today.
+  const studio = createHarness()
+  const probe = {_id: 'probe', _type: 'harnessReadOnlyProbe'}
+  const published = await studio.validate(probe)
+  assert.deepEqual(
+    published.map(({path, level, message}) => [path, level, message]),
+    [['', 'error', 'The probe rule ran.']],
+  )
+  const draft = await studio.validate({...probe, _id: 'drafts.probe'})
+  assert.equal(errorsAt(draft, '').length, 2)
+  assert.ok(errorsAt(draft, '').some(({message}) => message.startsWith('The harness writes')))
+  assert.equal(
+    studio.form('harnessReadOnlyProbe').notice,
+    "The harness writes this document. Editors can't change it. The probe input's own text.",
+  )
 })

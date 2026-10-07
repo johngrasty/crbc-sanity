@@ -21,13 +21,15 @@ test('the Media section opens the one media settings document', async () => {
 
 test('media settings keeps only publish, discard and restore, in every version type', () => {
   const studio = createHarness()
-  // Sanity's lists for each version type, filtered to the three singleton actions. A release
-  // version has none of them, and a scheduled draft only its own publish. Source:
-  // /tmp/studio-spec/notes/01-sanity-research.md, question 1.
+  // Sanity's lists for each version type, filtered to the three singleton actions. A scheduled
+  // draft has only its own publish. Source: /tmp/studio-spec/notes/01-sanity-research.md, question
+  // 1. Releases are off (structure/documentConfig.ts), so the releases plugin that trims a
+  // version's list doesn't load, and a version gets the draft's list. Studio opens a version only
+  // in a release perspective, which needs releases, so no editor sees this list.
   const expected = {
     draft: ['publish', 'restore', 'discardChanges'],
     published: ['publish', 'restore', 'discardChanges'],
-    version: [],
+    version: ['publish', 'restore', 'discardChanges'],
     'scheduled-draft': ['publish'],
     revision: ['publish', 'restore', 'discardChanges'],
   }
@@ -222,12 +224,14 @@ test('a media settings document under any other ID is an error, in every version
 
 // A media settings document under any other ID keeps only delete, so an editor can remove it.
 // Sanity's lists have delete for drafts, published documents and revisions, and none for a
-// release version or a scheduled draft. Source: /tmp/studio-spec/notes/01-sanity-research.md,
-// question 1.
+// scheduled draft. Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1.
+// Releases are off (structure/documentConfig.ts), so the releases plugin that trims a version's
+// list doesn't load, and a version gets the draft's list. Studio opens a version only in a release
+// perspective, which needs releases, so no editor sees this list.
 const strayActions = {
   draft: ['delete'],
   published: ['delete'],
-  version: [],
+  version: ['delete'],
   'scheduled-draft': [],
   revision: ['delete'],
 }
