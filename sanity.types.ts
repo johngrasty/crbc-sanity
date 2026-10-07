@@ -564,6 +564,21 @@ export type MediaItem = {
       _key: string
     } & Passage
   >
+  documents?: Array<{
+    label: string
+    file: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.fileAsset'
+      }
+      media?: unknown
+      _type: 'file'
+    }
+    _type: 'mediaDocument'
+    _key: string
+  }>
   publicationPolicy: 'auto' | 'manual'
   publishAt?: string
   editorHold?: {

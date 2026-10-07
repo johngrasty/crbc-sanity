@@ -1,4 +1,4 @@
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
 import {itemLimit, noRepeats, referencedId} from './lists'
 import {editorialIdField} from './editorialId'
@@ -81,6 +81,7 @@ export default defineType({
   groups: [
     {name: 'details', title: 'Details', default: true},
     {name: 'peopleAndScripture', title: 'People and scripture'},
+    {name: 'artwork', title: 'Artwork and files'},
     {name: 'publishing', title: 'Publishing'},
     {name: 'source', title: 'Source'},
   ],
@@ -209,6 +210,37 @@ export default defineType({
       group: 'peopleAndScripture',
     }),
     {...passagesField, group: 'peopleAndScripture'},
+    // Contract section 10.2 allows 50 documents on an item.
+    defineField({
+      name: 'documents',
+      title: 'Documents',
+      type: 'array',
+      description: 'Files viewers can download, such as sermon notes or a handout, up to 50.',
+      of: [
+        defineArrayMember({
+          name: 'mediaDocument',
+          title: 'Document',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'label',
+              title: 'Label',
+              type: 'string',
+              description: 'What viewers see on the download link, such as Sermon notes.',
+              validation: (rule) => [rule.required(), labelLimit(rule)],
+            }),
+            defineField({
+              name: 'file',
+              title: 'File',
+              type: 'file',
+              validation: (rule) => rule.required(),
+            }),
+          ],
+        }),
+      ],
+      validation: (rule) => itemLimit(rule, 50, 'documents'),
+      group: 'artwork',
+    }),
     {...publicationPolicyField, group: 'publishing'},
     defineField({
       name: 'publishAt',
