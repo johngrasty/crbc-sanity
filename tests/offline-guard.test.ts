@@ -279,3 +279,18 @@ test('the guard runs before a preload listed ahead of it on the command line', a
   assert.match(guarded.stderr, /Tests run offline/)
   assert.equal(guarded.hits, 0, 'the setup module reached the receiver through the guard')
 })
+
+test("an eval worker whose 'use strict' has no semicolon still runs, with or without the guard", async () => {
+  const code = `
+    const source = "'use strict'\\nrequire('node:worker_threads').parentPort.postMessage(42)"
+    let message
+    new Worker(source, {eval: true, execArgv: []})
+      .on('message', (value) => (message = value))
+      .on('error', (error) => console.error(error))
+      .on('exit', (code) => process.exit(code === 0 && message === 42 ? 0 : 3))
+  `
+  for (const guarded of [false, true]) {
+    const result = await attempt(code, {guarded})
+    assert.equal(result.status, 0, `guarded: ${guarded}. stderr: ${result.stderr}`)
+  }
+})
