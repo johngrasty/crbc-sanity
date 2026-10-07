@@ -253,3 +253,18 @@ test("a media item's artwork, documents and podcast audio sit under Artwork and 
   assert.equal(group('source')?.title, 'Source')
   assert.deepEqual(group('source')?.fields, ['source'])
 })
+
+test('clearing every podcast audio field takes the podcast audio off, so the item can still publish', async () => {
+  const studio = createHarness({documents: [item()]})
+  await studio.edit('item', {set: {'audioEnclosure.url': audioEnclosure.url}})
+  const cleared = await studio.edit('item', {unset: ['audioEnclosure.url']})
+  assert.equal('audioEnclosure' in cleared, false)
+  assert.deepEqual(errors(await studio.validate(cleared._id)), [])
+
+  // An empty object an API write left goes when an editor opens the item.
+  const written = createHarness({
+    documents: [item(), {...item(), _id: 'drafts.item', audioEnclosure: {}}],
+  })
+  const opened = await written.open('item')
+  assert.equal('audioEnclosure' in opened, false)
+})

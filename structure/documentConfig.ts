@@ -10,6 +10,7 @@ import {
   type TemplateResolver,
 } from 'sanity'
 import {CalendarClock} from 'lucide-react'
+import {emptyAudioPatch} from '../schemaTypes/media/audioEnclosure'
 import {
   editorialIdFor,
   editorialIds,
@@ -159,7 +160,8 @@ const keepId: FormFollowUp = ({version, published, draft}) => {
 }
 
 // Each type's follow-up steps, in order. Every type with a slug keeps its slug history, a media item
-// fills in its passages' display text, and then every editorial type keeps its ID.
+// fills in its passages' display text and drops empty podcast audio, and then every editorial type
+// keeps its ID.
 const slugSteps: Partial<Record<string, FormFollowUp[]>> = Object.fromEntries(
   Object.keys(slugTypes).map((type) => [type, [slugHistoryPatch]]),
 )
@@ -167,7 +169,7 @@ const slugSteps: Partial<Record<string, FormFollowUp[]>> = Object.fromEntries(
 export const formFollowUps: Partial<Record<string, FormFollowUp[]>> = {
   serviceEvent: [fillSlotLength],
   ...slugSteps,
-  mediaItem: [...(slugSteps.mediaItem ?? []), passageDisplayPatch],
+  mediaItem: [...(slugSteps.mediaItem ?? []), passageDisplayPatch, emptyAudioPatch],
 }
 for (const type of Object.keys(editorialIds)) {
   formFollowUps[type] = [...(formFollowUps[type] ?? []), keepId]

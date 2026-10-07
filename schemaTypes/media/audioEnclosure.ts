@@ -2,6 +2,7 @@
 // that tells them which episode it is. The importer and editors write it. Duplicate drops it,
 // because the GUID names the original's episode.
 import {defineField, getPublishedId} from 'sanity'
+import type {FormFollowUp} from '../../structure/documentConfig'
 import {urlRule} from './url'
 
 const apiVersion = '2025-02-19'
@@ -89,3 +90,17 @@ export const audioEnclosureField = defineField({
     }),
   ],
 })
+
+// The form step that takes off podcast audio with none of its four fields. Sanity's form leaves an
+// empty object behind when an editor clears every field, and the four required fields would then
+// block Publish with nothing left to remove. Opening an item an API write left that way fixes it
+// too. An item has podcast audio once any of the four has a value.
+export const emptyAudioPatch: FormFollowUp = ({version}) => {
+  const audio = version.audioEnclosure
+  if (audio === undefined) return null
+  const fields = (audio ?? {}) as Record<string, unknown>
+  const filled = ['url', 'mimeType', 'bytes', 'guid'].some(
+    (field) => fields[field] !== undefined && fields[field] !== null && fields[field] !== '',
+  )
+  return filled ? null : {unset: ['audioEnclosure']}
+}
