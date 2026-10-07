@@ -26,6 +26,14 @@ import {formFollowUpInput} from './FormFollowUpInput'
 import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
+// Content Releases stay off, whatever the plan allows. A release could unpublish a mirror
+// document: Sanity skips validation for a version marked to unpublish, so the published-ID rule
+// in readOnlyType wouldn't stop it, and Sanity has no per-type release setting. With releases
+// off, Sanity doesn't load the releases plugin and no version menu offers a new release.
+// Scheduled drafts stay on. Turning releases on needs a fresh review of the mirror types and of
+// slug history. See /tmp/studio-spec/reviews/mirrors-fable-5.1.md, finding 1.
+export const releases = {enabled: false}
+
 export const documentActions: DocumentActionsResolver = (prev, context) => {
   // No action of any kind on the read-only types, in any version type. That includes Publish,
   // Duplicate, Discard, the scheduled-draft Schedule, Create task and the release actions.
@@ -104,8 +112,8 @@ export const templates: TemplateResolver = (prev) =>
 export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter(({templateId}) => !singletonsWithTemplates.has(templateId))
 
-// A patch for one document version. Keys in set and entries in unset are paths in Sanity's string
-// form, such as title, editorHold.note or passages[_key=="a"].display.
+// A patch for one document version. Keys in set and entries in unset are paths such as title,
+// editorHold.note or passages[_key=="a"].display. Write one with patchPath from patchPath.ts.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step keeps fields of a draft or release version in step as the editor works.

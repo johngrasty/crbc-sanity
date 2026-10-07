@@ -7,7 +7,6 @@ import {
   isDraftId,
   isVersionId,
   set,
-  stringToPath,
   unset,
   useEditState,
   type InputProps,
@@ -15,6 +14,7 @@ import {
   type SanityDocumentLike,
 } from 'sanity'
 import type {DocumentPatch, FormFollowUp} from './documentConfig'
+import {parsePatchPath} from './patchPath'
 
 // The one patch the form applies to the version it shows, from every step in order, or null
 // when there's nothing to change. The runner and the harness both call this. It's null while the
@@ -36,20 +36,33 @@ export function followUpPatch(
   return merged.set || merged.unset ? merged : null
 }
 
-// Patch paths are in Sanity's string form, so a step can reach into an array item by its _key.
+// The harness reads patch paths with the same parsePatchPath.
 const formPatches = ({set: values = {}, unset: paths = []}: DocumentPatch) => [
-  ...Object.entries(values).map(([path, value]) => set(value, stringToPath(path))),
-  ...paths.map((path) => unset(stringToPath(path))),
+  ...Object.entries(values).map(([path, value]) => set(value, parsePatchPath(path))),
+  ...paths.map((path) => unset(parsePatchPath(path))),
 ]
 
-function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}) {
+// What the runner reads about the document's stored versions. In Studio that's Sanity's
+// useEditState. DOM tests pass their own, because jsdom has no document store.
+export type UseStoredVersions = (
+  publishedId: string,
+  typeName: string,
+) => {draft: SanityDocumentLike | null; published: SanityDocumentLike | null; ready: boolean}
+
+type FollowUpsProps = ObjectInputProps & {
+  steps: FormFollowUp[]
+  useStoredVersions: UseStoredVersions
+}
+
+function FollowUps({steps, useStoredVersions, ...props}: FollowUpsProps) {
   const {onChange, readOnly, schemaType} = props
   const version = props.value as SanityDocumentLike | undefined
-  const {draft, published, ready} = useEditState(
+  const {draft, published, ready} = useStoredVersions(
     getPublishedId(version?._id ?? ''),
     schemaType.name,
   )
   const previous = useRef(version)
+  const lastSent = useRef<{rev: unknown; patch: string} | null>(null)
 
   // Patching during render throws, so the steps run in an effect. It runs after each change to
   // the form value, including a remote edit, and when the published document or the draft
@@ -68,7 +81,15 @@ function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}
       draft: draft ?? null,
       readOnly: Boolean(readOnly),
     })
-    if (patch) onChange(formPatches(patch))
+    if (!patch) return
+    // When the server refuses a write, Sanity resets the value to the server's head, with the same
+    // _rev, and the steps compute the same patch again. Send it once for each revision. A patch
+    // that applied changes the value, so this never holds back a real write.
+    const sending = {rev: version._rev, patch: JSON.stringify(patch)}
+    const last = lastSent.current
+    if (last && last.rev === sending.rev && last.patch === sending.patch) return
+    lastSent.current = sending
+    onChange(formPatches(patch))
   }, [draft, steps, onChange, published, readOnly, ready, version])
 
   return props.renderDefault(props)
@@ -76,12 +97,21 @@ function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}
 
 // The form input for sanity.config.ts's form.components. It wraps only the root input of a
 // document type that has follow-up steps.
-export function formFollowUpInput(followUps: Partial<Record<string, FormFollowUp[]>>) {
+export function formFollowUpInput(
+  followUps: Partial<Record<string, FormFollowUp[]>>,
+  useStoredVersions: UseStoredVersions = useEditState,
+) {
   return function FormFollowUpInput(props: InputProps) {
     const steps = followUps[props.schemaType.name]
     if (props.id !== 'root' || props.schemaType.type?.name !== 'document' || !steps?.length) {
       return props.renderDefault(props)
     }
-    return <FollowUps {...(props as ObjectInputProps)} steps={steps} />
+    return (
+      <FollowUps
+        {...(props as ObjectInputProps)}
+        steps={steps}
+        useStoredVersions={useStoredVersions}
+      />
+    )
   }
 }

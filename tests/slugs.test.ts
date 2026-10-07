@@ -279,3 +279,23 @@ test('a draft left behind when a release publishes a new slug catches up when op
   assert.equal(slugOf(published), 'easter')
   assert.deepEqual(history(published), ['easter-sunday'])
 })
+
+test('an imported draft whose old slugs are plain strings keeps every one when opened', async () => {
+  // An importer may write the history the way the public API lists it, as strings.
+  const imported = item({
+    _id: 'drafts.item',
+    slug: slug('easter-2026'),
+    slugHistory: ['easter', {_key: 'h1', ...slug('resurrection')}, 'easter-sunday'],
+  })
+  const studio = createHarness({documents: [imported]})
+  const draft = await studio.open('item')
+  assert.deepEqual(history(draft), ['easter', 'resurrection', 'easter-sunday'])
+  for (const entry of draft.slugHistory as Record<string, unknown>[]) {
+    assert.equal(entry._type, 'slug')
+    assert.equal(typeof entry._key, 'string')
+  }
+  const keys = (draft.slugHistory as {_key: string}[]).map(({_key}) => _key)
+  assert.equal(new Set(keys).size, keys.length)
+  assert.equal(keys[1], 'h1')
+  assert.deepEqual(errorsAt(await studio.validate(draft), 'slugHistory'), [])
+})

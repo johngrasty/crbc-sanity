@@ -319,6 +319,13 @@
             "type": "string"
           },
           "optional": false
+        },
+        "generatedDisplay": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
         }
       }
     }
