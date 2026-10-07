@@ -7,8 +7,10 @@ import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
 import speakingurl from 'speakingurl'
 import type {ClientPerspective} from '@sanity/client'
-import {isValidElement, type ReactNode} from 'react'
+import {createElement, isValidElement, type ReactNode} from 'react'
+import {renderToStaticMarkup} from 'react-dom/server'
 import {defer, firstValueFrom} from 'rxjs'
+import {studioTheme, ThemeProvider} from '@sanity/ui'
 import {assist} from '@sanity/assist'
 import {visionTool} from '@sanity/vision'
 import {
@@ -20,11 +22,14 @@ import {
   defineType,
   getDraftId,
   getPublishedId,
+  getSearchableTypes,
   getVersionFromId,
   getVersionId,
   isArraySchemaType,
   isDraftId,
+  isObjectSchemaType,
   isPublishedId,
+  isReferenceSchemaType,
   isVersionId,
   pathToString,
   prepareConfig,
@@ -36,6 +41,7 @@ import {
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type InputProps,
   type KeyedSegment,
   type NewDocumentCreationContext,
   type ObjectSchemaType,
@@ -271,6 +277,77 @@ function textOf(node: ReactNode): string {
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
+// Whether Studio's document form accepts a patch. The form locks itself, throws "Attempted to
+// patch a read-only document" and sends nothing when the type's __experimental_actions leave
+// out update, or leave out create for a document that doesn't exist yet (lib/index.js:58356
+// and 58498). A type without the flag allows every action. This copies isActionEnabled from
+// @sanity/schema/_internal (lib/_internal.js:504-519), which isn't one of the Studio's
+// dependencies.
+function formAccepts(type: SchemaType, action: 'create' | 'update') {
+  const actions = '__experimental_actions' in type ? type.__experimental_actions : undefined
+  return actions === undefined || actions.includes(action)
+}
+
+// The text a document type's own input shows above the fields. The harness can't mount
+// Studio's form, so it renders the type's components.input to static HTML, inside the theme
+// Studio provides, with the fields Sanity renders through renderDefault stubbed out.
+const entities: Record<string, string> = {amp: '&', lt: '<', gt: '>', quot: '"', '#x27': "'"}
+function formNotice(schemaType: SchemaType): string | undefined {
+  const Input = schemaType.components?.input
+  if (!Input) return undefined
+  const fields = '[fields]'
+  const props = {schemaType, readOnly: true, renderDefault: () => fields} as unknown as InputProps
+  const html = renderToStaticMarkup(
+    createElement(ThemeProvider, {theme: studioTheme}, createElement(Input, props)),
+  )
+  if (!html.includes(fields))
+    throw new Error(`The ${schemaType.name} input doesn't render its fields`)
+  const text = html
+    .slice(0, html.indexOf(fields))
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(amp|lt|gt|quot|#x27);/g, (_: string, entity: string) => entities[entity])
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text || undefined
+}
+
+// The document types global search covers, as Sanity selects them. The type filter, recent
+// searches and the release tool's "Add document" use the same list. getSearchableTypes is
+// Sanity's export, and the omnisearch flag filter copies getSearchableOmnisearchTypes, which
+// isn't exported (lib/index.js:50487-50489).
+const globalSearchTypes = (): string[] =>
+  getSearchableTypes(schema)
+    .filter((type) => type.__experimental_omnisearch_visibility !== false)
+    .map(({name}) => name)
+
+// A field a type declares, at any depth, as Sanity compiled it. path is dotted, with [] for an
+// array's members, for example captions[].label. readOnly is the declared value, so a callback
+// stays a function. A reference lists the types it can point to.
+export type SchemaField = {path: string; jsonType: string; readOnly: unknown; to?: string[]}
+
+// Walks a compiled type's fields and array members. Names that start with _, such as a
+// reference's _ref, are Sanity's own. A type already open higher up the path isn't walked again,
+// so a type that contains itself ends.
+function declaredFields(type: SchemaType, prefix = '', open = new Set<SchemaType>()) {
+  const found: SchemaField[] = []
+  if (open.has(type)) return found
+  open = new Set(open).add(type)
+  const add = (path: string, member: SchemaType) => {
+    const field: SchemaField = {path, jsonType: member.jsonType, readOnly: member.readOnly}
+    if (isReferenceSchemaType(member)) field.to = member.to.map(({name}) => name)
+    found.push(field, ...declaredFields(member, path, open))
+  }
+  if (isObjectSchemaType(type)) {
+    for (const {name, type: member} of type.fields) {
+      if (!name.startsWith('_')) add(prefix ? `${prefix}.${name}` : name, member)
+    }
+  }
+  if (isArraySchemaType(type)) {
+    for (const member of type.of) add(`${prefix}[]`, member)
+  }
+  return found
+}
+
 // One document action as Studio resolves it. action is the name Sanity copies into the action's
 // state, component is the component's displayName or function name, and keptWhenLinkedToCanvas
 // says whether Sanity's Canvas guard leaves it enabled on a document linked to Canvas.
@@ -498,6 +575,8 @@ export function createHarness({
   async function validate(document: TestDocument | string): Promise<Marker[]> {
     const value = typeof document === 'string' ? dataset.get(document) : document
     if (!value) throw new Error(`No document with _id "${document}"`)
+    // Sanity skips a type the schema doesn't have and returns no markers, which would pass.
+    if (!schema.get(value._type)) throw new Error(`No schema type named "${value._type}"`)
     // Without i18n on the workspace, Sanity falls back to its English messages.
     const workspace = {schema, getClient} as unknown as Workspace
     // As in Studio, a referenced document exists when it's published. For a document in a
@@ -605,6 +684,52 @@ export function createHarness({
       }
     },
 
+    // The document types global search covers. See globalSearchTypes.
+    searchTypes: globalSearchTypes,
+
+    // The document form for a type. readOnly is the type's own declared value, which locks every
+    // input in the form. notice is the text the type's own input shows above the fields, or
+    // undefined when it shows none.
+    form(type: string): {readOnly: unknown; notice?: string} {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No schema type named "${type}"`)
+      return {readOnly: schemaType.readOnly, notice: formNotice(schemaType)}
+    },
+
+    // The names of every registered document type, plugin types included.
+    documentTypes(): string[] {
+      return schema
+        .getTypeNames()
+        .filter((name) => schema.get(name)?.type?.name === 'document')
+        .sort()
+    },
+
+    // Every field the registered type declares, at any depth. See SchemaField.
+    fields(type: string): SchemaField[] {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No schema type named "${type}"`)
+      return declaredFields(schemaType)
+    },
+
+    // The names of the inspectors a document pane offers for this type, such as AI Assist's
+    // ai-assistance, resolved through the whole plugin chain.
+    inspectors(type: string): string[] {
+      return source.document
+        .inspectors({documentId: type, documentType: type})
+        .map(({name}) => name)
+    },
+
+    // The names of the field actions each field in this type's form offers, such as Sanity's
+    // copyField and pasteField and AI Assist's sanity-assist-actions, resolved through the whole
+    // plugin chain.
+    fieldActions(type: string): string[] {
+      const schemaType = schema.get(type)
+      if (!schemaType) throw new Error(`No schema type named "${type}"`)
+      return source.document
+        .unstable_fieldActions({documentId: type, documentType: type, schemaType})
+        .map(({name}) => name)
+    },
+
     // The template IDs a create menu offers, resolved through the whole config chain: the
     // global create button by default, a structure list's "+" with {type: 'structure',
     // schemaType}, or a reference field's "Create new" with {type: 'document', documentId,
@@ -639,20 +764,28 @@ export function createHarness({
 
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
-    // draft when nothing is published. Then the form applies the type's follow-up steps, with
-    // the version as it was before the patch and the stored draft.
+    // draft when nothing is published. When nothing is stored at all, the first patch starts
+    // from initialValue, what the form shows, such as intent()'s initialValue for a create URL.
+    // Like the form, edit refuses a patch the type's __experimental_actions don't allow. Then
+    // the form applies the type's follow-up steps, with the version as it was before the patch
+    // and the stored draft.
     async edit(
       id: string,
       patch: DocumentPatch,
-      {release}: {release?: string} = {},
+      {release, initialValue}: {release?: string; initialValue?: TestDocument} = {},
     ): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const target = versionId(id, release)
       const published = dataset.get(publishedId) ?? null
       const draft = dataset.get(getDraftId(publishedId)) ?? null
       const base = dataset.get(target) ?? published ?? (release ? draft : null)
-      if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
-      const previous = {...base, _id: target}
+      const start = base ?? (initialValue ? {...initialValue, _id: publishedId} : null)
+      if (!start) throw new Error(`No document to edit with _id "${publishedId}"`)
+      const schemaType = schema.get(start._type)
+      if (schemaType && !formAccepts(schemaType, base ? 'update' : 'create')) {
+        throw new Error('Attempted to patch a read-only document')
+      }
+      const previous = {...start, _id: target}
       let version = applyPatch(previous, patch)
       const followUp = followUpPatch(followUpSteps(version._type), {
         previous,
@@ -667,16 +800,19 @@ export function createHarness({
 
     // Opens the document's form, as an editor does, and returns the document it shows. Without
     // release the form shows the draft, else the published document. With release it shows that
-    // release's version, else the draft or the published document, and then it's read-only.
-    // Once loaded, the form applies the type's follow-up steps unless it's read-only. Like
-    // Sanity, a patch on the published document writes a draft made from it.
+    // release's version, else the draft or the published document, and then it's read-only. It's
+    // read-only too when the type's __experimental_actions leave out update. Once loaded, the
+    // form applies the type's follow-up steps unless it's read-only. Like Sanity, a patch on the
+    // published document writes a draft made from it.
     async open(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const published = dataset.get(publishedId) ?? null
       const version = release ? dataset.get(getVersionId(publishedId, release)) : undefined
       const shown = version ?? dataset.get(getDraftId(publishedId)) ?? published
       if (!shown) throw new Error(`No document to open with _id "${publishedId}"`)
-      const readOnly = release !== undefined && !version
+      const schemaType = schema.get(shown._type)
+      const locked = schemaType !== undefined && !formAccepts(schemaType, 'update')
+      const readOnly = (release !== undefined && !version) || locked
       const followUp = followUpPatch(followUpSteps(shown._type), {
         previous: shown,
         version: shown,
@@ -929,10 +1065,10 @@ export function createHarness({
     },
 
     // The _ids Studio's search finds for text among these types, best match first, as Sanity
-    // ranks them. With every searchable type that's the global search, and with a reference
-    // field's target types it's that field's picker. It sees published documents, as the
-    // client's default perspective does.
-    async search(text: string, types: string[]): Promise<string[]> {
+    // ranks them. Without types that's the global search, over searchTypes(), and with a
+    // reference field's target types it's that field's picker. It sees published documents, as
+    // the client's default perspective does.
+    async search(text: string, types: string[] = globalSearchTypes()): Promise<string[]> {
       const search = createSearch(
         types.map((type) => schema.get(type) as SchemaType),
         getClient({apiVersion: '2025-02-19'}),

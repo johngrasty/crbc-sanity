@@ -17,6 +17,7 @@ import {
   newEditorialId,
 } from '../schemaTypes/media/editorialId'
 import {passageDisplayPatch} from '../schemaTypes/media/passage'
+import {readOnlyTypeNames} from '../schemaTypes/media/readOnlyTypes'
 import {slugHistoryPatch, slugTypes} from '../schemaTypes/media/slug'
 import {nextOccurrence, slotAt, standingSlots} from '../schemaTypes/media/standingSchedule'
 import type {ZonedStart} from '../schemaTypes/media/zonedStart'
@@ -26,6 +27,9 @@ import {previewableTypes} from './preview'
 import {singletonActions, singletonsWithTemplates, singletonTypes} from './singletons'
 
 export const documentActions: DocumentActionsResolver = (prev, context) => {
+  // No action of any kind on the read-only types, in any version type. That includes Publish,
+  // Duplicate, Discard, the scheduled-draft Schedule, Create task and the release actions.
+  if (readOnlyTypeNames.has(context.schemaType)) return []
   if (singletonTypes.has(context.schemaType)) {
     // A create intent URL can open a singleton that keeps its template under a random ID. Only
     // its fixed document, whose ID is the type name, gets the singleton actions. Any other copy
@@ -79,12 +83,16 @@ const standingSlotTemplates: Template[] = standingSlots.map((slot) => ({
 }))
 
 // Singletons have no template, except the ones whose fixed document opens with field defaults.
-// Sanity's document pane applies those only through the type's template.
+// Sanity's document pane applies those only through the type's template. The read-only types
+// have none, and every create menu starts from this list, so no menu offers them.
 export const templates: TemplateResolver = (prev) =>
   [
-    ...prev.filter(
-      ({schemaType}) => !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
-    ),
+    ...prev
+      .filter(({schemaType}) => !readOnlyTypeNames.has(schemaType))
+      .filter(
+        ({schemaType}) =>
+          !singletonTypes.has(schemaType) || singletonsWithTemplates.has(schemaType),
+      ),
     ...standingSlotTemplates,
   ].map(withFreshId)
 
