@@ -63,6 +63,19 @@ preview setup. They cannot be established by the offline tests alone. Generating
 preview link creates a short-lived Sanity preview-secret draft using the editor's session.
 See [preview setup](ANNOUNCEMENT_PREVIEW_SETUP.md).
 
+## Media editorial model
+
+The media types (media items, service events, series, speakers, topics and media settings) are
+what the separate `media-ops` service reads. They follow the spec in
+[subsplash-replacement#18](https://github.com/johngrasty/subsplash-replacement/issues/18). Their
+browser checks against the `media-dev` dataset are recorded in
+[crbc-sanity#14](https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6029892634). Run them
+again after a Sanity upgrade, because the offline tests can't render the Studio.
+
+Series and media items reference each other strongly, so neither can publish while it points at
+the other's unpublished draft. For a new series and a new item, publish the series first with an
+empty manual order, then publish the item, then add the item to the series' order.
+
 ## Code layout
 
 - `schemaTypes/` contains the registered content definitions.

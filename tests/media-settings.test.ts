@@ -21,8 +21,8 @@ test('the Media section opens the one media settings document', async () => {
 
 test('media settings keeps only publish, discard and restore, in every version type', () => {
   const studio = createHarness()
-  // Sanity's lists for each version type, filtered to the three singleton actions. Source:
-  // /tmp/studio-spec/notes/01-sanity-research.md, question 1. Releases and scheduled drafts are off
+  // The lists Sanity 4.22.1 resolves for each version type, filtered to the three singleton
+  // actions. Releases and scheduled drafts are off
   // (structure/documentConfig.ts), so neither plugin loads. Nothing trims a version's list, so a
   // version gets the draft's, and nothing replaces a scheduled draft's, so it gets the structure
   // tool's defaults. Studio opens either only inside a release, which it can no longer make, so no
@@ -183,8 +183,9 @@ test('the media settings form starts with the default title template', async () 
 const canonical = {_id: 'mediaSettings', _type: 'mediaSettings', socialTitleTemplate: '{title}'}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
-// What Studio's structure tool opens for an intent URL, as the review's probe of Sanity's own
-// resolveIntent found: /tmp/review-t20-22-probes/intent.log.
+// What Studio's structure tool opens for an intent URL. Sanity 4.22.1's resolveIntent gives a
+// create intent a random ID before routing it, so only the fixed ID reaches the Media settings
+// pane. gpt-6.1-sol's check of #20 and #22, finding 1: https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027384161
 test('Studio routes only the fixed ID to Media settings, and other intents to its plain editor', async () => {
   const studio = createHarness({documents: [canonical, {...canonical, _id: 'drafts.other'}]})
 
@@ -224,8 +225,8 @@ test('a media settings document under any other ID is an error, in every version
 })
 
 // A media settings document under any other ID keeps only delete, so an editor can remove it.
-// Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1. Releases and scheduled drafts
-// are off (structure/documentConfig.ts), so neither plugin loads. Nothing trims a version's list,
+// The lists are the ones Sanity 4.22.1 resolves for each version type. Releases and scheduled
+// drafts are off (structure/documentConfig.ts), so neither plugin loads. Nothing trims a version's list,
 // so a version gets the draft's, and nothing replaces a scheduled draft's, so it gets the structure
 // tool's defaults. Studio opens either only inside a release, which it can no longer make, so no
 // editor sees these lists.

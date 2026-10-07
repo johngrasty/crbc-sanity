@@ -110,9 +110,9 @@ const withoutSlugCheck = (rule: SlugRule) =>
 // A missing slug, at the type's level. It's a custom rule, because required() on a slug also
 // runs the rule on its current text and gives a second marker.
 function missingSlug(rule: SlugRule, type: SlugType) {
-  const {noun, required} = slugTypes[type]
+  const {required} = slugTypes[type]
   const missing = rule.custom((value) =>
-    slugText(value) ? true : `Add a slug. Generate makes one from the ${noun}'s title.`,
+    slugText(value) ? true : 'Add a slug. Generate makes one from the title.',
   )
   return required ? missing : missing.warning()
 }

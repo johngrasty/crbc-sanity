@@ -42,7 +42,8 @@ test('AI Assist never writes an editorial ID', () => {
 })
 
 // Every ID guard relies on drafts: with live edit, edits go straight to the published document
-// and nothing validates them first (/tmp/studio-spec/reviews/ids-fable-5.1.md, finding 7).
+// and nothing validates them first. Fable 5.1's ID review, finding 7:
+// https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027403481
 test('no editorial type uses live edit', () => {
   const studio = createHarness()
   for (const [type] of registered(studio)) {
@@ -50,7 +51,8 @@ test('no editorial type uses live edit', () => {
   }
 })
 
-// /tmp/studio-spec/reviews/ids-fable-5.1.md, finding 5.
+// A stray draft must not block the published document that owns the ID. Fable 5.1's ID review,
+// finding 5: https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027403481
 test("a draft that copies a published item's ID doesn't block that item's own draft", async () => {
   const studio = createHarness({
     documents: [item('a', P), {...item('drafts.a', P), title: 'Edited'}, item('drafts.b', P)],
@@ -77,7 +79,8 @@ test('two published items that share an ID both show an error that names the oth
   }
 })
 
-// /tmp/studio-spec/reviews/ids-fable-5.1.md, finding 6.
+// Before the first publish, a release version keeps its draft's ID. Fable 5.1's ID review,
+// finding 6: https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027403481
 test("a release version of an item that was never published must keep its draft's ID", async () => {
   const studio = createHarness({documents: [item('drafts.n', P), item('versions.rSpring.n', Q)]})
   assert.deepEqual(idErrors(await studio.validate('drafts.n')), [])
@@ -97,7 +100,8 @@ test("a release version of an item that was never published must keep its draft'
   }
 })
 
-// /tmp/studio-spec/reviews/ids-fable-5.1.md, finding 1. Unpublish has no validation gate, and
+// Fable 5.1's ID review, finding 1: https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027403481
+// Unpublish has no validation gate, and
 // after it there's no published ID left to compare with.
 test("a paste can't carry a new ID through Unpublish and Publish", async () => {
   const studio = createHarness({documents: [{...item('item', P), ...publishable}]})
@@ -232,7 +236,8 @@ test("one edit to a service event gets both its ID step's patch and its slot len
   assert.equal(draft.expectedDurationMinutes, 80)
 })
 
-// /tmp/studio-spec/reviews/ids-fable-5.1.md, finding 4. A history restore or an API write can
+// Fable 5.1's ID review, finding 4: https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027403481
+// A history restore or an API write can
 // leave a published item's draft without an ID.
 test('Assign uses the ID the item has to keep, and mints one only when there is none', () => {
   const restored = createHarness({documents: [item('item', P), item('drafts.item')]})
