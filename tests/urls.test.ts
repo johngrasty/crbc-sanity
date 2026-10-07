@@ -31,37 +31,36 @@ async function markersFor(
   return errorsAt(await studio.validate({...created, ...set(url)}), path)
 }
 
-// A URL of exactly the given number of UTF-8 bytes: an https address, then the character as many
-// times as fits, then plain letters for any bytes left over.
-function urlOfBytes(bytes: number, character: string): string {
+// An https address of exactly the given length, padded with plain letters. Each character of an
+// ASCII URL is one UTF-8 byte, so its length in characters and in bytes is the same.
+function urlOfLength(length: number): string {
   const start = 'https://example.org/'
-  const characterBytes = Buffer.byteLength(character)
-  const repeats = Math.floor((bytes - start.length) / characterBytes)
-  const url = start + character.repeat(repeats)
-  return url + 'a'.repeat(bytes - Buffer.byteLength(url))
+  return start + 'a'.repeat(length - start.length)
 }
 
-test('a URL holds up to 2,048 UTF-8 bytes, so multibyte text reaches the limit sooner', async () => {
+test('a URL holds up to 2,048 characters, which are also its 2,048 UTF-8 bytes', async () => {
   for (const field of urlFields) {
-    // é takes two bytes, あ three and 😀 four, so each URL has far fewer than 2,048 characters.
-    for (const character of ['é', 'あ', '😀']) {
-      const atLimit = urlOfBytes(2048, character)
-      const pastLimit = urlOfBytes(2049, character)
-      assert.equal(Buffer.byteLength(atLimit), 2048)
-      assert.equal(Buffer.byteLength(pastLimit), 2049)
-      assert.ok([...pastLimit].length < 2048)
-      const label = `${field.type} ${field.path} with ${character}`
-      assert.deepEqual(await markersFor(field, atLimit), [], `${label} at 2,048 bytes`)
-      assert.equal((await markersFor(field, pastLimit)).length, 1, `${label} at 2,049 bytes`)
-    }
+    const label = `${field.type} ${field.path}`
+    const atLimit = urlOfLength(2048)
+    const pastLimit = urlOfLength(2049)
+    assert.equal(Buffer.byteLength(atLimit), 2048)
+    assert.equal(Buffer.byteLength(pastLimit), 2049)
+    assert.deepEqual(await markersFor(field, atLimit), [], `${label} at 2,048`)
+    assert.equal((await markersFor(field, pastLimit)).length, 1, `${label} at 2,049`)
   }
 })
 
-test('a URL holds up to 2,048 characters', async () => {
+// The contract's Url has format uri, which allows only ASCII. A browser's address bar copies
+// other characters percent-encoded.
+test('a URL with a character outside ASCII is an error, and its percent-encoded form passes', async () => {
   for (const field of urlFields) {
     const label = `${field.type} ${field.path}`
-    assert.deepEqual(await markersFor(field, urlOfBytes(2048, 'a')), [], label)
-    assert.equal((await markersFor(field, urlOfBytes(2049, 'a'))).length, 1, label)
+    const markers = await markersFor(field, 'https://example.org/sermón')
+    assert.equal(markers.length, 1, label)
+    assert.match(markers[0].message, /writes é as %C3%A9/, label)
+    assert.deepEqual(await markersFor(field, 'https://example.org/serm%C3%B3n'), [], label)
+    // A space is ASCII, but the contract's uri format refuses it too.
+    assert.equal((await markersFor(field, 'https://example.org/sermon notes')).length, 1, label)
   }
 })
 
