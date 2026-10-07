@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import dgram from 'node:dgram'
-import {mkdtempSync, rmSync} from 'node:fs'
+import {mkdtempSync, rmSync, writeFileSync} from 'node:fs'
 import net from 'node:net'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
@@ -17,6 +17,11 @@ import {setTimeout as wait} from 'node:timers/promises'
 import {fileURLToPath} from 'node:url'
 
 const guard = fileURLToPath(new URL('./loader/offline.mjs', import.meta.url))
+
+// Children run from files here rather than with -e, because a worker inherits its process's
+// arguments, and -e with --input-type would break it.
+const scratch = mkdtempSync(join(tmpdir(), 'offline-guard-'))
+let children = 0
 
 let hits = 0
 const ports: Record<string, number> = {}
@@ -47,6 +52,7 @@ after(() => {
   tcp6.close()
   udp.close()
   udp6.close()
+  rmSync(scratch, {recursive: true, force: true})
 })
 
 // Puts the receivers' ports in place of PORT, PORT6, UDP and UDP6.
@@ -63,11 +69,17 @@ async function attempt(code: string, {guarded}: {guarded: boolean}) {
     import dns from 'node:dns'
     import net from 'node:net'
     import tls from 'node:tls'
+    import {Worker} from 'node:worker_threads'
     const servers = ['127.0.0.1:${ports.UDP}']
+    const inWorker = (body, options) =>
+      new Worker(new URL('data:text/javascript,' + encodeURIComponent(body)), options)
+        .on('error', () => {})
     setTimeout(() => process.exit(), 500).unref()
     ${code}
   `
-  const args = [...(guarded ? ['--import', guard] : []), '--input-type=module', '-e', source]
+  const file = join(scratch, `child-${++children}.mjs`)
+  writeFileSync(file, source)
+  const args = [...(guarded ? ['--import', guard] : []), file]
   const child = spawn(process.execPath, args, {stdio: ['ignore', 'ignore', 'pipe']})
   let stderr = ''
   child.stderr.on('data', (chunk) => (stderr += chunk))
@@ -147,6 +159,42 @@ const cases: {name: string; code: string; observable: boolean}[] = [
     code: `dns.promises.setServers(servers); dns.promises.reverse('192.0.2.1').catch(${ignore})`,
     observable: true,
   },
+  {
+    name: 'native c-ares query',
+    code: `const {ChannelWrap, QueryReqWrap} = process.binding('cares_wrap')
+      const channel = new ChannelWrap(500, 1, 0)
+      channel.setServers([[4, '127.0.0.1', UDP]])
+      const request = new QueryReqWrap()
+      request.oncomplete = ${ignore}
+      channel.queryA(request, 'guard.invalid')`,
+    observable: true,
+  },
+  {
+    name: 'native c-ares reverse',
+    code: `const {ChannelWrap, QueryReqWrap} = process.binding('cares_wrap')
+      const channel = new ChannelWrap(500, 1, 0)
+      channel.setServers([[4, '127.0.0.1', UDP]])
+      const request = new QueryReqWrap()
+      request.oncomplete = ${ignore}
+      channel.getHostByAddr(request, '192.0.2.1')`,
+    observable: true,
+  },
+  {
+    name: 'native getaddrinfo',
+    code: `const {getaddrinfo, GetAddrInfoReqWrap} = process.binding('cares_wrap')
+      const request = new GetAddrInfoReqWrap()
+      request.oncomplete = ${ignore}
+      getaddrinfo(request, 'localhost', 0, 0, 0)`,
+    observable: false,
+  },
+  {
+    name: 'native getnameinfo',
+    code: `const {getnameinfo, GetNameInfoReqWrap} = process.binding('cares_wrap')
+      const request = new GetNameInfoReqWrap()
+      request.oncomplete = ${ignore}
+      getnameinfo(request, '127.0.0.1', 22)`,
+    observable: false,
+  },
 ]
 
 for (const {name, code, observable} of cases) {
@@ -163,8 +211,7 @@ for (const {name, code, observable} of cases) {
 }
 
 test('the offline guard leaves Unix sockets open, because they are local IPC', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'offline-guard-'))
-  const path = join(directory, 'ipc.sock')
+  const path = join(scratch, 'ipc.sock')
   const server = net.createServer((socket) => {
     hits++
     socket.end()
@@ -177,6 +224,5 @@ test('the offline guard leaves Unix sockets open, because they are local IPC', a
     assert.equal(result.hits, 1)
   } finally {
     server.close()
-    rmSync(directory, {recursive: true, force: true})
   }
 })

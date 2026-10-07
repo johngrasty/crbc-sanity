@@ -39,7 +39,27 @@ for (const name of ['send', 'send6']) {
   }
 }
 
-// Every DNS function is denied before Node's native resolver runs: lookup, lookupService,
+// The native DNS entry points under the public API: c-ares queries and reverse lookups on
+// ChannelWrap, and the operating system's getaddrinfo and getnameinfo. Node's own dns module
+// keeps its own references to these, so the public functions are denied separately below.
+const cares = process.binding('cares_wrap')
+for (const name of Object.getOwnPropertyNames(cares.ChannelWrap.prototype)) {
+  if (!name.startsWith('query') && name !== 'getHostByAddr') continue
+  // queryA(request, hostname), getHostByAddr(request, address)
+  cares.ChannelWrap.prototype[name] = function (request, target) {
+    blocked(`DNS ${name} ${target}`)
+    return UV_ENETUNREACH
+  }
+}
+for (const name of ['getaddrinfo', 'getnameinfo']) {
+  // getaddrinfo(request, hostname, family, hints, order), getnameinfo(request, address, port)
+  cares[name] = function (request, target) {
+    blocked(`DNS ${name} ${target}`)
+    return UV_ENETUNREACH
+  }
+}
+
+// Every public DNS function is denied before Node's resolver runs: lookup, lookupService,
 // reverse and each resolve method, on the callback and promise modules, and on both Resolver
 // classes, whose instances don't go through the module functions. A callback gets the error, and
 // a promise rejects with it. Node answers a lookup of an IP literal itself, without the resolver,
