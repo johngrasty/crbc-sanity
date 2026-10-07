@@ -32,10 +32,14 @@ export function readOnlyType(writer: string, definition: DocumentDefinition): Re
     __experimental_actions: [],
     // AI Assist adds no inspector, field actions or presence to the document.
     options: {...definition.options, aiAssist: {exclude: true}},
-    // Someone who opens one by a link learns why nothing in it can change.
+    // Someone who opens one by a link learns why nothing in it can change. The type's own input,
+    // if it has one, renders under the notice.
     components: {
       ...definition.components,
-      input: readOnlyNotice(`${writer} writes this document. Editors can't change it.`),
+      input: readOnlyNotice(
+        `${writer} writes this document. Editors can't change it.`,
+        definition.components?.input,
+      ),
     },
     // Global search leaves the type out, and so does the release tool's "Add document", which
     // is the same search.
@@ -43,12 +47,14 @@ export function readOnlyType(writer: string, definition: DocumentDefinition): Re
     // Releases and the API can make a version of any document without asking the schema or
     // the document actions. This error stops Studio from publishing one, or a release that
     // holds one. A mirror's ID has dots in it, but only drafts. and versions. make it
-    // unpublished.
-    validation: (rule) =>
+    // unpublished. The type's own rules, if it has any, run as well.
+    validation: (rule) => [
       rule.custom((document) =>
         !document || isPublishedId(document._id)
           ? true
           : `${writer} writes this document, so this draft or release version can't be published. To remove it, right-click its chip above the form and choose Discard version.`,
       ),
+      ...(definition.validation ? [definition.validation(rule)].flat() : []),
+    ],
   }
 }

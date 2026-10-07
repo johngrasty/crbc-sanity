@@ -395,3 +395,22 @@ test('the workspace turns Content Releases off and keeps scheduled drafts', () =
   // releases off, Sanity doesn't load the releases plugin, and no chip menu offers a new release.
   assert.deepEqual(createHarness().versioning(), {releases: false, scheduledDrafts: true})
 })
+
+test("readOnlyType keeps a wrapped type's own rule and input", async () => {
+  // The harness registers harnessReadOnlyProbe, wrapped in readOnlyType, with a document rule and
+  // an input of its own. The three read-only types have neither today.
+  const studio = createHarness()
+  const probe = {_id: 'probe', _type: 'harnessReadOnlyProbe'}
+  const published = await studio.validate(probe)
+  assert.deepEqual(
+    published.map(({path, level, message}) => [path, level, message]),
+    [['', 'error', 'The probe rule ran.']],
+  )
+  const draft = await studio.validate({...probe, _id: 'drafts.probe'})
+  assert.equal(errorsAt(draft, '').length, 2)
+  assert.ok(errorsAt(draft, '').some(({message}) => message.startsWith('The harness writes')))
+  assert.equal(
+    studio.form('harnessReadOnlyProbe').notice,
+    "The harness writes this document. Editors can't change it. The probe input's own text.",
+  )
+})

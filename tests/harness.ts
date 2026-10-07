@@ -7,7 +7,7 @@ import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
 import speakingurl from 'speakingurl'
 import type {ClientPerspective} from '@sanity/client'
-import {createElement, isValidElement, type ReactNode} from 'react'
+import {createElement, Fragment, isValidElement, type ReactNode} from 'react'
 import {renderToStaticMarkup} from 'react-dom/server'
 import {defer, firstValueFrom} from 'rxjs'
 import {studioTheme, ThemeProvider} from '@sanity/ui'
@@ -65,6 +65,7 @@ import {schemaTypes} from '../schemaTypes'
 import {deskStructure} from '../structure/deskStructure'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
 import {editorialIdFor, idToAssign} from '../schemaTypes/media/editorialId'
+import {readOnlyType} from '../schemaTypes/media/readOnlyType'
 import {
   documentActions,
   formComponents,
@@ -183,8 +184,31 @@ const actionProbes = (
   ...(actions && {__experimental_actions: [...actions]}),
 }))
 
+// A type wrapped in readOnlyType with a document rule and an input of its own, for the tests
+// that readOnlyType keeps both.
+const readOnlyProbe = readOnlyType(
+  'The harness',
+  defineType({
+    name: 'harnessReadOnlyProbe',
+    type: 'document',
+    fields: [defineField({name: 'title', type: 'string'})],
+    validation: (rule) => rule.custom(() => 'The probe rule ran.'),
+    components: {
+      input: (props: InputProps) =>
+        createElement(
+          Fragment,
+          null,
+          createElement('p', null, "The probe input's own text."),
+          props.renderDefault(props),
+        ),
+    },
+  }),
+)
+
 // The harness's own types have no template, so no create menu or create call offers them.
-const probeTypes = new Set<string>([clientProbe, ...actionProbes].map(({name}) => name))
+const probeTypes = new Set<string>(
+  [clientProbe, ...actionProbes, readOnlyProbe].map(({name}) => name),
+)
 
 // Sanity's own config resolution, with the plugins sanity.config.ts uses. sanity-plugin-media
 // can't load in Node, so an inert plugin stands in for it. It adds no document actions,
@@ -210,7 +234,7 @@ const prepared = prepareConfig({
     assist(),
   ],
   schema: {
-    types: [...schemaTypes, clientProbe, ...actionProbes],
+    types: [...schemaTypes, clientProbe, ...actionProbes, readOnlyProbe],
     templates: (prev, context) =>
       templates(prev, context).filter(({schemaType}) => !probeTypes.has(schemaType)),
   },
