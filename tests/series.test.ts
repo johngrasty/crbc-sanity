@@ -533,3 +533,40 @@ test("a media item's series sit in the Details group", () => {
   const details = studio.groups('mediaItem').find(({name}) => name === 'details')
   assert.ok(details?.fields.includes('series'), details?.fields.join(', '))
 })
+
+test('the Media section lists series A to Z, after media items and before speakers', async () => {
+  const studio = createHarness({
+    documents: [
+      series({_id: 'mark', title: 'Mark'}),
+      series({_id: 'drafts.acts', title: 'Acts'}),
+      series({_id: 'romans', title: 'Romans'}),
+      series({_id: 'drafts.romans', title: 'Romans, part two'}),
+      series({_id: 'versions.rSpring.john', title: 'Only in a release'}),
+      {_id: 'pastor', _type: 'speaker', name: 'Sam Jones'},
+    ],
+  })
+  const ids = (await studio.desk('media')).items?.map(({id}) => id) ?? []
+  const at = (id: string) => ids.indexOf(id)
+  assert.ok(at('heldItems') >= 0 && at('heldItems') < at('series'), ids.join(', '))
+  assert.equal(at('speakers'), at('series') + 1, ids.join(', '))
+
+  const list = await studio.desk('media', 'series')
+  assert.equal(list.title, 'Series')
+  assert.deepEqual(
+    list.documents?.map(({title}) => title),
+    ['Acts', 'Mark', 'Romans, part two'],
+  )
+})
+
+// "Create new" in a media item's series field uses the same template, so the new series gets
+// its ID.
+test('the create menus offer a series', () => {
+  const studio = createHarness()
+  assert.ok(studio.createMenu().includes('series'))
+  assert.ok(studio.createMenu({type: 'structure', schemaType: 'series'}).includes('series'))
+  assert.ok(
+    studio
+      .createMenu({type: 'document', documentId: 'item', schemaType: 'mediaItem'})
+      .includes('series'),
+  )
+})
