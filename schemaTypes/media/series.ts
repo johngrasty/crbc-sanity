@@ -137,4 +137,8 @@ export default defineType({
     }),
     sourceField('series'),
   ],
+  preview: {
+    select: {title: 'title', thumbnail: 'artwork.thumbnail'},
+    prepare: ({title, thumbnail}) => ({title: title || 'Untitled series', media: thumbnail}),
+  },
 })

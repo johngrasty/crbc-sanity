@@ -570,3 +570,13 @@ test('the create menus offer a series', () => {
       .includes('series'),
   )
 })
+
+test("a series row shows its title and thumbnail, or a placeholder title when there's none", async () => {
+  const studio = createHarness()
+  const thumbnail = picture(1920, 1080, {alt: 'An open Bible'})
+  assert.deepEqual(studio.preview(series({artwork: {thumbnail, banner: picture(3000, 1000)}})), {
+    title: 'The Gospel of John',
+    media: thumbnail,
+  })
+  assert.deepEqual(studio.preview({_id: 'new', _type: 'series'}), {title: 'Untitled series'})
+})
