@@ -37,6 +37,7 @@ const readOnlyTypes = Object.keys(writers)
 type JsonSchema = {
   $ref?: string
   type?: string | string[]
+  enum?: unknown[]
   properties?: Record<string, JsonSchema>
   items?: JsonSchema
   allOf?: JsonSchema[]
@@ -66,6 +67,25 @@ function schemaFields(schema: JsonSchema, prefix = '', found = new Map<string, s
     if (!name.startsWith('_')) schemaFields(property, prefix ? `${prefix}.${name}` : name, found)
   }
   if (schema.items) schemaFields(schema.items, `${prefix}[]`, found)
+  return found
+}
+
+// The values each field of a JSON Schema definition can take, where the contract lists them,
+// without null. For example kind gives video and nonvideo.
+function schemaEnums(schema: JsonSchema, prefix = '', found = new Map<string, unknown[]>()) {
+  if (schema.$ref) schemaEnums(definitions[schema.$ref.replace('#/$defs/', '')], prefix, found)
+  for (const branch of [...(schema.allOf ?? []), ...(schema.oneOf ?? [])]) {
+    schemaEnums(branch, prefix, found)
+  }
+  if (prefix && schema.enum)
+    found.set(
+      prefix,
+      schema.enum.filter((value) => value !== null),
+    )
+  for (const [name, property] of Object.entries(schema.properties ?? {})) {
+    if (!name.startsWith('_')) schemaEnums(property, prefix ? `${prefix}.${name}` : name, found)
+  }
+  if (schema.items) schemaEnums(schema.items, `${prefix}[]`, found)
   return found
 }
 
@@ -104,6 +124,30 @@ test('the mirror types declare every field of their contract definitions, with i
     const expected = Object.fromEntries(schemaFields(definitions[definition]))
     assert.deepEqual(declared, expected, type)
   }
+})
+
+test("each list of choices on the read-only types is the contract's list of values", () => {
+  // Without a validation function a list checks nothing, so only this test catches a list that
+  // drifts from the contract. The lists set the generated types' unions and the inputs' titles.
+  const studio = createHarness()
+  const lists = (type: string) =>
+    Object.fromEntries(
+      studio
+        .fields(type)
+        .filter(({list}) => list)
+        .map(({path, list}) => [path, list]),
+    )
+  for (const [type, definition] of [
+    ['mediaRelease', 'SanityMediaRelease'],
+    ['liveStatus', 'SanityLiveStatus'],
+  ]) {
+    assert.deepEqual(lists(type), Object.fromEntries(schemaEnums(definitions[definition])), type)
+  }
+  const environments = definitions.Environment.enum
+  assert.deepEqual(lists('mediaOpsBinding'), {
+    environments,
+    'environments[]': environments,
+  })
 })
 
 test('the mirror types declare every field the fixtures use', () => {

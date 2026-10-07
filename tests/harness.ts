@@ -374,8 +374,21 @@ const globalSearchTypes = (): string[] =>
 
 // A field a type declares, at any depth, as Sanity compiled it. path is dotted, with [] for an
 // array's members, for example captions[].label. readOnly is the declared value, so a callback
-// stays a function. A reference lists the types it can point to.
-export type SchemaField = {path: string; jsonType: string; readOnly: unknown; to?: string[]}
+// stays a function. A reference lists the types it can point to, and a field with options.list
+// lists the values it offers.
+export type SchemaField = {
+  path: string
+  jsonType: string
+  readOnly: unknown
+  to?: string[]
+  list?: unknown[]
+}
+
+// The values of an options.list, whether written as {title, value} or as bare values.
+const listValues = (list: unknown[]) =>
+  list.map((option) =>
+    option && typeof option === 'object' && 'value' in option ? option.value : option,
+  )
 
 // Walks a compiled type's fields and array members. Names that start with _, such as a
 // reference's _ref, are Sanity's own. A type already open higher up the path isn't walked again,
@@ -387,6 +400,8 @@ function declaredFields(type: SchemaType, prefix = '', open = new Set<SchemaType
   const add = (path: string, member: SchemaType) => {
     const field: SchemaField = {path, jsonType: member.jsonType, readOnly: member.readOnly}
     if (isReferenceSchemaType(member)) field.to = member.to.map(({name}) => name)
+    const list = (member.options as {list?: unknown} | undefined)?.list
+    if (Array.isArray(list)) field.list = listValues(list)
     found.push(field, ...declaredFields(member, path, open))
   }
   if (isObjectSchemaType(type)) {
