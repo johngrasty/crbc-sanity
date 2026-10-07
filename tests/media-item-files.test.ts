@@ -327,15 +327,45 @@ test("a media item's artwork, documents and podcast audio sit under Artwork and 
 
 test('clearing every podcast audio field takes the podcast audio off, so the item can still publish', async () => {
   const studio = createHarness({documents: [item()]})
-  await studio.edit('item', {set: {'audioEnclosure.url': audioEnclosure.url}})
-  const cleared = await studio.edit('item', {unset: ['audioEnclosure.url']})
+  await studio.edit('item', {set: {audioEnclosure}})
+  // A partly cleared enclosure stays, so its errors show.
+  for (const field of ['url', 'mimeType', 'bytes']) {
+    const partial = await studio.edit('item', {unset: [`audioEnclosure.${field}`]})
+    assert.equal('audioEnclosure' in partial, true, field)
+  }
+  const cleared = await studio.edit('item', {unset: ['audioEnclosure.guid']})
   assert.equal('audioEnclosure' in cleared, false)
   assert.deepEqual(errors(await studio.validate(cleared._id)), [])
+})
 
-  // An empty object an API write left goes when an editor opens the item.
-  const written = createHarness({
-    documents: [item(), {...item(), _id: 'drafts.item', audioEnclosure: {}}],
-  })
-  const opened = await written.open('item')
-  assert.equal('audioEnclosure' in opened, false)
+test('clearing the last podcast audio field to null or an empty string takes the audio off too', async () => {
+  for (const value of [null, '']) {
+    const studio = createHarness({documents: [item()]})
+    await studio.edit('item', {set: {audioEnclosure: {guid: audioEnclosure.guid}}})
+    const cleared = await studio.edit('item', {set: {'audioEnclosure.guid': value}})
+    assert.equal('audioEnclosure' in cleared, false, JSON.stringify(value))
+  }
+})
+
+// An empty object an API write left stays, and shows its errors, until an editor changes it.
+test('opening an item writes nothing, whatever its podcast audio holds, in a draft, a release version or the published item', async () => {
+  const audios = {
+    absent: undefined,
+    empty: {},
+    partial: {url: audioEnclosure.url},
+    full: audioEnclosure,
+  }
+  for (const [name, audio] of Object.entries(audios)) {
+    for (const [_id, release] of [
+      ['drafts.item', undefined],
+      ['versions.rSpring.item', 'rSpring'],
+      ['item', undefined],
+    ] as const) {
+      const studio = createHarness({documents: [{...item(), _id, audioEnclosure: audio}]})
+      const before = studio.documents()
+      const opened = await studio.open('item', {release})
+      assert.deepEqual(opened.audioEnclosure, audio, `${name} ${_id}`)
+      assert.deepEqual(studio.documents(), before, `${name} ${_id}`)
+    }
+  }
 })
