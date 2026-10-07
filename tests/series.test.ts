@@ -187,7 +187,7 @@ test('a series without a slug is an error, so it cannot publish without one', as
     (await studio.validate(draft._id)).filter(({path}) => path === 'slug').map(({level}) => level),
     ['error'],
   )
-  await assert.rejects(studio.publish(draft._id), /slug/)
+  await assert.rejects(studio.publish(draft._id), /slug: Add a slug\. Generate makes one/)
   // Generate makes the slug from the title.
   assert.equal(await studio.generateSlug(draft._id), 'the-gospel-of-john')
   await studio.edit(draft._id, {set: {slug: slug('the-gospel-of-john')}})
@@ -332,4 +332,126 @@ test('artwork alt text holds up to 200 characters, counted as code points', asyn
       )
     }
   }
+})
+
+const reference = (_key: string, _ref: string) => ({_key, _type: 'reference', _ref})
+// What Studio stores when an editor picks a document that only has a draft.
+const weakReference = (_key: string, _ref: string, type: string) => ({
+  ...reference(_key, _ref),
+  _weak: true,
+  _strengthenOnPublish: {type},
+})
+const mediaItem = (_id: string, series?: string[]): TestDocument => ({
+  _id,
+  _type: 'mediaItem',
+  title: _id,
+  ...(series && {series: series.map((_ref, index) => reference(`s${index}`, _ref))}),
+})
+// The markers on a list field and its items, as [path, level], sorted so rule order doesn't count.
+const markersUnder = (markers: Marker[], field: string) =>
+  markers
+    .filter(({path}) => path === field || path.startsWith(`${field}[`))
+    .map(({path, level}) => [path, level])
+    .sort((a, b) => a.join().localeCompare(b.join()))
+
+test('each item in a manual order must list the series, and only a draft that lists it is a warning', async () => {
+  const studio = createHarness({
+    documents: [
+      series({ordering: 'manual'}),
+      series({_id: 'luke', seriesId: `se_${OTHER_ULID}`, title: 'Luke', slug: slug('luke')}),
+      // The published item lists the series.
+      mediaItem('listed', ['luke', 'gospel']),
+      // Its draft drops the series, but the published item still lists it.
+      mediaItem('dropped', ['gospel']),
+      mediaItem('drafts.dropped', ['luke']),
+      // Only the draft lists it.
+      mediaItem('draftOnly', ['luke']),
+      mediaItem('drafts.draftOnly', ['luke', 'gospel']),
+      // Neither lists it: with a draft, without one, and with no series at all.
+      mediaItem('neither', ['luke']),
+      mediaItem('drafts.neither', ['luke']),
+      mediaItem('other', ['luke']),
+      mediaItem('bare'),
+    ],
+  })
+  const manualOrder = ['listed', 'dropped', 'draftOnly', 'neither', 'other', 'bare'].map((_ref) =>
+    reference(_ref, _ref),
+  )
+  for (const _id of ['drafts.gospel', 'versions.rSpring.gospel']) {
+    const markers = await studio.validate(series({_id, ordering: 'manual', manualOrder}))
+    assert.deepEqual(
+      markersUnder(markers, 'manualOrder'),
+      [
+        ['manualOrder[_key=="bare"]', 'error'],
+        ['manualOrder[_key=="draftOnly"]', 'warning'],
+        ['manualOrder[_key=="neither"]', 'error'],
+        ['manualOrder[_key=="other"]', 'error'],
+      ],
+      _id,
+    )
+  }
+})
+
+test("an item that was never published can't be in a published manual order yet", async () => {
+  const studio = createHarness({
+    documents: [mediaItem('drafts.new', ['gospel']), mediaItem('drafts.unsorted', ['luke'])],
+  })
+  const markers = await studio.validate(
+    series({
+      _id: 'drafts.gospel',
+      ordering: 'manual',
+      manualOrder: [
+        weakReference('new', 'new', 'mediaItem'),
+        weakReference('unsorted', 'unsorted', 'mediaItem'),
+      ],
+    }),
+  )
+  // Sanity's own reference check, and this rule's warning or error.
+  assert.deepEqual(markersUnder(markers, 'manualOrder'), [
+    ['manualOrder[_key=="new"]', 'error'],
+    ['manualOrder[_key=="new"]', 'warning'],
+    ['manualOrder[_key=="unsorted"]', 'error'],
+    ['manualOrder[_key=="unsorted"]', 'error'],
+  ])
+})
+
+// The field is hidden then, so an editor couldn't see or fix a problem in it.
+test('a manual order is checked only while the series uses manual order', async () => {
+  const studio = createHarness({documents: [mediaItem('other', ['luke'])]})
+  const manualOrder = [reference('a', 'other'), reference('b', 'other')]
+  for (const ordering of ['newestFirst', 'oldestFirst']) {
+    const markers = await studio.validate(series({_id: 'drafts.gospel', ordering, manualOrder}))
+    assert.deepEqual(markersUnder(markers, 'manualOrder'), [], ordering)
+  }
+  const markers = await studio.validate(
+    series({_id: 'drafts.gospel', ordering: 'manual', manualOrder}),
+  )
+  assert.deepEqual(markersUnder(markers, 'manualOrder'), [
+    ['manualOrder[_key=="a"]', 'error'],
+    ['manualOrder[_key=="b"]', 'error'],
+    ['manualOrder[_key=="b"]', 'error'],
+  ])
+})
+
+test('a manual order lists each media item once', async () => {
+  const studio = createHarness({
+    documents: [mediaItem('first', ['gospel']), mediaItem('second', ['gospel'])],
+  })
+  const markers = await studio.validate(
+    series({
+      _id: 'drafts.gospel',
+      ordering: 'manual',
+      manualOrder: [
+        reference('a', 'first'),
+        reference('b', 'second'),
+        reference('c', 'first'),
+        // Sanity's unique() would miss this one, because _weak makes the items differ.
+        weakReference('d', 'second', 'mediaItem'),
+      ],
+    }),
+  )
+  assert.deepEqual(markersUnder(markers, 'manualOrder'), [
+    ['manualOrder[_key=="c"]', 'error'],
+    ['manualOrder[_key=="d"]', 'error'],
+  ])
 })
