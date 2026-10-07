@@ -2,8 +2,13 @@
 // The input resolves them as the editor types and stores the offset and UTC time only when the
 // time has one reading. When the clocks go back it shows both readings with neither chosen, and
 // when they skip ahead it shows an error.
+//
+// It takes part in Studio's focus handling as the default object input does. Studio's field ref
+// focuses the date and time. Focusing a control reports its field, local, timeZone or offset, and
+// leaving it reports a blur. When an editor picks a marker on one of the start's fields, Studio
+// sets focusPath, and the input moves focus to that field's control.
 import {Box, Card, Flex, Radio, Stack, Text, TextInput} from '@sanity/ui'
-import {useId} from 'react'
+import {useEffect, useId, useImperativeHandle, useRef} from 'react'
 import {set, unset, type ObjectInputProps} from 'sanity'
 import {
   resolveWallTime,
@@ -30,11 +35,35 @@ const utcLabel = (utc: string) =>
     .format(Date.parse(utc))
     .concat(' UTC')
 
-export function ZonedStartInput({value, onChange, readOnly}: ObjectInputProps) {
+export function ZonedStartInput(props: ObjectInputProps) {
+  const {value, onChange, readOnly, focusPath, onPathFocus, elementProps} = props
   const start = (value ?? {}) as ZonedStart
   const local = start.local ?? ''
   const timeZone = start.timeZone ?? ''
   const name = useId()
+
+  const localRef = useRef<HTMLInputElement>(null)
+  const zoneRef = useRef<HTMLInputElement>(null)
+  const choiceRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // Studio focuses the field through this ref, for example from a marker on the start itself.
+  useImperativeHandle(elementProps.ref, () => localRef.current, [])
+
+  // The UTC time has no control of its own, and entering the time again fixes it, so its marker
+  // goes to the date and time. An offset marker goes to the chosen reading, else the first.
+  const target = focusPath[0]
+  useEffect(() => {
+    const choices = choiceRefs.current.filter((choice) => choice !== null)
+    const element =
+      target === 'timeZone'
+        ? zoneRef.current
+        : target === 'offset'
+          ? (choices.find((choice) => choice.checked) ?? choices[0] ?? localRef.current)
+          : target === 'local' || target === 'utc'
+            ? localRef.current
+            : null
+    if (element && element.ownerDocument.activeElement !== element) element.focus()
+  }, [target])
 
   const save = (next: ZonedStart) => onChange(Object.keys(next).length ? set(next) : unset())
 
@@ -54,20 +83,28 @@ export function ZonedStartInput({value, onChange, readOnly}: ObjectInputProps) {
       <Flex gap={2} wrap="wrap">
         <Box flex={1} style={{minWidth: 200}}>
           <TextInput
+            ref={localRef}
+            id={elementProps.id}
             type="datetime-local"
             aria-label="Date and time"
+            aria-describedby={elementProps['aria-describedby']}
             value={local}
             readOnly={readOnly}
             onChange={(event) => save(storedStart(event.currentTarget.value, timeZone))}
+            onFocus={() => onPathFocus(['local'])}
+            onBlur={elementProps.onBlur}
           />
         </Box>
         <Box flex={1} style={{minWidth: 200}}>
           <TextInput
+            ref={zoneRef}
             aria-label="Time zone"
             placeholder="America/New_York"
             value={timeZone}
             readOnly={readOnly}
             onChange={(event) => save(storedStart(local, event.currentTarget.value.trim()))}
+            onFocus={() => onPathFocus(['timeZone'])}
+            onBlur={elementProps.onBlur}
           />
         </Box>
       </Flex>
@@ -78,10 +115,15 @@ export function ZonedStartInput({value, onChange, readOnly}: ObjectInputProps) {
             {readings.map((reading, index) => (
               <Flex key={reading.offset} as="label" align="center" gap={2}>
                 <Radio
+                  ref={(element) => {
+                    choiceRefs.current[index] = element
+                  }}
                   name={name}
                   checked={start.offset === reading.offset}
                   disabled={readOnly}
                   onChange={() => save(storedStart(local, timeZone, reading.offset))}
+                  onFocus={() => onPathFocus(['offset'])}
+                  onBlur={elementProps.onBlur}
                 />
                 <Text size={1}>{readingLabel(reading, timeZone, index)}</Text>
               </Flex>

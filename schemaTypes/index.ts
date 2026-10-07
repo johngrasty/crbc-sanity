@@ -30,6 +30,7 @@ import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
 import mediaItem from './media/mediaItem'
 import serviceEvent from './media/serviceEvent'
+import series from './media/series'
 import speaker from './media/speaker'
 import topic from './media/topic'
 import mediaSettings from './media/mediaSettings'
@@ -65,6 +66,7 @@ export const schemaTypes = [
   jobOpening,
   mediaItem,
   serviceEvent,
+  series,
   speaker,
   topic,
   mediaSettings,

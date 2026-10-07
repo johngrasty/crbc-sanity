@@ -13,21 +13,33 @@ export const itemLimit = <T>(rule: ArrayRule<T[]>, max: number, noun: string) =>
 const hasKey = (item: unknown): item is {_key: string} =>
   typeof item === 'object' && item !== null && typeof (item as {_key?: unknown})._key === 'string'
 
-// An error on each item that repeats an earlier one. sameAs gives what two items share when they
-// count as the same, such as a reference's _ref. Items it returns undefined for are skipped.
-export const noRepeats = <T>(rule: ArrayRule<T[]>, sameAs: (item: T) => unknown, message: string) =>
-  rule.custom((value) => {
-    const seen = new Set<unknown>()
-    const repeats: ValidationError[] = []
-    value?.forEach((item, index) => {
-      const key = sameAs(item)
-      if (key === undefined) return
-      const path: Path = [hasKey(item) ? {_key: item._key} : index]
-      if (seen.has(key)) repeats.push({message, path})
-      seen.add(key)
-    })
-    return repeats.length ? repeats : true
+// The path of a list item, relative to the list: its _key, or its index for a primitive.
+export const itemPath = (item: unknown, index: number): Path => [
+  hasKey(item) ? {_key: item._key} : index,
+]
+
+// An error on each item that repeats an earlier one, or true when nothing repeats. sameAs gives
+// what two items share when they count as the same, such as a reference's _ref. Items it returns
+// undefined for are skipped. A rule that checks repeats only some of the time calls this itself.
+export function repeatsIn<T>(
+  value: T[] | undefined,
+  sameAs: (item: T) => unknown,
+  message: string,
+): true | ValidationError[] {
+  const seen = new Set<unknown>()
+  const repeats: ValidationError[] = []
+  value?.forEach((item, index) => {
+    const key = sameAs(item)
+    if (key === undefined) return
+    if (seen.has(key)) repeats.push({message, path: itemPath(item, index)})
+    seen.add(key)
   })
+  return repeats.length ? repeats : true
+}
+
+// The rule that puts repeatsIn's errors on a list.
+export const noRepeats = <T>(rule: ArrayRule<T[]>, sameAs: (item: T) => unknown, message: string) =>
+  rule.custom((value) => repeatsIn(value, sameAs, message))
 
 // The document a reference points at, so noRepeats counts two references to it as one, whatever
 // else they carry, such as _weak.

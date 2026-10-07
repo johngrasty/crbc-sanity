@@ -2,16 +2,21 @@
 // form, such as focus, clicks and the patches it sends. Tests find an input through the
 // registered schema, so they render what the form renders. A DOM test file shouldn't import the
 // harness, which installs its own window. Each test file runs in its own process.
+//
+// Import this module before anything that loads Sanity or React DOM. React DOM checks which
+// browser features exist once, when it loads. Without a document, it handles text inputs through
+// an old Internet Explorer event path that throws in jsdom as soon as one gets focus. Sanity
+// breaks if a window exists while it loads, so the two can't load at the same moment. This module
+// sets the window and runs React DOM, removes the window while Sanity, Sanity UI and the schema
+// load, then sets it again for the tests.
+import {createRequire} from 'node:module'
 import {JSDOM} from 'jsdom'
 import {act, createElement, type ComponentType, type ReactElement} from 'react'
-import {createRoot} from 'react-dom/client'
-import {studioTheme, ThemeProvider} from '@sanity/ui'
-import {schemaTypes} from '../schemaTypes'
+import type * as ReactDomClient from 'react-dom/client'
 
 export const noop = () => undefined
 
-// Imports load before this runs, so Sanity and styled-components load without a window, as the
-// harness needs too. Sanity UI asks matchMedia for its breakpoints, and jsdom has none.
+// Sanity UI asks matchMedia for its breakpoints, and jsdom has none.
 const dom = new JSDOM('<!doctype html><div id="root"></div>', {url: 'http://localhost/'})
 Object.assign(dom.window, {
   matchMedia: (media: string) => ({
@@ -23,11 +28,33 @@ Object.assign(dom.window, {
     removeListener: noop,
   }),
 })
-Object.assign(globalThis, {
+const domGlobals = {
   window: dom.window,
   document: dom.window.document,
   IS_REACT_ACT_ENVIRONMENT: true,
-})
+}
+const setDom = (on: boolean) => {
+  for (const [name, value] of Object.entries(domGlobals)) {
+    if (on) Object.assign(globalThis, {[name]: value})
+    else delete (globalThis as Record<string, unknown>)[name]
+  }
+}
+
+// React DOM is CommonJS, so require runs it at once, and Sanity's own import of it later gets
+// this instance from the module cache. Node's ESM loader caches a CommonJS module when it links
+// an import, before running it, so only a loaded one means React DOM ran without the document.
+const require = createRequire(import.meta.url)
+if (require.cache[require.resolve('react-dom/client')]?.loaded) {
+  throw new Error('React DOM loaded before tests/dom.ts. Import tests/dom.ts first.')
+}
+setDom(true)
+const {createRoot} = require('react-dom/client') as typeof ReactDomClient
+setDom(false)
+const [{studioTheme, ThemeProvider}, {schemaTypes}] = await Promise.all([
+  import('@sanity/ui'),
+  import('../schemaTypes'),
+])
+setDom(true)
 
 // The input component a registered document type sets on one of its fields.
 export function fieldInput(typeName: string, fieldName: string): ComponentType<never> {
