@@ -31,3 +31,40 @@ test('Studio can focus the publication policy through the ref it supplies', asyn
   assert.deepEqual(elementProps.events, ['focus', 'blur'])
   await view.unmount()
 })
+
+test("each publication policy choice is described by the field's description", async () => {
+  const elementProps = primitiveElementProps('publicationPolicy')
+  const view = await render(policyInput({elementProps}))
+  const describedBy = radios(view.document).map((radio) => radio.getAttribute('aria-describedby'))
+  assert.deepEqual(describedBy, [
+    elementProps['aria-describedby'],
+    elementProps['aria-describedby'],
+  ])
+  await view.unmount()
+})
+
+test('each choice says what it does, selects on a click of its text, and is off when read-only', async () => {
+  const patches: {type?: string; value?: unknown}[] = []
+  const onChange = (patch: {type?: string; value?: unknown}) => patches.push(patch)
+  const elementProps = primitiveElementProps('publicationPolicy')
+  const view = await render(policyInput({elementProps, onChange}))
+  const labels = [...view.document.querySelectorAll('label')].map(({textContent}) => textContent)
+  assert.equal(labels.length, 2)
+  assert.match(String(labels[0]), /^Automatic.*passes the checks/)
+  assert.match(String(labels[1]), /^Manual.*approves it in media-ops/)
+
+  await interact(() => view.document.querySelectorAll('label')[1].click())
+  assert.deepEqual(
+    patches.map(({type, value}) => ({type, value})),
+    [{type: 'set', value: 'manual'}],
+  )
+
+  await view.rerender(policyInput({elementProps, onChange, value: 'manual', readOnly: true}))
+  assert.deepEqual(
+    radios(view.document).map(({disabled}) => disabled),
+    [true, true],
+  )
+  await interact(() => view.document.querySelectorAll('label')[0].click())
+  assert.equal(patches.length, 1)
+  await view.unmount()
+})

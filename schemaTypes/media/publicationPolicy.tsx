@@ -33,6 +33,7 @@ function PublicationPolicyInput({value, onChange, readOnly, elementProps}: Strin
             onChange={() => onChange(set(policy.value))}
             onFocus={elementProps.onFocus}
             onBlur={elementProps.onBlur}
+            aria-describedby={elementProps['aria-describedby']}
           />
           <Stack space={2}>
             <Text size={1} weight="medium">
