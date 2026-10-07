@@ -36,6 +36,12 @@ After changing schemas, run `npm run typegen` and commit both `schema.json` and
 `sanity.types.ts`. Update any corresponding queries in the website repository. Typegen
 currently covers schema types only; the frontend still maintains its groqd projections.
 
+`npm run typegen` also writes `mirror.types.ts` from the media contract copy's JSON Schema.
+`MediaReleaseDocument` and `LiveStatusDocument` type the mirror documents as media-ops writes
+them, with every required field and its null states. `sanity.types.ts` types the same
+documents as Studio's form sees them, with every field optional and never null. Read mirror
+documents with the types in `mirror.types.ts`, and commit it when it changes.
+
 For browser QA, sign in to the local Studio and check the following:
 
 - Home, page settings, menus and footer open their fixed document IDs. The New document
