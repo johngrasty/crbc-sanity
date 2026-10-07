@@ -469,3 +469,67 @@ test('the form shows the manual order only when the series uses manual order', a
   // The import source shows once the importer has set it.
   assert.deepEqual(studio.hiddenFields(series({ordering: 'manual', source})), [])
 })
+
+// Published series s1 to s11, so every reference resolves.
+const published = Array.from({length: 11}, (_, index) =>
+  series({
+    _id: `s${index + 1}`,
+    title: `Series ${index + 1}`,
+    slug: slug(`series-${index + 1}`),
+  }),
+)
+const references = (count: number) =>
+  Array.from({length: count}, (_, index) => reference(`k${index + 1}`, `s${index + 1}`))
+
+test('a media item lists up to 10 series', async () => {
+  const studio = createHarness({documents: published})
+  const item = await studio.create('mediaItem')
+  assert.deepEqual(
+    markersUnder(await studio.validate({...item, series: references(10)}), 'series'),
+    [],
+  )
+  assert.deepEqual(
+    markersUnder(await studio.validate({...item, series: references(11)}), 'series'),
+    [['series', 'error']],
+  )
+})
+
+test('a media item lists each series once', async () => {
+  const studio = createHarness({documents: published})
+  const item = await studio.create('mediaItem')
+  const markers = await studio.validate({
+    ...item,
+    series: [
+      reference('a', 's1'),
+      reference('b', 's2'),
+      reference('c', 's1'),
+      // Sanity's unique() would miss this one, because _weak makes the items differ.
+      weakReference('d', 's2', 'series'),
+    ],
+  })
+  assert.deepEqual(markersUnder(markers, 'series'), [
+    ['series[_key=="c"]', 'error'],
+    ['series[_key=="d"]', 'error'],
+  ])
+})
+
+test('a media item with no series has a warning, not an error, so a placeholder can publish', async () => {
+  const studio = createHarness({documents: published})
+  const item = await studio.create('mediaItem')
+  for (const empty of [undefined, []]) {
+    const markers = await studio.validate({...item, series: empty})
+    assert.deepEqual(markersUnder(markers, 'series'), [['series', 'warning']], String(empty))
+  }
+  assert.deepEqual(
+    markersUnder(await studio.validate({...item, series: references(1)}), 'series'),
+    [],
+  )
+  await studio.publish(item._id)
+})
+
+// media-ops holds a recording without a series, as it does one without a title or date.
+test("a media item's series sit in the Details group", () => {
+  const studio = createHarness()
+  const details = studio.groups('mediaItem').find(({name}) => name === 'details')
+  assert.ok(details?.fields.includes('series'), details?.fields.join(', '))
+})
