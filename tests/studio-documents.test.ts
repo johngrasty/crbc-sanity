@@ -7,7 +7,7 @@ const errorsAt = (markers: Marker[], path: string) =>
 
 // What Sanity 4.22.1's plugin chain hands the root resolver for each versionType, with the
 // structure tool, tasks, canvas and legacy Scheduled Publishing. Unnamed actions show their
-// displayName. Source: /tmp/studio-spec/notes/01-sanity-research.md, question 1. schedule is the
+// displayName. schedule is the
 // legacy ScheduleAction, which shows nothing until a workspace turns Scheduled Publishing on or the
 // dataset has used it, and neither has.
 const draftDefaults = [

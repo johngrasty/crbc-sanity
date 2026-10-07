@@ -110,7 +110,7 @@ async function copyFields(type: EditorialType): Promise<Record<string, unknown>>
   return copy
 }
 
-// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, without
+// The lists Sanity 4.22.1 resolves for each version type, without
 // schedule. The fresh-ID Duplicate takes Sanity's action name, so it shows as duplicate in
 // Sanity's place. Tasks and canvas actions stay.
 const editorialDraftActions = [
@@ -182,8 +182,9 @@ test("the editorial types swap Sanity's Duplicate for the fresh-ID one in every 
 })
 
 // A scheduled draft is validated only when Schedule is clicked, and then publishes on the server
-// without another check (/tmp/studio-spec/reviews/ids-fable-5.1.md, finding 2). Media items
-// have their own publish time.
+// without another check. Fable 5.1's ID review, finding 2:
+// https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6027403481
+// Media items have their own publish time.
 test('the editorial types offer no scheduling in any version type', () => {
   const studio = createHarness()
   for (const type of editorialTypes) {
@@ -194,7 +195,8 @@ test('the editorial types offer no scheduling in any version type', () => {
 })
 
 // On a scheduled draft, publish is Sanity's Publish now, which publishes without checking
-// validation (/tmp/studio-spec/reviews/ids-fable-5.1-r2.md, finding 8). Scheduled drafts are off,
+// validation. Fable 5.1's second ID review, finding 8: https://github.com/johngrasty/crbc-sanity/pull/14#issuecomment-6028772205
+// Scheduled drafts are off,
 // so Studio can't make or open one, but the filter still keeps Publish now off in case they
 // come back.
 test('a scheduled draft of an editorial type offers no Publish now', () => {
