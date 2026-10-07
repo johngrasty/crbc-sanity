@@ -104,8 +104,8 @@ export const templates: TemplateResolver = (prev) =>
 export const newDocumentOptions: NewDocumentOptionsResolver = (prev) =>
   prev.filter(({templateId}) => !singletonsWithTemplates.has(templateId))
 
-// A patch for one document version. Keys in set and entries in unset are paths in Sanity's string
-// form, such as title, editorHold.note or passages[_key=="a"].display.
+// A patch for one document version. Keys in set and entries in unset are paths such as title,
+// editorHold.note or passages[_key=="a"].display. Write one with patchPath from patchPath.ts.
 export type DocumentPatch = {set?: Record<string, unknown>; unset?: string[]}
 
 // A form follow-up step keeps fields of a draft or release version in step as the editor works.

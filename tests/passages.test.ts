@@ -388,3 +388,89 @@ test('opening a published item with a passage that lacks display text writes not
   assert.deepEqual(await studio.open('item'), published)
   assert.deepEqual(studio.documents(), [published])
 })
+
+test("a range into a later chapter, entered one field at a time, keeps Studio's text in step", async () => {
+  const displayAfter = await displayEditor()
+  assert.equal(
+    await displayAfter({set: {passages: [{_key: 'a', _type: 'passage', book: 'John'}]}}),
+    undefined,
+  )
+  assert.equal(await displayAfter({set: {[`${a}.chapterStart`]: 3}}), 'John 3')
+  assert.equal(await displayAfter({set: {[`${a}.verseStart`]: 16}}), 'John 3:16')
+  // John 3:16 to the end of chapter 4 has no text of its own, so the display waits.
+  assert.equal(await displayAfter({set: {[`${a}.chapterEnd`]: 4}}), 'John 3:16')
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 2}}), 'John 3:16-4:2')
+})
+
+test('an imported display that reads as Studio writes it follows the reference through a gap', async () => {
+  const displayAfter = await displayEditor()
+  const imported = {
+    _key: 'a',
+    _type: 'passage',
+    book: 'John',
+    chapterStart: 3,
+    verseStart: 16,
+    display: 'John 3:16',
+  }
+  assert.equal(await displayAfter({set: {passages: [imported]}}), 'John 3:16')
+  assert.equal(await displayAfter({set: {[`${a}.chapterEnd`]: 4}}), 'John 3:16')
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 2}}), 'John 3:16-4:2')
+})
+
+test("a book cleared and picked again keeps Studio's text in step", async () => {
+  const displayAfter = await displayEditor()
+  await displayAfter({set: {passages: [{_key: 'a', _type: 'passage', book: 'Jas'}]}})
+  await displayAfter({set: {[`${a}.chapterStart`]: 1}})
+  await displayAfter({set: {[`${a}.verseStart`]: 2}})
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 4}}), 'James 1:2-4')
+
+  assert.equal(await displayAfter({unset: [`${a}.book`]}), 'James 1:2-4')
+  assert.equal(await displayAfter({set: {[`${a}.book`]: 'Phil'}}), 'Philippians 1:2-4')
+  assert.equal(await displayAfter({unset: [`${a}.chapterStart`]}), 'Philippians 1:2-4')
+  assert.equal(await displayAfter({set: {[`${a}.chapterStart`]: 2}}), 'Philippians 2:2-4')
+  assert.equal(await displayAfter({unset: [`${a}.book`]}), 'Philippians 2:2-4')
+  assert.equal(await displayAfter({set: {[`${a}.book`]: 'Phil'}}), 'Philippians 2:2-4')
+  assert.equal(await displayAfter({set: {[`${a}.verseEnd`]: 5}}), 'Philippians 2:2-5')
+})
+
+test('display text an editor wrote stays through every step of a change', async () => {
+  const displayAfter = await displayEditor()
+  await displayAfter({set: {passages: [passage('a', {display: 'Joy in trials'})]}})
+  for (const patch of [
+    {unset: [`${a}.book`]},
+    {set: {[`${a}.book`]: 'Phil'}},
+    {set: {[`${a}.chapterEnd`]: 2}},
+    {unset: [`${a}.verseEnd`]},
+    {set: {[`${a}.verseEnd`]: 3}},
+  ]) {
+    assert.equal(await displayAfter(patch), 'Joy in trials', JSON.stringify(patch))
+  }
+
+  // A short form the editor typed over Studio's text stays, even though it reads like a
+  // reference.
+  const psalm = await displayEditor()
+  await psalm({set: {passages: [{_key: 'a', _type: 'passage', book: 'Ps'}]}})
+  await psalm({set: {[`${a}.chapterStart`]: 23}})
+  await psalm({set: {[`${a}.verseStart`]: 1}})
+  assert.equal(await psalm({set: {[`${a}.verseEnd`]: 6}}), 'Psalm 23:1-6')
+  assert.equal(await psalm({set: {[`${a}.display`]: 'Psalm 23'}}), 'Psalm 23')
+  assert.equal(await psalm({set: {[`${a}.verseEnd`]: 5}}), 'Psalm 23')
+  assert.equal(await psalm({unset: [`${a}.book`]}), 'Psalm 23')
+  assert.equal(await psalm({set: {[`${a}.book`]: 'Ps'}}), 'Psalm 23')
+})
+
+test('opening a draft writes nothing to its passages either', async () => {
+  const seeded = {
+    _id: 'drafts.item',
+    _type: 'mediaItem',
+    contentId: 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
+    passages: [
+      {_key: 'a', _type: 'passage', book: 'Rom', chapterStart: 4},
+      {_key: 'b', _type: 'passage', book: 'John', chapterStart: 3, display: 'John 3'},
+      {_key: 'c', _type: 'passage', book: 'Jas', chapterStart: 1, display: 'Joy in trials'},
+    ],
+  }
+  const studio = createHarness({documents: [seeded]})
+  assert.deepEqual(await studio.open('item'), seeded)
+  assert.deepEqual(studio.documents(), [seeded])
+})
