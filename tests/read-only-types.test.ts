@@ -128,6 +128,8 @@ test("a draft or release version of a read-only document is an error, so it can'
       const errors = errorsAt(await studio.validate(_id), '')
       assert.equal(errors.length, 1, _id)
       assert.ok(errors[0].message.startsWith(`${writers[sample._type]} writes this document`), _id)
+      // The chip menu's Discard version removes a stray draft or version, never the published one.
+      assert.match(errors[0].message, /choose Discard version\.$/, _id)
     }
     await assert.rejects(studio.publish(sample._id), /validation errors/)
     await assert.rejects(studio.publish(sample._id, {release: 'rSpring'}), /validation errors/)

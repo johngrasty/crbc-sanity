@@ -48,7 +48,7 @@ export function readOnlyType(writer: string, definition: DocumentDefinition): Re
       rule.custom((document) =>
         !document || isPublishedId(document._id)
           ? true
-          : `${writer} writes this document, so this draft or release version can't be published. Ask a developer to remove it.`,
+          : `${writer} writes this document, so this draft or release version can't be published. To remove it, right-click its chip above the form and choose Discard version.`,
       ),
   }
 }
