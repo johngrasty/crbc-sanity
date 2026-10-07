@@ -12,13 +12,16 @@ import {LABEL_MAX_LENGTH} from './limits'
 const {$defs} = contract
 
 // Free text of the given number of code points, at its longest. Compact JSON writes a control
-// character such as U+0000 as a six-byte escape, \u0000, the most any code point takes. Labels,
-// alt text, lqip and MIME types are free text, limited only by their maxLength.
+// character such as U+0000 as a six-byte escape, \u0000, the most any code point takes. Labels
+// and alt text are free text, limited only by their maxLength.
 const longestText = (codePoints: number) => '\u0000'.repeat(codePoints)
+
+// ASCII that JSON doesn't escape takes one byte a character.
+const longestAscii = (characters: number) => 'a'.repeat(characters)
 
 // Url has format uri, which the contract's tests check with ajv-formats. A URI is ASCII and holds
 // no character that JSON escapes, so each of its 2,048 characters takes one byte.
-const longestUrl = 'a'.repeat($defs.Url.maxLength)
+const longestUrl = longestAscii($defs.Url.maxLength)
 
 // Widths, heights, positions and durations have no maximum. JSON writes no number longer than
 // Number.MAX_VALUE, 1.7976931348623157e+308, at 23 bytes.
@@ -55,19 +58,20 @@ export const sizeAllowances = {
     title: longestText(LABEL_MAX_LENGTH),
     position: longestNumber,
   }),
-  // A thumbnail or banner becomes an Image, {url, width, height, alt, lqip}: 15,630 bytes. The
-  // property name is in the computed allowance.
+  // A thumbnail or banner becomes an Image, {url, width, height, alt, lqip}: 5,390 bytes. lqip is
+  // a data URL, so it's ASCII like any URI. The property name is in the computed allowance.
   image: serializedSize({
     url: longestUrl,
     width: longestNumber,
     height: longestNumber,
     alt: longestText($defs.Image.properties.alt.maxLength),
-    lqip: longestText($defs.Image.properties.lqip.maxLength),
+    lqip: longestAscii($defs.Image.properties.lqip.maxLength),
   }),
-  // A document adds a url and a mimeType to the label the item stores: 2,673 bytes.
+  // A document adds a url and a mimeType to the label the item stores: 2,173 bytes. A MIME type
+  // is an ASCII token (RFC 6838), with none of the characters JSON escapes.
   document: listEntry({
     url: longestUrl,
-    mimeType: longestText($defs.Document.properties.mimeType.maxLength),
+    mimeType: longestAscii($defs.Document.properties.mimeType.maxLength),
   }),
   // Every ItemDetail property name, in case the stored item leaves the field out, with null as
   // its value unless the website computes it. The computed values are the canonical URL, the

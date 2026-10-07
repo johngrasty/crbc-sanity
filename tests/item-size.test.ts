@@ -46,7 +46,8 @@ const sizeErrors = (markers: Marker[]) => errors(markers).filter(({path}) => pat
 // What each expanded value adds to the estimate, worked out from the contract's JSON Schema. The
 // longest label is 200 code points that compact JSON writes as six-byte escapes such as \u0000,
 // 1,202 bytes with its quotes. The longest number JSON writes is Number.MAX_VALUE,
-// 1.7976931348623157e+308, 23 bytes. A URL is ASCII, so the longest is 2,050 bytes with quotes.
+// 1.7976931348623157e+308, 23 bytes. A URL is ASCII that JSON doesn't escape, so the longest is
+// 2,050 bytes with quotes.
 const allowance = {
   // {"id":"sp_<26>","name":<1,202>} is 1+4+1+31+1+6+1+1,202+1, and a comma before the next.
   speaker: 1249,
@@ -54,11 +55,12 @@ const allowance = {
   topic: 1250,
   // {"id":"se_<26>","title":<1,202>,"position":<23>} is 1,284, and a comma.
   series: 1285,
-  // {"url":<2,050>,"width":<23>,"height":<23>,"alt":<1,202>,"lqip":<12,290>} is 15,630. lqip
-  // holds up to 2,048 code points of any text, at six bytes each.
-  image: 15630,
-  // {"url":<2,050>,"mimeType":<602>} is 2,672, and a comma. The label is stored on the item.
-  document: 2673,
+  // {"url":<2,050>,"width":<23>,"height":<23>,"alt":<1,202>,"lqip":<2,050>} is 5,390. lqip is a
+  // data URL, so it's ASCII too, up to 2,048 characters.
+  image: 5390,
+  // {"url":<2,050>,"mimeType":<102>} is 2,172, and a comma. A MIME type is an ASCII token of up to
+  // 100 characters. The label is stored on the item.
+  document: 2173,
   // Every ItemDetail property name, null unless the website computes its value: canonicalUrl,
   // publishedAt, revision, durationSeconds, seriesTitle, availability and audio.durationSeconds.
   computed: 3794,
