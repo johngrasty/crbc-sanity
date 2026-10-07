@@ -80,14 +80,15 @@ test("an item's published, draft and release versions may share its content ID",
 })
 
 test('a draft or release version whose content ID differs from the published item is an error', async () => {
+  // Written through the API. In the form, the next edit sets the published ID back.
   const published = {_id: 'item', _type: 'mediaItem', contentId: `mi_${ULID}`}
-  const studio = createHarness({documents: [published]})
-  const pasted = {set: {contentId: `mi_${OTHER_ULID}`}}
-  const draft = await studio.edit('item', pasted)
-  const version = await studio.edit('item', pasted, {release: 'rSpring'})
-  assert.equal(draft._id, 'drafts.item')
-  assert.equal(version._id, 'versions.rSpring.item')
-  for (const {_id} of [draft, version]) {
+  const changed = ['drafts.item', 'versions.rSpring.item'].map((_id) => ({
+    ...published,
+    _id,
+    contentId: `mi_${OTHER_ULID}`,
+  }))
+  const studio = createHarness({documents: [published, ...changed]})
+  for (const {_id} of changed) {
     assert.equal(errorsAt(await studio.validate(_id), 'contentId').length, 1, _id)
   }
 })

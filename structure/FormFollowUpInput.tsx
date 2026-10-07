@@ -7,6 +7,7 @@ import {
   isDraftId,
   isVersionId,
   set,
+  stringToPath,
   unset,
   useEditState,
   type InputProps,
@@ -35,20 +36,24 @@ export function followUpPatch(
   return merged.set || merged.unset ? merged : null
 }
 
+// Patch paths are in Sanity's string form, so a step can reach into an array item by its _key.
 const formPatches = ({set: values = {}, unset: paths = []}: DocumentPatch) => [
-  ...Object.entries(values).map(([path, value]) => set(value, path.split('.'))),
-  ...paths.map((path) => unset(path.split('.'))),
+  ...Object.entries(values).map(([path, value]) => set(value, stringToPath(path))),
+  ...paths.map((path) => unset(stringToPath(path))),
 ]
 
 function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}) {
   const {onChange, readOnly, schemaType} = props
   const version = props.value as SanityDocumentLike | undefined
-  const {published, ready} = useEditState(getPublishedId(version?._id ?? ''), schemaType.name)
+  const {draft, published, ready} = useEditState(
+    getPublishedId(version?._id ?? ''),
+    schemaType.name,
+  )
   const previous = useRef(version)
 
   // Patching during render throws, so the steps run in an effect. It runs after each change to
-  // the form value, including a remote edit, and when the published document changes, such as
-  // when a release publishes. It waits until the published document has loaded.
+  // the form value, including a remote edit, and when the published document or the draft
+  // changes, such as when a release publishes. It waits until both have loaded.
   useEffect(() => {
     const before = previous.current
     previous.current = version
@@ -60,10 +65,11 @@ function FollowUps({steps, ...props}: ObjectInputProps & {steps: FormFollowUp[]}
       previous: sameDocument ? before : version,
       version,
       published: published ?? null,
+      draft: draft ?? null,
       readOnly: Boolean(readOnly),
     })
     if (patch) onChange(formPatches(patch))
-  }, [steps, onChange, published, readOnly, ready, version])
+  }, [draft, steps, onChange, published, readOnly, ready, version])
 
   return props.renderDefault(props)
 }
