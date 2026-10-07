@@ -33,6 +33,7 @@ import serviceEvent from './media/serviceEvent'
 import speaker from './media/speaker'
 import topic from './media/topic'
 import mediaSettings from './media/mediaSettings'
+import passage from './media/passage'
 
 export const schemaTypes = [
   // Documents
@@ -73,4 +74,5 @@ export const schemaTypes = [
   richText,
   bentoCard,
   statistic,
+  passage,
 ]
