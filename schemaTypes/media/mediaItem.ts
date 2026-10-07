@@ -3,6 +3,7 @@ import {Video} from 'lucide-react'
 import {artworkField} from './artwork'
 import {audioEnclosureField} from './audioEnclosure'
 import {documentsField} from './documents'
+import {itemSize} from './itemSize'
 import {itemLimit, noRepeats, referencedId} from './lists'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
@@ -242,6 +243,8 @@ export default defineType({
     ),
     {...sourceField('mediaItem'), group: 'source'},
   ],
+  // The public API refuses an item over 200,000 bytes, so Studio refuses one too.
+  validation: (rule) => rule.custom(itemSize),
   orderings: [
     {
       title: 'Service date, newest first',
