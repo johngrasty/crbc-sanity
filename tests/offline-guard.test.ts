@@ -286,8 +286,9 @@ test('the offline guard leaves Unix sockets open, because they are local IPC', a
 })
 
 test('the guard runs before a preload listed ahead of it on the command line', async () => {
-  // Node runs --require preloads before --import preloads, whatever their order.
-  const before = ['--import', setupModule]
+  // Node runs --require preloads before --import preloads, whatever their order. The setup
+  // module's DNS query reaches the native resolver as it loads, so a guard loaded after it fails.
+  const before = ['--import', dnsSetupModule]
   const open = await attempt('0', {guarded: false, before})
   assert.ok(open.hits > 0, 'without the guard, the setup module should reach the receiver')
   const guarded = await attempt('0', {guarded: true, before})
