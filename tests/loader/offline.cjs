@@ -1,19 +1,26 @@
-// Loaded with node --import before every test file, and into every worker those tests start.
+// The offline guard. npm test loads it with node --require before every test file, and it loads
+// itself into every worker those tests start. It's CommonJS and synchronous, because Node runs
+// --require preloads before --import preloads and before any test code, so nothing a test or
+// its setup modules load can reach the network before the guard is in place.
+//
 // Tests run offline: a network connection, a UDP packet or a DNS query fails the run, even when
 // the code under test catches the error. Unix sockets and named pipes stay open, because they're
 // local IPC, not network. The guard catches accidental network use. It isn't a sandbox against
 // code written to get around it. tests/offline-guard.test.ts checks each kind of attempt from a
 // child process.
-import {randomUUID} from 'node:crypto'
-import dns from 'node:dns'
-import {appendFileSync, existsSync, rmSync} from 'node:fs'
-import {syncBuiltinESMExports} from 'node:module'
-import net from 'node:net'
-import {tmpdir} from 'node:os'
-import {join} from 'node:path'
-import process from 'node:process'
-import {fileURLToPath} from 'node:url'
-import workerThreads from 'node:worker_threads'
+'use strict'
+
+const {randomUUID} = require('node:crypto')
+const dns = require('node:dns')
+const {appendFileSync, existsSync, rmSync} = require('node:fs')
+const {syncBuiltinESMExports} = require('node:module')
+const net = require('node:net')
+const {tmpdir} = require('node:os')
+const {join} = require('node:path')
+const process = require('node:process')
+const workerThreads = require('node:worker_threads')
+
+const guardFile = require.resolve('./offline.cjs')
 
 // A worker's exit code ends only that worker, so a worker reports a blocked attempt by appending
 // to the file this variable names, and the main thread fails the process on exit when the file
@@ -117,35 +124,27 @@ denyDns(dns.Resolver.prototype, {promises: false})
 denyDns(dns.promises, {promises: true})
 denyDns(dns.promises.Resolver.prototype, {promises: true})
 
-// Every worker gets the guard. A worker started from a file or URL runs --import preloads, so
-// the guard's --import goes in front of the worker's own arguments, inherited or given, such as
-// execArgv: []. An eval worker never runs preloads, so its code loads the guard first: a static
-// import when --input-type=module makes the code a module, else a require after any
-// 'use strict' directive. Workers also get the report file in their environment.
-const guardUrl = import.meta.url
-const strictDirective = /^\s*(['"])use strict\1;?/
-
-function loadGuardFirst(code, execArgv) {
-  const moduleCode = execArgv.some(
-    (arg, index) =>
-      arg === '--input-type=module' || (arg === '--input-type' && execArgv[index + 1] === 'module'),
-  )
-  if (moduleCode) return `import ${JSON.stringify(guardUrl)};${code}`
-  const directive = code.match(strictDirective)?.[0] ?? ''
-  const load = `require(${JSON.stringify(fileURLToPath(guardUrl))});`
-  return directive + load + code.slice(directive.length)
+// Every worker gets the guard first. Workers run --require preloads in the order given, before
+// --import preloads and the worker's code, including eval workers, which skip --import. So the
+// guard goes first among the worker's own arguments, inherited or given, such as execArgv: [].
+// A worker also applies NODE_OPTIONS from its environment before those arguments, so when the
+// worker's environment has NODE_OPTIONS, the guard goes first there too. Workers also get the
+// report file in their environment. With SHARE_ENV the worker shares this process's environment,
+// which already has the report file.
+function workerEnv(env) {
+  if (typeof env === 'symbol') return env
+  const copy = {...(env ?? process.env), [REPORT]: process.env[REPORT]}
+  if (copy.NODE_OPTIONS) {
+    copy.NODE_OPTIONS = `--require ${JSON.stringify(guardFile)} ${copy.NODE_OPTIONS}`
+  }
+  return copy
 }
 
 const BaseWorker = workerThreads.Worker
 workerThreads.Worker = class Worker extends BaseWorker {
   constructor(filename, options = {}) {
-    const execArgv = ['--import', guardUrl, ...(options.execArgv ?? process.execArgv)]
-    const env =
-      typeof options.env === 'object' && options.env !== null
-        ? {...options.env, [REPORT]: process.env[REPORT]}
-        : options.env
-    const entry = options.eval ? loadGuardFirst(String(filename), execArgv) : filename
-    super(entry, {...options, execArgv, env})
+    const execArgv = ['--require', guardFile, ...(options.execArgv ?? process.execArgv)]
+    super(filename, {...options, execArgv, env: workerEnv(options.env)})
   }
 }
 

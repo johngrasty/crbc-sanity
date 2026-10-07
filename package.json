@@ -16,7 +16,7 @@
     "typegen": "sanity schema extract --enforce-required-fields && sanity typegen generate && node scripts/mirror-types.ts",
     "verify": "export DO_NOT_TRACK=1 NO_UPDATE_NOTIFIER=1 npm_config_update_notifier=false && npm run check && npm run lint && npm test && npm run schema:check && npm run build",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --import ./tests/loader/offline.mjs --import ./tests/loader/register.mjs --test 'tests/*.test.mjs' 'tests/*.test.ts'"
+    "test": "node --require ./tests/loader/offline.cjs --import ./tests/loader/register.mjs --test 'tests/*.test.mjs' 'tests/*.test.ts'"
   },
   "keywords": [
     "sanity"
