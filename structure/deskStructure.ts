@@ -144,6 +144,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                         .child(
                           S.documentTypeList('serviceEvent')
                             .title('Upcoming services')
+                            .apiVersion('2025-02-19')
                             .filter(`${liveEvent} && !(${eventEnded})`)
                             .defaultOrdering([{field: 'scheduledStart.utc', direction: 'asc'}]),
                         ),
@@ -154,6 +155,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                         .child(
                           S.documentTypeList('serviceEvent')
                             .title('Past services')
+                            .apiVersion('2025-02-19')
                             .filter(`${liveEvent} && ${eventEnded}`)
                             .defaultOrdering([{field: 'scheduledStart.utc', direction: 'desc'}]),
                         ),
@@ -164,6 +166,7 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                         .child(
                           S.documentTypeList('serviceEvent')
                             .title('Cancelled services')
+                            .apiVersion('2025-02-19')
                             .filter('_type == "serviceEvent" && cancelled == true')
                             .defaultOrdering([{field: 'scheduledStart.utc', direction: 'desc'}]),
                         ),
