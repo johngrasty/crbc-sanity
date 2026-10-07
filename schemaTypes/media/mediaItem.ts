@@ -1,5 +1,9 @@
 import {defineField, defineType} from 'sanity'
 import {Video} from 'lucide-react'
+import {artworkField} from './artwork'
+import {audioEnclosureField} from './audioEnclosure'
+import {documentsField} from './documents'
+import {itemSize} from './itemSize'
 import {itemLimit, noRepeats, referencedId} from './lists'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
@@ -7,6 +11,7 @@ import {passagesField} from './passage'
 import {publicationPolicyField} from './publicationPolicy'
 import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
 import {slugFields} from './slug'
+import {sourceField} from './source'
 
 // A real day written as YYYY-MM-DD, the way Sanity stores a date field. setUTCFullYear, unlike
 // Date.UTC, doesn't read years 0 to 99 as 1900 to 1999.
@@ -80,7 +85,9 @@ export default defineType({
   groups: [
     {name: 'details', title: 'Details', default: true},
     {name: 'peopleAndScripture', title: 'People and scripture'},
+    {name: 'artwork', title: 'Artwork and files'},
     {name: 'publishing', title: 'Publishing'},
+    {name: 'source', title: 'Source'},
   ],
   fields: [
     {...editorialIdField('mediaItem'), group: 'details'},
@@ -207,6 +214,9 @@ export default defineType({
       group: 'peopleAndScripture',
     }),
     {...passagesField, group: 'peopleAndScripture'},
+    {...artworkField('mediaItem'), group: 'artwork'},
+    {...documentsField, group: 'artwork'},
+    {...audioEnclosureField, group: 'artwork'},
     {...publicationPolicyField, group: 'publishing'},
     defineField({
       name: 'publishAt',
@@ -231,7 +241,10 @@ export default defineType({
       'Rights hold',
       "Use this when the church can't show the recording, for example because of music rights. It keeps the item off the website and apps, as an editor hold does.",
     ),
+    {...sourceField('mediaItem'), group: 'source'},
   ],
+  // The public API refuses an item over 200,000 bytes, so Studio refuses one too.
+  validation: (rule) => rule.custom(itemSize),
   orderings: [
     {
       title: 'Service date, newest first',

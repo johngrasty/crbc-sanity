@@ -565,6 +565,55 @@ export type MediaItem = {
       _key: string
     } & Passage
   >
+  artwork?: {
+    thumbnail?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+    banner?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+  }
+  documents?: Array<{
+    label: string
+    file: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.fileAsset'
+      }
+      media?: unknown
+      _type: 'file'
+    }
+    _type: 'mediaDocument'
+    _key: string
+  }>
+  audioEnclosure?: {
+    url: string
+    mimeType: 'audio/mpeg' | 'audio/mp4' | 'audio/aac'
+    bytes: number
+    guid: string
+  }
   publicationPolicy: 'auto' | 'manual'
   publishAt?: string
   editorHold?: {
@@ -574,6 +623,11 @@ export type MediaItem = {
   rightsHold?: {
     active?: boolean
     note?: string
+  }
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
   }
 }
 

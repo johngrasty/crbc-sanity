@@ -3,3 +3,7 @@
 const encoder = new TextEncoder()
 
 export const utf8Bytes = (text: string): number => encoder.encode(text).length
+
+// The size of a value as compact UTF-8 JSON, which is how the contract's serializedBytes measures
+// an item against its 200,000-byte cap.
+export const serializedSize = (value: unknown): number => utf8Bytes(JSON.stringify(value))
