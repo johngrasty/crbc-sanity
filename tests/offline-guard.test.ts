@@ -1,9 +1,9 @@
 // The offline guard in tests/loader/offline.cjs, checked from outside. Each case runs a child
 // process that makes one network attempt and catches the error, as Sanity's getCurrentUser does.
 // Without the guard, the attempt reaches a receiver in this process, which shows the receiver
-// works. With the guard, the child exits nonzero and nothing arrives. The receivers listen on
-// 127.0.0.1 and ::1, and DNS cases point the resolver at the UDP receiver, so nothing leaves the
-// machine.
+// works. With the guard, the child exits nonzero and no connection or packet reaches the
+// attempt's receivers. The receivers listen on 127.0.0.1 and ::1, and DNS cases point the
+// resolver at the UDP receiver, so nothing leaves the machine.
 import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import dgram from 'node:dgram'
@@ -12,7 +12,7 @@ import net from 'node:net'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import process from 'node:process'
-import {after, before, test} from 'node:test'
+import {after, test} from 'node:test'
 import {setTimeout as wait} from 'node:timers/promises'
 import {fileURLToPath} from 'node:url'
 
@@ -25,80 +25,97 @@ let children = 0
 const setupModule = join(scratch, 'worker-setup.cjs')
 const dnsSetupModule = join(scratch, 'dns-setup.cjs')
 
-let hits = 0
-const ports: Record<string, number> = {}
-const receive = () => hits++
-const tcp = net.createServer((socket) => {
-  hits++
-  socket.destroy()
-})
-const tcp6 = net.createServer((socket) => {
-  hits++
-  socket.destroy()
-})
-const udp = dgram.createSocket('udp4').on('message', receive)
-const udp6 = dgram.createSocket('udp6').on('message', receive)
-
-before(async () => {
-  await new Promise<void>((resolve) => tcp.listen(0, '127.0.0.1', resolve))
-  await new Promise<void>((resolve) => tcp6.listen(0, '::1', resolve))
-  await new Promise<void>((resolve) => udp.bind(0, '127.0.0.1', resolve))
-  await new Promise<void>((resolve) => udp6.bind(0, '::1', resolve))
-  ports.PORT = (tcp.address() as net.AddressInfo).port
-  ports.PORT6 = (tcp6.address() as net.AddressInfo).port
-  ports.UDP = udp.address().port
-  ports.UDP6 = udp6.address().port
-  // A worker setup module that connects to the TCP receiver, for the preload cases.
-  writeFileSync(
-    setupModule,
-    `require('node:net').connect(${ports.PORT}, '127.0.0.1').on('error', () => {})\n`,
-  )
-  // A setup module whose DNS query reaches the native resolver as soon as it loads, so a guard
-  // that loads after it is too late.
-  writeFileSync(
-    dnsSetupModule,
-    `const dns = require('node:dns')
-dns.setServers(['127.0.0.1:${ports.UDP}'])
+// What the setup modules hold. Each attempt writes them with its own receivers' ports. The first
+// is a worker setup module that connects to the TCP receiver, for the preload cases. The second
+// makes a DNS query that reaches the native resolver as soon as it loads, so a guard that loads
+// after it is too late.
+const setupSources = {
+  [setupModule]: `require('node:net').connect(PORT, '127.0.0.1').on('error', () => {})\n`,
+  [dnsSetupModule]: `const dns = require('node:dns')
+dns.setServers(['127.0.0.1:UDP'])
 dns.resolve4('guard.invalid', () => {})\n`,
-  )
-})
+}
+
+// Each attempt gets its own receivers on fresh ports, and every receiver stays open until the
+// end. A connection or packet that arrives late lands on the receivers of the attempt that sent
+// it, so it can't count against a later attempt.
+const receivers: (net.Server | dgram.Socket)[] = []
 after(() => {
-  tcp.close()
-  tcp6.close()
-  udp.close()
-  udp6.close()
+  for (const receiver of receivers) receiver.close()
   rmSync(scratch, {recursive: true, force: true})
 })
+
+type Counts = {tcp: number; tcp6: number; udp: number; udp6: number}
+
+// Opens a set of receivers: TCP and UDP, on 127.0.0.1 and ::1. A TCP receiver counts every
+// connection it accepts, even one that sends nothing, since a leaked connection might send
+// nothing. It closes the connection at once, so no peer can hold it open. A UDP receiver counts
+// every packet. The counts keep going after the attempt ends. Another process that happens to
+// reach a fresh port counts too. That can fail a run, but it can't hide a leak.
+async function openReceivers() {
+  const counts: Counts = {tcp: 0, tcp6: 0, udp: 0, udp6: 0}
+  const listen = (name: keyof Counts, host: string) =>
+    new Promise<number>((resolve, reject) => {
+      const server = net.createServer((socket) => {
+        counts[name]++
+        socket.destroy()
+      })
+      receivers.push(server)
+      server.on('error', reject)
+      server.listen(0, host, () => resolve((server.address() as net.AddressInfo).port))
+    })
+  const bind = (name: keyof Counts, type: dgram.SocketType, host: string) =>
+    new Promise<number>((resolve, reject) => {
+      const socket = dgram.createSocket(type).on('message', () => counts[name]++)
+      receivers.push(socket)
+      socket.on('error', reject)
+      socket.bind(0, host, () => resolve(socket.address().port))
+    })
+  const ports: Record<string, number> = {
+    PORT: await listen('tcp', '127.0.0.1'),
+    PORT6: await listen('tcp6', '::1'),
+    UDP: await bind('udp', 'udp4', '127.0.0.1'),
+    UDP6: await bind('udp6', 'udp6', '::1'),
+  }
+  return {counts, ports}
+}
 
 // Puts the receivers' ports in place of PORT, PORT6, UDP and UDP6, and the setup modules' paths,
 // as string literals, in place of SETUP and DNS_SETUP.
 const setupPaths: Record<string, string> = {SETUP: setupModule, DNS_SETUP: dnsSetupModule}
-const withPorts = (code: string) =>
+const withPorts = (code: string, ports: Record<string, number>) =>
   code.replaceAll(/\b(PORT6|PORT|UDP6|UDP|SETUP|DNS_SETUP)\b/g, (name) =>
     name in setupPaths ? JSON.stringify(setupPaths[name]) : String(ports[name]),
   )
 
-// Runs code in a child process, with or without the guard, and reports its exit status and how
-// many connections and packets the receivers saw. The child exits after half a second at most,
-// so a DNS query nobody answers doesn't hang it.
+// Runs code in a child process, with or without the guard, against its own receivers, and
+// reports its exit status, the receivers' ports, and how many connections and packets reached
+// each receiver, with their total as hits. The child exits after half a second at most, so a DNS
+// query nobody answers doesn't hang it.
 async function attempt(
   code: string,
   {guarded, before = []}: {guarded: boolean; before?: string[]},
 ) {
-  hits = 0
-  const source = `
+  const {counts, ports} = await openReceivers()
+  for (const [path, source] of Object.entries(setupSources)) {
+    writeFileSync(path, withPorts(source, ports))
+  }
+  const source = withPorts(
+    `
     import dgram from 'node:dgram'
     import dns from 'node:dns'
     import net from 'node:net'
     import tls from 'node:tls'
     import {SHARE_ENV, Worker} from 'node:worker_threads'
-    const servers = ['127.0.0.1:${ports.UDP}']
+    const servers = ['127.0.0.1:UDP']
     const inWorker = (body, options) =>
       new Worker(new URL('data:text/javascript,' + encodeURIComponent(body)), options)
         .on('error', () => {})
     setTimeout(() => process.exit(), 500).unref()
     ${code}
-  `
+  `,
+    ports,
+  )
   const file = join(scratch, `child-${++children}.mjs`)
   writeFileSync(file, source)
   const args = [...before, ...(guarded ? ['--require', guard] : []), file]
@@ -107,7 +124,8 @@ async function attempt(
   child.stderr.on('data', (chunk) => (stderr += chunk))
   const status = await new Promise<number | null>((resolve) => child.on('close', resolve))
   await wait(100)
-  return {status, stderr, hits}
+  const hits = counts.tcp + counts.tcp6 + counts.udp + counts.udp6
+  return {status, stderr, ports, counts: {...counts}, hits}
 }
 
 const ignore = '() => {}'
@@ -256,22 +274,57 @@ const cases: {name: string; code: string; observable: boolean}[] = [
 ]
 
 for (const {name, code, observable} of cases) {
-  test(`the offline guard fails a caught ${name} attempt and sends nothing`, async () => {
+  const title = `the offline guard fails a caught ${name} attempt, and no connection or packet reaches its receivers`
+  test(title, async () => {
     if (observable) {
-      const open = await attempt(withPorts(code), {guarded: false})
+      const open = await attempt(code, {guarded: false})
       assert.ok(open.hits > 0, `without the guard, ${name} should reach the receiver`)
     }
-    const guarded = await attempt(withPorts(code), {guarded: true})
+    const guarded = await attempt(code, {guarded: true})
     assert.notEqual(guarded.status, 0, `the child should fail. stderr: ${guarded.stderr}`)
     assert.match(guarded.stderr, /Tests run offline/)
-    assert.equal(guarded.hits, 0, `${name} reached the receiver through the guard`)
+    assert.deepEqual(
+      guarded.counts,
+      {tcp: 0, tcp6: 0, udp: 0, udp6: 0},
+      `${name} reached a receiver through the guard`,
+    )
   })
 }
 
+test('an attempt counts every connection and packet that reaches its own receivers, and none sent to earlier ones', async () => {
+  // This process runs under the guard, so an unguarded child sends the traffic. It sends a late
+  // connection and packet to each of an earlier set of receivers. To each of its own TCP receivers
+  // it opens a connection that sends nothing and waits for the receiver to close it, and to each
+  // of its own UDP receivers it sends a packet.
+  const earlier = await openReceivers()
+  const code = `
+    net.connect(${earlier.ports.PORT}, '127.0.0.1').on('error', ${ignore}).end('late')
+    net.connect(${earlier.ports.PORT6}, '::1').on('error', ${ignore}).end('late')
+    dgram.createSocket('udp4').send('late', ${earlier.ports.UDP}, '127.0.0.1')
+    dgram.createSocket('udp6').send('late', ${earlier.ports.UDP6}, '::1')
+    process.exitCode = 3
+    let open = 2
+    const closed = () => --open || (process.exitCode = 0)
+    net.connect(PORT, '127.0.0.1').on('error', ${ignore}).on('close', closed)
+    net.connect(PORT6, '::1').on('error', ${ignore}).on('close', closed)
+    dgram.createSocket('udp4').send('x', UDP, '127.0.0.1')
+    dgram.createSocket('udp6').send('x', UDP6, '::1')
+  `
+  const result = await attempt(code, {guarded: false})
+  assert.deepEqual(result.counts, {tcp: 1, tcp6: 1, udp: 1, udp6: 1})
+  assert.deepEqual(
+    earlier.counts,
+    {tcp: 1, tcp6: 1, udp: 1, udp6: 1},
+    'the late traffic should reach the earlier receivers',
+  )
+  assert.equal(result.status, 0, 'the receivers should close a connection that sends nothing')
+})
+
 test('the offline guard leaves Unix sockets open, because they are local IPC', async () => {
   const path = join(scratch, 'ipc.sock')
+  let connections = 0
   const server = net.createServer((socket) => {
-    hits++
+    connections++
     socket.end()
   })
   await new Promise<void>((resolve) => server.listen(path, resolve))
@@ -279,7 +332,7 @@ test('the offline guard leaves Unix sockets open, because they are local IPC', a
     const code = `net.connect(${JSON.stringify(path)}).on('connect', () => process.exit(0))`
     const result = await attempt(code, {guarded: true})
     assert.equal(result.status, 0, result.stderr)
-    assert.equal(result.hits, 1)
+    assert.equal(connections, 1)
   } finally {
     server.close()
   }
@@ -294,7 +347,11 @@ test('the guard runs before a preload listed ahead of it on the command line', a
   const guarded = await attempt('0', {guarded: true, before})
   assert.notEqual(guarded.status, 0, `the child should fail. stderr: ${guarded.stderr}`)
   assert.match(guarded.stderr, /Tests run offline/)
-  assert.equal(guarded.hits, 0, 'the setup module reached the receiver through the guard')
+  assert.deepEqual(
+    guarded.counts,
+    {tcp: 0, tcp6: 0, udp: 0, udp6: 0},
+    'the setup module reached a receiver through the guard',
+  )
 })
 
 test("an eval worker whose 'use strict' has no semicolon still runs, with or without the guard", async () => {
