@@ -22,15 +22,19 @@ Run `npm run verify` before review. It checks TypeScript, lint, the tests, Sanit
 validation and the production build.
 
 `npm test` runs offline. The tests use an in-memory dataset. The preload in
-`tests/loader/offline.mjs` fails the run when a test process opens a network connection,
-sends a UDP packet or makes a DNS query, even if the code catches the error.
-`tests/offline-guard.test.ts` checks each kind. Child processes that a test starts don't load
-the preload. `npm run verify` never reads or writes content and never deploys the Studio. It
-turns off Sanity CLI telemetry and update checks with `DO_NOT_TRACK` and
-`NO_UPDATE_NOTIFIER`. The schema check still needs the network, because Sanity asks the
-API who the logged-in CLI user is before it validates the schema definitions. It never reads
-dataset documents. Studio runtime auto-updates are disabled so a deployment runs the
-dependency versions checked locally.
+`tests/loader/offline.mjs` fails the run when a test opens a network connection, sends a UDP
+packet or makes a DNS query, even if the code catches the error. It covers every public Node
+network API, plus Node's native TCP, UDP and DNS bindings, in test processes and in the worker
+threads they start. It doesn't cover child processes, connections or file descriptors handed in
+already open from outside the process, or code written to get around the guard. The guard
+catches accidental network use by the code under test and its libraries. It isn't a sandbox.
+`tests/offline-guard.test.ts` checks each kind of attempt.
+
+`npm run verify` never reads or writes content and never deploys the Studio. It turns off
+Sanity CLI telemetry and update checks with `DO_NOT_TRACK` and `NO_UPDATE_NOTIFIER`. The
+schema check still needs the network, because Sanity asks the API who the logged-in CLI user
+is before it validates the schema definitions. It never reads dataset documents. Studio runtime
+auto-updates are disabled so a deployment runs the dependency versions checked locally.
 
 After changing schemas, run `npm run typegen` and commit both `schema.json` and
 `sanity.types.ts`. Update any corresponding queries in the website repository. Typegen
