@@ -13,6 +13,13 @@ const urlFields: {type: string; path: string; set: (url: string) => Record<strin
     path: 'source.sourceUrl',
     set: (sourceUrl: string) => ({source: {sourceId: 'subsplash:+abc123', sourceUrl}}),
   })),
+  {
+    type: 'mediaItem',
+    path: 'audioEnclosure.url',
+    set: (url: string) => ({
+      audioEnclosure: {url, mimeType: 'audio/mpeg', bytes: 48_000_000, guid: 'crbc-easter-2026'},
+    }),
+  },
 ]
 
 async function markersFor(

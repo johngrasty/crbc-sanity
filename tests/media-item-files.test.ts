@@ -109,3 +109,98 @@ test('a document label holds up to 200 characters, counted as code points', asyn
     )
   }
 })
+
+const warningsAt = (markers: Marker[], path: string) =>
+  markers.filter((marker) => marker.level === 'warning' && marker.path === path)
+
+// A podcast episode's audio file, as podcast apps read it from the feed.
+const audioEnclosure = {
+  url: 'https://media.example.org/easter.mp3',
+  mimeType: 'audio/mpeg',
+  bytes: 48_000_000,
+  guid: 'crbc-easter-2026',
+}
+
+test('podcast audio is optional, but once an item has it, it needs all four fields', async () => {
+  const studio = createHarness()
+  assert.deepEqual(errors(await studio.validate(item())), [])
+  assert.deepEqual(errors(await studio.validate(item({audioEnclosure}))), [])
+  for (const field of ['url', 'mimeType', 'bytes', 'guid']) {
+    const markers = await studio.validate(
+      item({audioEnclosure: {...audioEnclosure, [field]: undefined}}),
+    )
+    assert.equal(errorsAt(markers, `audioEnclosure.${field}`).length, 1, field)
+    assert.equal(errors(markers).length, 1, field)
+  }
+})
+
+test('the podcast audio format is audio/mpeg, audio/mp4 or audio/aac', async () => {
+  const studio = createHarness()
+  for (const mimeType of ['audio/mpeg', 'audio/mp4', 'audio/aac']) {
+    const markers = await studio.validate(item({audioEnclosure: {...audioEnclosure, mimeType}}))
+    assert.deepEqual(errors(markers), [], mimeType)
+  }
+  for (const mimeType of ['audio/wav', 'video/mp4', 'mp3']) {
+    const markers = await studio.validate(item({audioEnclosure: {...audioEnclosure, mimeType}}))
+    assert.equal(errorsAt(markers, 'audioEnclosure.mimeType').length, 1, mimeType)
+  }
+})
+
+test('the podcast audio size is a positive whole number of bytes', async () => {
+  const studio = createHarness()
+  for (const bytes of [1, 48_000_000]) {
+    const markers = await studio.validate(item({audioEnclosure: {...audioEnclosure, bytes}}))
+    assert.deepEqual(errors(markers), [], String(bytes))
+  }
+  for (const bytes of [0, -1, 1.5]) {
+    const markers = await studio.validate(item({audioEnclosure: {...audioEnclosure, bytes}}))
+    assert.equal(errorsAt(markers, 'audioEnclosure.bytes').length, 1, String(bytes))
+  }
+})
+
+test('a podcast GUID another media item uses is an error, in any of its versions', async () => {
+  for (const other of ['other', 'drafts.other', 'versions.rSpring.other']) {
+    const studio = createHarness({
+      documents: [{...item({audioEnclosure}), _id: other, contentId: `mi_${OTHER_ULID}`}],
+    })
+    const created = await studio.create('mediaItem')
+    const edited = await studio.edit(created._id, {set: {audioEnclosure}})
+    const markers = await studio.validate(edited._id)
+    assert.equal(errorsAt(markers, 'audioEnclosure.guid').length, 1, `taken by ${other}`)
+  }
+})
+
+test("an item's own versions may share its podcast GUID", async () => {
+  const studio = createHarness({
+    documents: [item({audioEnclosure}), {...item({audioEnclosure}), _id: 'versions.rSpring.item'}],
+  })
+  const draft = await studio.edit('item', {set: {title: 'Easter'}})
+  for (const _id of [draft._id, 'item', 'versions.rSpring.item']) {
+    assert.deepEqual(errorsAt(await studio.validate(_id), 'audioEnclosure.guid'), [], _id)
+  }
+})
+
+test("changing a published item's podcast GUID is a warning, in a draft or a release version", async () => {
+  for (const release of [undefined, 'rSpring']) {
+    const studio = createHarness({documents: [item({audioEnclosure})]})
+    const unchanged = await studio.edit('item', {set: {title: 'Easter'}}, {release})
+    assert.deepEqual(warningsAt(await studio.validate(unchanged._id), 'audioEnclosure.guid'), [])
+    const changed = await studio.edit(
+      'item',
+      {set: {'audioEnclosure.guid': 'crbc-easter-2026-v2'}},
+      {release},
+    )
+    const markers = await studio.validate(changed._id)
+    assert.equal(warningsAt(markers, 'audioEnclosure.guid').length, 1, changed._id)
+    assert.deepEqual(errors(markers), [], changed._id)
+  }
+})
+
+test('a GUID on an item that was never published, or published without audio, is no warning', async () => {
+  const studio = createHarness({documents: [{...item({audioEnclosure}), _id: 'drafts.item'}]})
+  assert.deepEqual(warningsAt(await studio.validate('drafts.item'), 'audioEnclosure.guid'), [])
+
+  const withoutAudio = createHarness({documents: [item()]})
+  const draft = await withoutAudio.edit('item', {set: {audioEnclosure}})
+  assert.deepEqual(warningsAt(await withoutAudio.validate(draft._id), 'audioEnclosure.guid'), [])
+})

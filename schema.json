@@ -3530,6 +3530,57 @@
         },
         "optional": true
       },
+      "audioEnclosure": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "object",
+          "attributes": {
+            "url": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "string"
+              },
+              "optional": false
+            },
+            "mimeType": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "union",
+                "of": [
+                  {
+                    "type": "string",
+                    "value": "audio/mpeg"
+                  },
+                  {
+                    "type": "string",
+                    "value": "audio/mp4"
+                  },
+                  {
+                    "type": "string",
+                    "value": "audio/aac"
+                  }
+                ]
+              },
+              "optional": false
+            },
+            "bytes": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "number"
+              },
+              "optional": false
+            },
+            "guid": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "string"
+              },
+              "optional": false
+            }
+          }
+        },
+        "optional": true
+      },
       "publicationPolicy": {
         "type": "objectAttribute",
         "value": {

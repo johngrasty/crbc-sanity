@@ -579,6 +579,12 @@ export type MediaItem = {
     _type: 'mediaDocument'
     _key: string
   }>
+  audioEnclosure?: {
+    url: string
+    mimeType: 'audio/mpeg' | 'audio/mp4' | 'audio/aac'
+    bytes: number
+    guid: string
+  }
   publicationPolicy: 'auto' | 'manual'
   publishAt?: string
   editorHold?: {

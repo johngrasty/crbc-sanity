@@ -1,7 +1,7 @@
 // The rule for every URL field in the editorial types: an http or https address of at most 2,048
 // characters and 2,048 UTF-8 bytes (contract section 10.2). Every character takes at least one
 // byte, so the byte limit covers the character limit too.
-// validation: (rule) => urlRule(rule)
+// validation: (rule) => urlRule(rule), or urlRule(rule, {required: true}) for a required URL.
 import type {Rule, UrlRule} from 'sanity'
 import {utf8Bytes} from './bytes'
 import {URL_MAX_LENGTH} from './limits'
@@ -9,12 +9,13 @@ import {URL_MAX_LENGTH} from './limits'
 const count = (value: number) => value.toLocaleString('en-US')
 
 // Sanity builds each rule a url field returns from a base rule that already checks the scheme,
-// with its own message. The length rule starts from a copy without that check, so a bad scheme
-// gives one marker.
+// with its own message. The length and required rules start from a copy without that check, so a
+// bad scheme gives one marker.
 const withoutSchemeCheck = (rule: UrlRule) =>
   (rule as unknown as Rule).clone().reset() as unknown as UrlRule
 
-export const urlRule = (rule: UrlRule) => [
+export const urlRule = (rule: UrlRule, {required = false}: {required?: boolean} = {}) => [
+  ...(required ? [withoutSchemeCheck(rule).required()] : []),
   rule
     .uri({scheme: ['http', 'https']})
     .error('Use a web address that starts with http:// or https://.'),
