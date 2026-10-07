@@ -766,7 +766,7 @@ export function createHarness({
   const resolveActions = (
     type: string,
     versionType: DocumentActionsVersionType,
-    documentId: string,
+    documentId: string | undefined,
   ) => {
     const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
     return source.document.actions({
@@ -784,13 +784,14 @@ export function createHarness({
     // through the whole plugin chain. Unnamed actions show their displayName. A replacement
     // that sets a built-in's action name shows that name, so use actionDetails to tell the two
     // apart. A version or a scheduled draft belongs to the release rHarness. documentId is the
-    // published ID the pane passes, and defaults to the type name, a singleton's fixed ID.
+    // published ID the pane passes, and defaults to the type name, a singleton's fixed ID. Pass
+    // null to resolve with no document ID, which Sanity's context allows.
     actions(
       type: string,
       versionType: DocumentActionsVersionType,
-      {documentId = type}: {documentId?: string} = {},
+      {documentId = type}: {documentId?: string | null} = {},
     ): string[] {
-      return resolveActions(type, versionType, documentId).map(actionName)
+      return resolveActions(type, versionType, documentId ?? undefined).map(actionName)
     },
 
     // The same actions, each with its action name, its component and what Sanity's Canvas guard
@@ -798,9 +799,9 @@ export function createHarness({
     actionDetails(
       type: string,
       versionType: DocumentActionsVersionType,
-      {documentId = type}: {documentId?: string} = {},
+      {documentId = type}: {documentId?: string | null} = {},
     ): ActionDetail[] {
-      return resolveActions(type, versionType, documentId).map(actionDetail)
+      return resolveActions(type, versionType, documentId ?? undefined).map(actionDetail)
     },
 
     // What Studio reads from a registered document type, or undefined for a type the schema

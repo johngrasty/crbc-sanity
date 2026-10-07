@@ -43,13 +43,17 @@ test('this file covers every singleton', () => {
   assert.deepEqual([...singletonTypes].sort(), [...singletons].sort())
 })
 
+// The rule reads the published ID, so a draft or version ID counts as its document's ID.
+const withPrefixes = (id: string) => [id, `drafts.${id}`, `versions.rSpring.${id}`]
+
 // A copy under another ID would be a second document of the type, and the website reads each
 // singleton with *[_type == "homePage"][0] and the like. An editor can delete the copy but
 // never publish it. Ticket #44.
 test('a singleton under any other ID has only delete, in every version type', () => {
   const studio = createHarness()
+  const others = [...withPrefixes('other'), '0b6f3c2e-5d4a-4e8b-9f1c-2a7d6e5b4c3a']
   for (const type of singletons) {
-    for (const documentId of ['other', '0b6f3c2e-5d4a-4e8b-9f1c-2a7d6e5b4c3a']) {
+    for (const documentId of others) {
       for (const versionType of versionTypes) {
         assert.deepEqual(
           studio.actions(type, versionType, {documentId}),
@@ -64,10 +68,26 @@ test('a singleton under any other ID has only delete, in every version type', ()
 test("every singleton's fixed document keeps publish, discard and restore, in every version type", () => {
   const studio = createHarness()
   for (const type of singletons) {
+    for (const documentId of withPrefixes(type)) {
+      for (const versionType of versionTypes) {
+        assert.deepEqual(
+          studio.actions(type, versionType, {documentId}),
+          fixedActions[versionType],
+          `${documentId} ${versionType}`,
+        )
+      }
+    }
+  }
+})
+
+// Sanity's context lets documentId be missing. Then nothing shows it's the fixed document.
+test('a singleton with no document ID has only delete, in every version type', () => {
+  const studio = createHarness()
+  for (const type of singletons) {
     for (const versionType of versionTypes) {
       assert.deepEqual(
-        studio.actions(type, versionType, {documentId: type}),
-        fixedActions[versionType],
+        studio.actions(type, versionType, {documentId: null}),
+        ['delete'],
         `${type} ${versionType}`,
       )
     }
