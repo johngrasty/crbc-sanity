@@ -89,6 +89,52 @@ test('a document without a label or a file is an error', async () => {
   assert.equal(errorsAt(empty, 'documents[_key=="d0"].label').length, 1)
 })
 
+// A document's file needs an uploaded asset, or the website has nothing to download. Each broken
+// shape gets one error, and the item can't publish.
+test("a document's file must point at an uploaded file, and any type of file will do", async () => {
+  const docx: TestDocument = {_id: `file-${'3b9d'.repeat(10)}-docx`, _type: 'sanity.fileAsset'}
+  const reference = (_ref?: unknown) => ({
+    _type: 'reference',
+    ...(_ref === undefined ? {} : {_ref}),
+  })
+  const broken: Record<string, unknown> = {
+    'a null asset': {_type: 'file', asset: null},
+    'no asset': {_type: 'file'},
+    'a reference without a _ref': {_type: 'file', asset: reference()},
+    'a reference with an empty _ref': {_type: 'file', asset: reference('')},
+    'a reference to a file that was never uploaded': {
+      _type: 'file',
+      asset: reference(`file-${'0'.repeat(40)}-pdf`),
+    },
+  }
+  for (const [name, file] of Object.entries(broken)) {
+    const draft = {
+      ...item({documents: [{_key: 'd0', _type: 'mediaDocument', label: 'Notes', file}]}),
+      _id: 'drafts.item',
+    }
+    const studio = createHarness({documents: [fileAsset, docx, draft]})
+    assert.equal(errors(await studio.validate(draft._id)).length, 1, name)
+    await assert.rejects(studio.publish('item'), name)
+  }
+
+  const uploaded = {
+    ...item({
+      documents: [
+        {
+          _key: 'd0',
+          _type: 'mediaDocument',
+          label: 'Handout',
+          file: {_type: 'file', asset: reference(docx._id)},
+        },
+      ],
+    }),
+    _id: 'drafts.item',
+  }
+  const studio = createHarness({documents: [fileAsset, docx, uploaded]})
+  assert.deepEqual(errors(await studio.validate(uploaded._id)), [])
+  await studio.publish('item')
+})
+
 test('a document label holds up to 200 characters, counted as code points', async () => {
   const studio = createHarness({documents: [fileAsset]})
   const [document] = documentsOf(1)
@@ -281,15 +327,45 @@ test("a media item's artwork, documents and podcast audio sit under Artwork and 
 
 test('clearing every podcast audio field takes the podcast audio off, so the item can still publish', async () => {
   const studio = createHarness({documents: [item()]})
-  await studio.edit('item', {set: {'audioEnclosure.url': audioEnclosure.url}})
-  const cleared = await studio.edit('item', {unset: ['audioEnclosure.url']})
+  await studio.edit('item', {set: {audioEnclosure}})
+  // A partly cleared enclosure stays, so its errors show.
+  for (const field of ['url', 'mimeType', 'bytes']) {
+    const partial = await studio.edit('item', {unset: [`audioEnclosure.${field}`]})
+    assert.equal('audioEnclosure' in partial, true, field)
+  }
+  const cleared = await studio.edit('item', {unset: ['audioEnclosure.guid']})
   assert.equal('audioEnclosure' in cleared, false)
   assert.deepEqual(errors(await studio.validate(cleared._id)), [])
+})
 
-  // An empty object an API write left goes when an editor opens the item.
-  const written = createHarness({
-    documents: [item(), {...item(), _id: 'drafts.item', audioEnclosure: {}}],
-  })
-  const opened = await written.open('item')
-  assert.equal('audioEnclosure' in opened, false)
+test('clearing the last podcast audio field to null or an empty string takes the audio off too', async () => {
+  for (const value of [null, '']) {
+    const studio = createHarness({documents: [item()]})
+    await studio.edit('item', {set: {audioEnclosure: {guid: audioEnclosure.guid}}})
+    const cleared = await studio.edit('item', {set: {'audioEnclosure.guid': value}})
+    assert.equal('audioEnclosure' in cleared, false, JSON.stringify(value))
+  }
+})
+
+// An empty object an API write left stays, and shows its errors, until an editor changes it.
+test('opening an item writes nothing, whatever its podcast audio holds, in a draft, a release version or the published item', async () => {
+  const audios = {
+    absent: undefined,
+    empty: {},
+    partial: {url: audioEnclosure.url},
+    full: audioEnclosure,
+  }
+  for (const [name, audio] of Object.entries(audios)) {
+    for (const [_id, release] of [
+      ['drafts.item', undefined],
+      ['versions.rSpring.item', 'rSpring'],
+      ['item', undefined],
+    ] as const) {
+      const studio = createHarness({documents: [{...item(), _id, audioEnclosure: audio}]})
+      const before = studio.documents()
+      const opened = await studio.open('item', {release})
+      assert.deepEqual(opened.audioEnclosure, audio, `${name} ${_id}`)
+      assert.deepEqual(studio.documents(), before, `${name} ${_id}`)
+    }
+  }
 })
