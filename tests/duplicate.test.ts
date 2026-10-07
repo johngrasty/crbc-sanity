@@ -110,14 +110,14 @@ async function copyFields(type: EditorialType): Promise<Record<string, unknown>>
   return copy
 }
 
-// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, with the
-// fresh-ID Duplicate where Sanity's Duplicate was. Tasks and canvas actions stay.
+// Sanity's lists from /tmp/studio-spec/notes/01-sanity-research.md, question 1, without
+// schedule. The fresh-ID Duplicate takes Sanity's action name, so it shows as duplicate in
+// Sanity's place. Tasks and canvas actions stay.
 const editorialActions = {
   draft: [
     'publish',
-    'schedule',
     'unpublish',
-    'FreshIdDuplicateAction',
+    'duplicate',
     'restore',
     'discardChanges',
     'TaskCreateAction',
@@ -129,14 +129,14 @@ const editorialActions = {
   published: [
     'unpublish',
     'publish',
-    'FreshIdDuplicateAction',
+    'duplicate',
     'restore',
     'discardChanges',
     'delete',
     'TaskCreateAction',
   ],
   version: [
-    'FreshIdDuplicateAction',
+    'duplicate',
     'unpublishVersion',
     'linkToCanvas',
     'unlinkFromCanvas',
@@ -144,12 +144,11 @@ const editorialActions = {
     'discardVersion',
   ],
   // Sanity offers no Duplicate on a scheduled draft, so there's nothing to replace.
-  'scheduled-draft': ['publish', 'schedule', 'discardVersion'],
+  'scheduled-draft': ['publish', 'discardVersion'],
   revision: [
     'publish',
-    'schedule',
     'unpublish',
-    'FreshIdDuplicateAction',
+    'duplicate',
     'restore',
     'discardChanges',
     'delete',
@@ -168,8 +167,43 @@ test("the editorial types swap Sanity's Duplicate for the fresh-ID one in every 
         editorialActions[versionType],
         `${type} ${versionType}`,
       )
+      const duplicates = studio
+        .actionDetails(type, versionType)
+        .filter(({action}) => action === 'duplicate')
+        .map(({component}) => component)
+      const expected = versionType === 'scheduled-draft' ? [] : ['FreshIdDuplicateAction']
+      assert.deepEqual(duplicates, expected, `${type} ${versionType}`)
     }
   }
+})
+
+// A scheduled draft is validated only when Schedule is clicked, and then publishes on the server
+// without another check (/tmp/studio-spec/reviews/ids-fable-5.1.md, finding 2). Media items
+// have their own publish time.
+test('the editorial types offer no scheduling in any version type', () => {
+  const studio = createHarness()
+  for (const type of editorialTypes) {
+    for (const versionType of versionTypes) {
+      assert.ok(!studio.actions(type, versionType).includes('schedule'), `${type} ${versionType}`)
+    }
+  }
+})
+
+test('on a document linked to Canvas, the fresh-ID Duplicate stays available', () => {
+  const studio = createHarness()
+  for (const type of editorialTypes) {
+    for (const versionType of versionTypes.filter((name) => name !== 'scheduled-draft')) {
+      const duplicate = studio
+        .actionDetails(type, versionType)
+        .find(({component}) => component === 'FreshIdDuplicateAction')
+      assert.equal(duplicate?.keptWhenLinkedToCanvas, true, `${type} ${versionType}`)
+    }
+  }
+  // The guard is live in the harness. It disables the unnamed task action.
+  const task = studio
+    .actionDetails('mediaItem', 'draft')
+    .find(({component}) => component === 'TaskCreateAction')
+  assert.equal(task?.keptWhenLinkedToCanvas, false)
 })
 
 test('a copy is an unpublished draft with a fresh ID of its kind, and the original is unchanged', async () => {
@@ -271,24 +305,39 @@ test("a media item's copy passes the ID rules next to its original", async () =>
 })
 
 // Studio's "Paste document" writes every field of the copied document, read-only ones included,
-// so the content ID comes along. The ID rules are the guard (research question 4).
-test("a whole-document paste of another item's fields is caught by the ID rules", async () => {
+// so the content ID comes along (research question 4).
+test("a whole-document paste of another item's fields keeps a published item's ID, and is caught on a new item", async () => {
   const other = {...originals.mediaItem, _id: 'other', contentId: `mi_${OTHER_ULID}`}
   const pasted = {
     set: Object.fromEntries(Object.entries(other).filter(([key]) => !key.startsWith('_'))),
   }
   const studio = createHarness({documents: [originals.mediaItem, other]})
+
+  // In a published item's draft or release version, the form sets the published ID back.
+  for (const release of [undefined, 'rSpring']) {
+    const version = await studio.edit('item', pasted, {release})
+    assert.equal(version.contentId, originals.mediaItem.contentId, version._id)
+    assert.deepEqual(errorsAt(await studio.validate(version._id), 'contentId'), [], version._id)
+  }
+
+  // A new item has no ID to keep, so the ID rules catch the other item's.
   const created = await studio.create('mediaItem')
-  // Pasted into a published item's draft or release version, the ID differs from the published
-  // one. Pasted into a new item, it's the other item's ID.
-  const pastes: [TestDocument, string | undefined][] = [
-    [await studio.edit('item', pasted), undefined],
-    [await studio.edit('item', pasted, {release: 'rSpring'}), 'rSpring'],
-    [await studio.edit(created._id, pasted), undefined],
-  ]
-  for (const [{_id, contentId}, release] of pastes) {
-    assert.equal(contentId, other.contentId, _id)
-    assert.equal(errorsAt(await studio.validate(_id), 'contentId').length, 1, _id)
-    await assert.rejects(studio.publish(_id, {release}), /contentId/, _id)
+  const pastedNew = await studio.edit(created._id, pasted)
+  assert.equal(pastedNew.contentId, other.contentId)
+  assert.equal(errorsAt(await studio.validate(pastedNew._id), 'contentId').length, 1)
+  await assert.rejects(studio.publish(pastedNew._id), /contentId/)
+})
+
+test("Duplicate leaves its source as it was, and the copy shares none of the source's objects or arrays", async () => {
+  for (const type of editorialTypes) {
+    const original = originals[type]
+    const studio = createHarness({documents: [original]})
+    await studio.duplicate(original._id)
+    assert.deepEqual(
+      studio.documents().find(({_id}) => _id === original._id),
+      original,
+      type,
+    )
+    assert.deepEqual(studio.sharedWithSource(), [], type)
   }
 })

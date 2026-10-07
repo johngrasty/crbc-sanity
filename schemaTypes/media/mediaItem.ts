@@ -3,6 +3,7 @@ import {Video} from 'lucide-react'
 import {itemLimit, noRepeats, referencedId} from './lists'
 import {editorialIdField} from './editorialId'
 import {characterLimit, labelLimit} from './limits'
+import {passagesField} from './passage'
 import {publicationPolicyField} from './publicationPolicy'
 import {CHURCH_TIME_ZONE, isTimeZone, timeZoneMessage} from './timeZone'
 import {slugFields} from './slug'
@@ -78,6 +79,7 @@ export default defineType({
   icon: Video,
   groups: [
     {name: 'details', title: 'Details', default: true},
+    {name: 'peopleAndScripture', title: 'People and scripture'},
     {name: 'publishing', title: 'Publishing'},
   ],
   fields: [
@@ -143,32 +145,6 @@ export default defineType({
       ],
       group: 'details',
     }),
-    // Contract section 10.2 allows 10 speakers and 20 topics on an item.
-    defineField({
-      name: 'speakers',
-      title: 'Speakers',
-      type: 'array',
-      description:
-        'Who preached or spoke, up to 10. Put the main speaker first, because YouTube and Facebook titles use the first one.',
-      of: [{type: 'reference', to: [{type: 'speaker'}]}],
-      validation: (rule) => [
-        itemLimit(rule, 10, 'speakers'),
-        noRepeats(rule, referencedId, 'This speaker is already on the item.'),
-      ],
-      group: 'details',
-    }),
-    defineField({
-      name: 'topics',
-      title: 'Topics',
-      type: 'array',
-      description: 'What the message is about, up to 20. Viewers can browse recordings by topic.',
-      of: [{type: 'reference', to: [{type: 'topic'}]}],
-      validation: (rule) => [
-        itemLimit(rule, 20, 'topics'),
-        noRepeats(rule, referencedId, 'This topic is already on the item.'),
-      ],
-      group: 'details',
-    }),
     defineField({
       name: 'serviceTimezone',
       title: 'Time zone',
@@ -182,6 +158,33 @@ export default defineType({
       ],
       group: 'details',
     }),
+    // Contract section 10.2 allows 10 speakers and 20 topics on an item.
+    defineField({
+      name: 'speakers',
+      title: 'Speakers',
+      type: 'array',
+      description:
+        'Who preached or spoke, up to 10. Put the main speaker first, because YouTube and Facebook titles use the first one.',
+      of: [{type: 'reference', to: [{type: 'speaker'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 10, 'speakers'),
+        noRepeats(rule, referencedId, 'This speaker is already on the item.'),
+      ],
+      group: 'peopleAndScripture',
+    }),
+    defineField({
+      name: 'topics',
+      title: 'Topics',
+      type: 'array',
+      description: 'What the message is about, up to 20. Viewers can browse recordings by topic.',
+      of: [{type: 'reference', to: [{type: 'topic'}]}],
+      validation: (rule) => [
+        itemLimit(rule, 20, 'topics'),
+        noRepeats(rule, referencedId, 'This topic is already on the item.'),
+      ],
+      group: 'peopleAndScripture',
+    }),
+    {...passagesField, group: 'peopleAndScripture'},
     {...publicationPolicyField, group: 'publishing'},
     defineField({
       name: 'publishAt',

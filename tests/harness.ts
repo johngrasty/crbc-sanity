@@ -2,6 +2,7 @@
 // module, over an in-memory dataset. Tests talk to this module, never to validators, inputs or
 // actions directly.
 import {randomUUID} from 'node:crypto'
+import {readFileSync} from 'node:fs'
 import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
 import speakingurl from 'speakingurl'
@@ -30,12 +31,16 @@ import {
   prepareForPreview,
   resolveInitialValue,
   resolveInitialValueForType,
+  stringToPath,
   validateDocument,
   type ConfigContext,
   type DocumentActionComponent,
   type DocumentActionsVersionType,
+  type KeyedSegment,
   type NewDocumentCreationContext,
   type ObjectSchemaType,
+  type Path,
+  type PathSegment,
   type PreviewableType,
   type SanityClient,
   type SanityDocument,
@@ -53,6 +58,7 @@ import {
 import {schemaTypes} from '../schemaTypes'
 import {deskStructure} from '../structure/deskStructure'
 import {duplicateWithFreshIds} from '../schemaTypes/media/duplicate'
+import {editorialIdFor, idToAssign} from '../schemaTypes/media/editorialId'
 import {
   documentActions,
   formComponents,
@@ -265,26 +271,118 @@ function textOf(node: ReactNode): string {
 const actionName = (action: DocumentActionComponent) =>
   action.action ?? action.displayName ?? action.name
 
-// Applies set, then unset, as Sanity does. Paths are dotted field names.
+// One document action as Studio resolves it. action is the name Sanity copies into the action's
+// state, component is the component's displayName or function name, and keptWhenLinkedToCanvas
+// says whether Sanity's Canvas guard leaves it enabled on a document linked to Canvas.
+export type ActionDetail = {
+  action: string | undefined
+  component: string
+  keptWhenLinkedToCanvas: boolean
+}
+
+// On a document linked to Canvas, Sanity's ActionsGuardWrapper disables every action whose state
+// has no action name, or a name off its list (sanity/lib/_chunks-es/pane.js:1914-1934). The
+// guard isn't exported, so the harness reads its list from the installed file and stops if the
+// guard's test no longer reads as it does here.
+const paneChunk = readFileSync(
+  new URL('./_chunks-es/pane.js', import.meta.resolve('sanity')),
+  'utf8',
+)
+const canvasList = /const SUPPORTED_LINKED_TO_CANVAS_ACTIONS = (\[[^\]]*\]);/.exec(paneChunk)
+const canvasTest =
+  'states.map((s) => !s.action || !SUPPORTED_LINKED_TO_CANVAS_ACTIONS.includes(s.action) ? {'
+if (!canvasList || !paneChunk.includes(canvasTest)) {
+  throw new Error(
+    "Sanity's Canvas guard changed. Read ActionsGuardWrapper in sanity/lib/_chunks-es/pane.js and update the harness.",
+  )
+}
+const canvasActions: string[] = JSON.parse(canvasList[1])
+
+const actionDetail = (action: DocumentActionComponent): ActionDetail => ({
+  action: action.action,
+  component: action.displayName ?? action.name,
+  keptWhenLinkedToCanvas: Boolean(action.action && canvasActions.includes(action.action)),
+})
+
+type Container = Record<string, unknown> | unknown[]
+
+// The array index a path segment names, or -1 when there's no such item. Only an index or a
+// {_key} names one.
+function indexIn(items: unknown[], segment: PathSegment): number {
+  if (typeof segment === 'number') return segment
+  if (!segment || typeof segment !== 'object' || Array.isArray(segment)) return -1
+  const {_key} = segment as KeyedSegment
+  return items.findIndex((item) => (item as {_key?: unknown} | null)?._key === _key)
+}
+
+// The value holding a path's last segment. A set creates missing objects on the way, as Sanity
+// does. A keyed segment needs its item to exist, as in Sanity, where a set or unset on a missing
+// item changes nothing.
+function parentAt(document: TestDocument, path: Path, create: boolean): Container | undefined {
+  let target: unknown = document
+  for (const segment of path.slice(0, -1)) {
+    if (Array.isArray(target)) {
+      target = target[indexIn(target, segment)]
+    } else if (target && typeof target === 'object' && typeof segment === 'string') {
+      const object = target as Record<string, unknown>
+      if (create) object[segment] ??= {}
+      target = object[segment]
+    } else {
+      return undefined
+    }
+  }
+  return target && typeof target === 'object' ? (target as Container) : undefined
+}
+
+// Applies set, then unset, as Sanity does. Paths are in Sanity's string form, such as title,
+// editorHold.note or passages[_key=="a"].display.
 function applyPatch(document: TestDocument, {set = {}, unset = []}: DocumentPatch): TestDocument {
   const next = structuredClone(document)
   for (const [path, value] of Object.entries(set)) {
-    const keys = path.split('.')
-    const field = keys.pop() as string
-    let target: Record<string, unknown> = next
-    for (const key of keys) target = (target[key] ??= {}) as Record<string, unknown>
-    target[field] = structuredClone(value)
+    const segments = stringToPath(path)
+    const last = segments[segments.length - 1]
+    const parent = parentAt(next, segments, true)
+    if (Array.isArray(parent)) {
+      const index = indexIn(parent, last)
+      if (index >= 0) parent[index] = structuredClone(value)
+    } else if (parent && typeof last === 'string') {
+      parent[last] = structuredClone(value)
+    }
   }
   for (const path of unset) {
-    const keys = path.split('.')
-    const field = keys.pop() as string
-    const parent = keys.reduce<unknown>(
-      (value, key) => (value as Record<string, unknown>)?.[key],
-      next,
-    )
-    if (parent && typeof parent === 'object') delete (parent as Record<string, unknown>)[field]
+    const segments = stringToPath(path)
+    const last = segments[segments.length - 1]
+    const parent = parentAt(next, segments, false)
+    if (Array.isArray(parent)) {
+      const index = indexIn(parent, last)
+      if (index >= 0) parent.splice(index, 1)
+    } else if (parent && typeof last === 'string') {
+      delete parent[last]
+    }
   }
   return next
+}
+
+// The paths in written of objects and arrays that are source's own objects, not copies, in
+// Sanity's path form, such as requestedDestinations[0]. The document itself is ''.
+function sharedObjects(source: object, written: unknown): string[] {
+  const own = new Set<unknown>()
+  const collect = (value: unknown) => {
+    if (!value || typeof value !== 'object' || own.has(value)) return
+    own.add(value)
+    Object.values(value).forEach(collect)
+  }
+  collect(source)
+  const shared: string[] = []
+  const walk = (value: unknown, path: (string | number)[]) => {
+    if (!value || typeof value !== 'object') return
+    if (own.has(value)) shared.push(pathToString(path))
+    for (const [key, child] of Object.entries(value)) {
+      walk(child, [...path, Array.isArray(value) ? Number(key) : key])
+    }
+  }
+  walk(written, [])
+  return shared
 }
 
 type ClientConfig = {apiVersion?: string; perspective?: unknown}
@@ -447,27 +545,64 @@ export function createHarness({
   const versionId = (id: string, release?: string) =>
     release ? getVersionId(getPublishedId(id), release) : getDraftId(getPublishedId(id))
 
+  let lastShared: string[] = []
+
+  const resolveActions = (
+    type: string,
+    versionType: DocumentActionsVersionType,
+    documentId: string,
+  ) => {
+    const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
+    return source.document.actions({
+      schemaType: type,
+      documentId,
+      versionType,
+      releaseId: inRelease ? 'rHarness' : undefined,
+    })
+  }
+
   return {
     validate,
 
     // The names of the document actions Studio's document pane shows for this type, resolved
-    // through the whole plugin chain. Unnamed actions show their displayName. A version or a
-    // scheduled draft belongs to the release rHarness. documentId is the published ID the pane
-    // passes, and defaults to the type name, a singleton's fixed ID.
+    // through the whole plugin chain. Unnamed actions show their displayName. A replacement
+    // that sets a built-in's action name shows that name, so use actionDetails to tell the two
+    // apart. A version or a scheduled draft belongs to the release rHarness. documentId is the
+    // published ID the pane passes, and defaults to the type name, a singleton's fixed ID.
     actions(
       type: string,
       versionType: DocumentActionsVersionType,
       {documentId = type}: {documentId?: string} = {},
     ): string[] {
-      const inRelease = versionType === 'version' || versionType === 'scheduled-draft'
-      return source.document
-        .actions({
-          schemaType: type,
-          documentId,
-          versionType,
-          releaseId: inRelease ? 'rHarness' : undefined,
-        })
-        .map(actionName)
+      return resolveActions(type, versionType, documentId).map(actionName)
+    },
+
+    // The same actions, each with its action name, its component and what Sanity's Canvas guard
+    // does with it.
+    actionDetails(
+      type: string,
+      versionType: DocumentActionsVersionType,
+      {documentId = type}: {documentId?: string} = {},
+    ): ActionDetail[] {
+      return resolveActions(type, versionType, documentId).map(actionDetail)
+    },
+
+    // What Studio reads from a registered document type, or undefined for a type the schema
+    // doesn't have. liveEdit means edits skip the draft and go straight to the published
+    // document. A field is assistExcluded when its options set aiAssist.exclude, which AI Assist
+    // checks before it offers or writes the field (@sanity/assist/dist/index.js:235).
+    schemaType(
+      name: string,
+    ): {liveEdit: boolean; fields: {name: string; assistExcluded: boolean}[]} | undefined {
+      const type = schema.get(name) as (ObjectSchemaType & {liveEdit?: boolean}) | undefined
+      if (!type) return undefined
+      return {
+        liveEdit: type.liveEdit === true,
+        fields: type.fields.map((field) => {
+          const options = field.type.options as {aiAssist?: {exclude?: boolean}} | undefined
+          return {name: field.name, assistExcluded: options?.aiAssist?.exclude === true}
+        }),
+      }
     },
 
     // The template IDs a create menu offers, resolved through the whole config chain: the
@@ -505,7 +640,7 @@ export function createHarness({
     // Patches the draft, or with release the version in that release, as an editor's form edit
     // does. A missing version starts from the published document, or for a release from the
     // draft when nothing is published. Then the form applies the type's follow-up steps, with
-    // the version as it was before the patch.
+    // the version as it was before the patch and the stored draft.
     async edit(
       id: string,
       patch: DocumentPatch,
@@ -514,12 +649,17 @@ export function createHarness({
       const publishedId = getPublishedId(id)
       const target = versionId(id, release)
       const published = dataset.get(publishedId) ?? null
-      const base =
-        dataset.get(target) ?? published ?? (release ? dataset.get(getDraftId(publishedId)) : null)
+      const draft = dataset.get(getDraftId(publishedId)) ?? null
+      const base = dataset.get(target) ?? published ?? (release ? draft : null)
       if (!base) throw new Error(`No document to edit with _id "${publishedId}"`)
       const previous = {...base, _id: target}
       let version = applyPatch(previous, patch)
-      const followUp = followUpPatch(followUpSteps(version._type), {previous, version, published})
+      const followUp = followUpPatch(followUpSteps(version._type), {
+        previous,
+        version,
+        published,
+        draft,
+      })
       if (followUp) version = applyPatch(version, followUp)
       store(touch(version))
       return structuredClone(dataset.get(target) as TestDocument)
@@ -541,6 +681,7 @@ export function createHarness({
         previous: shown,
         version: shown,
         published,
+        draft: dataset.get(getDraftId(publishedId)) ?? null,
         readOnly,
       })
       if (!followUp) return structuredClone(shown)
@@ -609,6 +750,8 @@ export function createHarness({
     // Runs the fresh-ID Duplicate as the document action does, and returns the copy. The source is
     // what the document pane shows: with release, that release's version if it has one, else
     // the draft, else the published document. The action gets Studio's client, which reads raw.
+    // Like the action, it hands over the stored snapshot itself, so a change the operation makes
+    // to its source shows in the dataset.
     async duplicate(id: string, {release}: {release?: string} = {}): Promise<TestDocument> {
       const publishedId = getPublishedId(id)
       const source =
@@ -617,8 +760,22 @@ export function createHarness({
         dataset.get(publishedId)
       if (!source) throw new Error(`No document to duplicate with _id "${publishedId}"`)
       const client = getClient({apiVersion: '2025-02-19', perspective: 'raw'})
-      const copy = await duplicateWithFreshIds(client, structuredClone(source))
+      const watched = {
+        ...client,
+        create: async (document: TestDocument) => {
+          lastShared = sharedObjects(source, document)
+          return client.create(document)
+        },
+      } as unknown as SanityClient
+      const copy = await duplicateWithFreshIds(watched, source)
       return structuredClone(copy) as TestDocument
+    },
+
+    // The paths of objects and arrays that the last duplicate's copy still shared with its
+    // source when the operation handed it to create, before the client serialized it. Empty when
+    // the copy is independent.
+    sharedWithSource(): string[] {
+      return [...lastShared]
     },
 
     // Makes the draft, or with release the version in that release, the published document, as
@@ -636,6 +793,35 @@ export function createHarness({
       dataset.delete(pending._id)
       store(touch({...pending, _id: publishedId}))
       return structuredClone(dataset.get(publishedId) as TestDocument)
+    },
+
+    // The ID that the ID input's Assign button sets on the draft, or with release on the version
+    // in that release, from what's stored. Nothing is stored. The input reads the published
+    // document and the draft from Studio's edit state, as this reads them from the dataset.
+    assignedId(id: string, {release}: {release?: string} = {}): string {
+      const publishedId = getPublishedId(id)
+      const target = versionId(id, release)
+      const document =
+        dataset.get(target) ?? dataset.get(publishedId) ?? dataset.get(getDraftId(publishedId))
+      const editorialId = document && editorialIdFor(document._type)
+      if (!editorialId) throw new Error(`No editorial document with _id "${publishedId}"`)
+      const value = (stored?: TestDocument) => stored?.[editorialId.field]
+      return idToAssign(target, editorialId.kind, {
+        published: value(dataset.get(publishedId)),
+        draft: value(dataset.get(getDraftId(publishedId))),
+      })
+    },
+
+    // Unpublishes the document as Sanity's Unpublish does, with no validation first: the
+    // published document goes and the draft stays. With no draft, the published document becomes
+    // the draft.
+    async unpublish(id: string): Promise<void> {
+      const publishedId = getPublishedId(id)
+      const published = dataset.get(publishedId)
+      if (!published) throw new Error(`No published document with _id "${publishedId}"`)
+      const draftId = getDraftId(publishedId)
+      if (!dataset.has(draftId)) store(touch({...published, _id: draftId}))
+      dataset.delete(publishedId)
     },
 
     // Opens an intent URL as the structure tool does, such as intent('create', {type:
@@ -756,9 +942,10 @@ export function createHarness({
       return hits.map(({hit}) => hit._id)
     },
 
-    // The preview of a document, or of the _id of one in the dataset, from its type's preview
-    // config, as Sanity prepares it. Only the fields the preview selects reach it.
-    preview(document: TestDocument | string): Preview {
+    // The preview of a document, of an object value such as an array item's row, or of the _id
+    // of a document in the dataset, from its type's preview config, as Sanity prepares it. Only
+    // the fields the preview selects reach it.
+    preview(document: ({_type: string} & Record<string, unknown>) | string): Preview {
       const value = typeof document === 'string' ? dataset.get(document) : document
       if (!value) throw new Error(`No document with _id "${document}"`)
       const type = schema.get(value._type) as PreviewableType
@@ -777,6 +964,36 @@ export function createHarness({
       return [...dataset.values()]
         .sort((a, b) => a._id.localeCompare(b._id))
         .map((document) => structuredClone(document))
+    },
+
+    // The tabs of a document type's form, in order, each with the fields it holds in the order
+    // the form shows them. Studio adds an All fields tab of its own.
+    groups(type: string): {name: string; title?: string; fields: string[]}[] {
+      const schemaType = schema.get(type) as ObjectSchemaType | undefined
+      if (!schemaType) throw new Error(`No type named "${type}"`)
+      return (schemaType.groups ?? []).map(({name, title, fields = []}) => ({
+        name,
+        title,
+        fields: fields.map((field) => field.name),
+      }))
+    },
+
+    // The values a list field offers, in order, each with the title its dropdown or radio
+    // buttons show. A plain value shows as itself.
+    choices(type: string, field: string): {title: string; value: unknown}[] {
+      const fieldType = (schema.get(type) as ObjectSchemaType | undefined)?.fields.find(
+        ({name}) => name === field,
+      )?.type
+      const list = (fieldType?.options as {list?: unknown[]} | undefined)?.list
+      if (!list) throw new Error(`${type}.${field} has no list of values`)
+      return list.map((option) =>
+        option && typeof option === 'object' && 'value' in option
+          ? {
+              title: String((option as {title?: unknown}).title ?? option.value),
+              value: option.value,
+            }
+          : {title: String(option), value: option},
+      )
     },
   }
 }
