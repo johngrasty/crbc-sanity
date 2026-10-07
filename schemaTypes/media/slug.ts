@@ -28,9 +28,12 @@ type SlugEntry = {_type: 'slug'; _key: string; current: string}
 
 const apiVersion = '2025-02-19'
 
-// The slug text of a slug object, or nothing when it's missing or blank.
+// The slug text of a slug object, or nothing when it's missing or blank. A plain string counts as
+// its slug, because an importer may write history entries the way the public API lists them. The
+// history step then rewrites each one as a slug object.
 function slugText(value: unknown): string | undefined {
-  const current = (value as {current?: unknown} | undefined)?.current
+  const current =
+    typeof value === 'string' ? value : (value as {current?: unknown} | undefined)?.current
   return typeof current === 'string' && current.trim() ? current : undefined
 }
 
