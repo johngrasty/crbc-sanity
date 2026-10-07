@@ -433,6 +433,72 @@ test('a manual order is checked only while the series uses manual order', async 
   ])
 })
 
+// Sanity's own reference check on each entry waits for manual order too, so an item that was never
+// published, or one that's gone, can't block Publish from a hidden field.
+test("a hidden manual order doesn't block publishing, and its checks come back with manual order", async () => {
+  for (const ordering of ['newestFirst', 'oldestFirst']) {
+    const studio = createHarness({
+      documents: [
+        series({
+          _id: 'drafts.gospel',
+          slug: slug('john'),
+          ordering,
+          manualOrder: [weakReference('new', 'new', 'mediaItem'), reference('gone', 'gone')],
+        }),
+        mediaItem('drafts.new', ['gospel']),
+      ],
+    })
+    assert.deepEqual(
+      markersUnder(await studio.validate('drafts.gospel'), 'manualOrder'),
+      [],
+      ordering,
+    )
+    await studio.publish('gospel')
+
+    await studio.edit('gospel', {set: {ordering: 'manual'}})
+    const markers = (await studio.validate('drafts.gospel')).filter(({path}) =>
+      path.startsWith('manualOrder['),
+    )
+    assert.deepEqual(
+      markers
+        .map(({path, level, message}) => [path, level, message])
+        .sort((a, b) => a.join().localeCompare(b.join())),
+      [
+        ['manualOrder[_key=="gone"]', 'error', 'Referenced document must be published'],
+        ['manualOrder[_key=="new"]', 'error', 'Referenced document must be published'],
+        [
+          'manualOrder[_key=="new"]',
+          'warning',
+          "Only this media item's unpublished draft lists this series. Publish the item to add it to the series.",
+        ],
+      ],
+      ordering,
+    )
+    await assert.rejects(
+      studio.publish('gospel'),
+      /Referenced document must be published/,
+      ordering,
+    )
+  }
+})
+
+// Only the importer or the API can write one, so it's an error whichever order the series uses.
+test("a manual order entry that isn't a reference is an error in any ordering", async () => {
+  const studio = createHarness()
+  for (const ordering of ['newestFirst', 'oldestFirst', 'manual']) {
+    const markers = await studio.validate(
+      series({ordering, manualOrder: [{_key: 'x', _type: 'reference'}]}),
+    )
+    assert.deepEqual(
+      markers
+        .filter(({path}) => path.startsWith('manualOrder['))
+        .map(({path, level, message}) => [path, level, message]),
+      [['manualOrder[_key=="x"]', 'error', 'Must be a reference to a document']],
+      ordering,
+    )
+  }
+})
+
 test('a manual order lists each media item once', async () => {
   const studio = createHarness({
     documents: [mediaItem('first', ['gospel']), mediaItem('second', ['gospel'])],

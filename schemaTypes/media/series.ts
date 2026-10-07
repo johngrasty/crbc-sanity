@@ -1,9 +1,13 @@
 import {
+  defineArrayMember,
   defineField,
   defineType,
   getDraftId,
   getPublishedId,
+  isReference,
   type ArrayRule,
+  type ReferenceRule,
+  type Rule,
   type ValidationContext,
 } from 'sanity'
 import {Library} from 'lucide-react'
@@ -73,6 +77,32 @@ const listingRule = (rule: ArrayRule<unknown[]>, listing: Listing, message: stri
     return marked.length ? marked : true
   })
 
+// A copy of a reference's rule without Sanity's reference check, which marks an entry whose
+// document isn't published (lib/index.js:6290-6314). reset() keeps the check that the value is an
+// object.
+const withoutReferenceCheck = (rule: ReferenceRule) =>
+  (rule as unknown as Rule).clone().reset() as unknown as ReferenceRule
+
+// An entry in the manual order. Sanity's own reference check would run while the order is hidden
+// too, so an item that was never published, or one that's gone, would block Publish from a field
+// the editor can't see. This rule makes the same checks with Sanity's messages, and checks that
+// the item is published only while the series uses manual order. The reference stays strong.
+const orderEntry = defineArrayMember({
+  type: 'reference',
+  to: [{type: 'mediaItem'}],
+  validation: (rule) =>
+    withoutReferenceCheck(rule).custom(async (entry, context) => {
+      if (!entry) return true
+      if (!isReference(entry)) return 'Must be a reference to a document'
+      if (!usesManualOrder(context)) return true
+      if (!context.getDocumentExists) {
+        throw new Error('getDocumentExists was not provided in the validation context')
+      }
+      const published = await context.getDocumentExists({id: entry._ref})
+      return published ? true : 'Referenced document must be published'
+    }),
+})
+
 export default defineType({
   name: 'series',
   title: 'Series',
@@ -117,7 +147,7 @@ export default defineType({
       type: 'array',
       description:
         'Drag the media items into the order viewers see them in. Each item must also list this series in its own Series field.',
-      of: [{type: 'reference', to: [{type: 'mediaItem'}]}],
+      of: [orderEntry],
       hidden: ({document}) => document?.ordering !== 'manual',
       validation: (rule) => [
         rule.custom((order, context) =>
