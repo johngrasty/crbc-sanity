@@ -34,6 +34,7 @@ import {
   pathToString,
   prepareConfig,
   prepareForPreview,
+  resolveConditionalProperty,
   resolveInitialValue,
   resolveInitialValueForType,
   stringToPath,
@@ -753,6 +754,26 @@ export function createHarness({
       const schemaType = schema.get(type)
       if (!schemaType) throw new Error(`No schema type named "${type}"`)
       return {readOnly: schemaType.readOnly, notice: formNotice(schemaType)}
+    },
+
+    // The names of the top-level fields a document's form hides, in field order. Takes a
+    // document, or the _id of one in the dataset. Each field's hidden callback gets the document
+    // as its parent, as Sanity's form gives it (lib/index.js:57543-57575).
+    hiddenFields(document: TestDocument | string): string[] {
+      const value = typeof document === 'string' ? dataset.get(document) : document
+      if (!value) throw new Error(`No document with _id "${document}"`)
+      const schemaType = schema.get(value._type) as ObjectSchemaType | undefined
+      if (!schemaType) throw new Error(`No schema type named "${value._type}"`)
+      return schemaType.fields
+        .filter(({name, type}) =>
+          resolveConditionalProperty(type.hidden, {
+            document: value as SanityDocument,
+            parent: value,
+            value: value[name],
+            currentUser: null,
+          }),
+        )
+        .map(({name}) => name)
     },
 
     // The names of every registered document type, plugin types included.

@@ -424,6 +424,70 @@ export type SanityImageHotspot = {
   width: number
 }
 
+export type Series = {
+  _id: string
+  _type: 'series'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  seriesId: string
+  title: string
+  slug?: Slug
+  slugHistory?: Array<
+    {
+      _key: string
+    } & Slug
+  >
+  description?: string
+  artwork?: {
+    thumbnail?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+    banner?: {
+      asset?: {
+        _ref: string
+        _type: 'reference'
+        _weak?: boolean
+        [internalGroqTypeReferenceTo]?: 'sanity.imageAsset'
+      }
+      media?: unknown
+      hotspot?: SanityImageHotspot
+      crop?: SanityImageCrop
+      alt?: string
+      _type: 'image'
+    }
+  }
+  ordering: 'newestFirst' | 'oldestFirst' | 'manual'
+  manualOrder?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'mediaItem'
+  }>
+  source?: {
+    sourceId?: string
+    sourceUrl?: string
+    originalPublishedAt?: string
+  }
+}
+
+export type Slug = {
+  _type: 'slug'
+  current: string
+  source?: string
+}
+
 export type ServiceEvent = {
   _id: string
   _type: 'serviceEvent'
@@ -472,6 +536,13 @@ export type MediaItem = {
     } & Slug
   >
   description?: string
+  series?: Array<{
+    _ref: string
+    _type: 'reference'
+    _weak?: boolean
+    _key: string
+    [internalGroqTypeReferenceTo]?: 'series'
+  }>
   serviceDate?: string
   serviceTimezone: string
   speakers?: Array<{
@@ -503,12 +574,6 @@ export type MediaItem = {
     active?: boolean
     note?: string
   }
-}
-
-export type Slug = {
-  _type: 'slug'
-  current: string
-  source?: string
 }
 
 export type JobOpening = {
@@ -1988,9 +2053,10 @@ export type AllSanitySchemaTypes =
   | Speaker
   | SanityImageCrop
   | SanityImageHotspot
+  | Series
+  | Slug
   | ServiceEvent
   | MediaItem
-  | Slug
   | JobOpening
   | CustomSignUp
   | Ministry

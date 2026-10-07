@@ -22,6 +22,7 @@
     "sanity"
   ],
   "dependencies": {
+    "@sanity/asset-utils": "^2.3.0",
     "@sanity/assist": "^5.0.0",
     "@sanity/client": "^7.27.0",
     "@sanity/orderable-document-list": "^1.5.1",
