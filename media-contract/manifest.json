@@ -2,14 +2,14 @@
   "note": "Written by npm run contract:sync. Do not edit this folder by hand.",
   "repo": "johngrasty/subsplash-replacement",
   "path": "contract",
-  "commit": "29591874d96da0c8c7de2b18dc884b685c547c9c",
+  "commit": "8893dbb3162aa383e6ad5e465333099a30710da9",
   "files": {
     "fixtures/sanity/live-status-absent-source.json": "735a4ba48fb22101a1390293fa10758adbe5b1e52e4a75ad8305bda661290715",
     "fixtures/sanity/live-status-live.json": "fcd3f9674ada99c96a58729678f62b9ea1516ce09767b5f2c674062c1b2019aa",
     "fixtures/sanity/media-release-absent-source.json": "7d9ff7a9975f2df0c0a2f4bd342ef27e2b3d2a3885d38ef4ddc5bb7a39b5cdda",
-    "fixtures/sanity/media-release-public.json": "ed62ada8f4d38b7a06e62345a3128984a95f36b12a133d44c87f470c288cd689",
+    "fixtures/sanity/media-release-public.json": "0eb7156db8ea8f7f3e3d684c0a2de790d3bb28a4773ab906db9eef5d3521056c",
     "fixtures/sanity/media-release-tombstone.json": "1bb976212c96cac9e09f3bf9043c94452116d770816da2a3f7859d38772e42eb",
-    "schemas/media-v1.schema.json": "586af4a9b2276fb56b2f1f571e72a9d4d5d51ac0289d51250c459b28aba0284f",
+    "schemas/media-v1.schema.json": "9ff457041daca2da58008c13d9a06783e811206e5900cf7aecadf918872d29cc",
     "src/ids.ts": "43d84fc6967a93d741130cd48eda6ee0d1b3dbb96a23bc66b4db2b36935c3678",
     "src/size.ts": "1c3c55cd2149438b941ded942c55234bb7b62d6081809f7e3b8d3a30121c2a8d",
     "standing-schedule.json": "cb2b0ce13347367a7c116834b0816dd4f24b47ddcaf33117396353e4ed3c3e20"

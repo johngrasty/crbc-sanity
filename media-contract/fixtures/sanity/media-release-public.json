@@ -10,6 +10,7 @@
   "durationSeconds": 4680,
   "captions": [
     {
+      "_key": "en",
       "language": "en",
       "label": "English",
       "kind": "generated",

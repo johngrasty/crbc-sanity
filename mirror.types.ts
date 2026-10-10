@@ -23,6 +23,8 @@ export type MediaReleaseDocument = {
   playbackId: string | null
   durationSeconds: number | null
   captions: Array<{
+    /** Erratum E21. Sanity's array item key, unique within the array. media-ops writes the item's language. The public API never returns it. */
+    _key?: string
     language: string
     label: string
     kind: 'live' | 'generated' | 'uploaded'

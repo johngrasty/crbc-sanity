@@ -42,7 +42,9 @@ const releases: Record<string, MediaReleaseDocument> = {
     assetId: 'as_01J9SYNTH0000Z00000000000M',
     playbackId: 'synthVodPlaybackId0020',
     durationSeconds: 4680,
-    captions: [{language: 'en', label: 'English', kind: 'generated', state: 'available'}],
+    captions: [
+      {_key: 'en', language: 'en', label: 'English', kind: 'generated', state: 'available'},
+    ],
     publishedAt: '2026-09-27T16:30:00Z',
     releaseVersion: 4,
     mirrorGen: 1,
