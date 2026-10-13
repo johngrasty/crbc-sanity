@@ -117,6 +117,19 @@ function missingSlug(rule: SlugRule, type: SlugType) {
   return required ? missing : missing.warning()
 }
 
+// The website serves a series at /media/series/{slug}, so /media/series belongs to the series
+// pages and a media item can't use "series" as its current slug. Only the current slug is
+// refused, and only for a media item: an item already published with it keeps it in its old
+// slugs when it renames, so /media/series keeps forwarding to the new slug, and a series may
+// still use it, because /media/series/series collides with nothing.
+function reservedSlug(rule: SlugRule, type: SlugType) {
+  return rule.custom((value) =>
+    type === 'mediaItem' && slugText(value) === 'series'
+      ? 'The website uses the address /media/series for its series pages, so a media item can\'t use "series" as its slug. Choose another slug.'
+      : true,
+  )
+}
+
 const isEntry = (entry: unknown): entry is SlugEntry => {
   const {_type, _key, current} = (entry ?? {}) as Partial<SlugEntry>
   return _type === 'slug' && typeof _key === 'string' && typeof current === 'string'
@@ -173,7 +186,11 @@ export function slugFields(type: SlugType) {
       type: 'slug',
       description: `The end of the link to this ${noun}. Generate makes it from the title. If you change it after publishing, links with the old slug keep working.`,
       options: {source: 'title', slugify, isUnique},
-      validation: (rule) => [slugShape(rule), missingSlug(withoutSlugCheck(rule), type)],
+      validation: (rule) => [
+        slugShape(rule),
+        missingSlug(withoutSlugCheck(rule), type),
+        reservedSlug(withoutSlugCheck(rule), type),
+      ],
     }),
     defineField({
       name: 'slugHistory',

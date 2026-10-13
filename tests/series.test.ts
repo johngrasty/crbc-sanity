@@ -179,6 +179,16 @@ test("a series slug matches the contract's pattern and holds up to 200 character
   }
 })
 
+// Only a media item must avoid "series": a series with that slug lives at
+// /media/series/series, which collides with nothing.
+test('a series can use the slug "series" and publish with it', async () => {
+  const studio = createHarness({documents: [series({_id: 'drafts.gospel', slug: slug('series')})]})
+  assert.deepEqual(errorsAt(await studio.validate('drafts.gospel'), 'slug'), [])
+  const published = await studio.publish('gospel')
+  assert.equal(slugOf(published), 'series')
+  assert.deepEqual(history(published), [])
+})
+
 test('a series without a slug is an error, so it cannot publish without one', async () => {
   const studio = createHarness()
   const created = await studio.create('series')
