@@ -280,6 +280,68 @@ test('a draft left behind when a release publishes a new slug catches up when op
   assert.deepEqual(history(published), ['easter-sunday'])
 })
 
+// The website serves a series at /media/series/{slug}, so /media/series belongs to the series
+// pages. A media item can't take it as its current slug, but it stays allowed in old slugs.
+const RESERVED_MESSAGE =
+  'The website uses the address /media/series for its series pages, so a media item can\'t use "series" as its slug. Choose another slug.'
+
+test('a media item with the slug "series" is an error and cannot publish', async () => {
+  for (const _id of ['drafts.item', 'versions.rSpring.item']) {
+    const studio = createHarness({documents: [item({_id, slug: slug('series')})]})
+    const markers = await studio.validate(_id)
+    // One message at the slug, not the reserved message plus a repeated slug check.
+    assert.deepEqual(
+      markers.filter(({path}) => path === 'slug').map(({level, message}) => [level, message]),
+      [['error', RESERVED_MESSAGE]],
+      _id,
+    )
+  }
+  const studio = createHarness({documents: [item({_id: 'drafts.item', slug: slug('series')})]})
+  await assert.rejects(studio.publish('item'), /slug: The website uses the address/)
+  // Generate makes "series" from the title "Series", and the editor then has to change it.
+  assert.equal(await studio.generateSlug(item({title: 'Series'})), 'series')
+})
+
+test('only the exact slug "series" is reserved for a media item', async () => {
+  const studio = createHarness()
+  for (const valid of ['series-2026', 'my-series', 'serie', 'seriesx']) {
+    assert.deepEqual(errorsAt(await studio.validate(item({slug: slug(valid)})), 'slug'), [], valid)
+  }
+})
+
+test('an item already published with the slug "series" can publish a new slug, and "series" stays in its old slugs', async () => {
+  const studio = createHarness({documents: [item({slug: slug('series')})]})
+  // Until the slug changes, the item still can't publish.
+  await studio.edit('item', {set: {title: 'Easter Sunday service'}})
+  await assert.rejects(studio.publish('item'), /slug: The website uses the address/)
+  const draft = await studio.edit('item', {set: {slug: slug('easter-series')}})
+  assert.deepEqual(history(draft), ['series'])
+  const markers = await studio.validate('drafts.item')
+  assert.deepEqual(errorsAt(markers, 'slug'), [])
+  assert.deepEqual(
+    markers.filter(({path}) => path.startsWith('slugHistory')),
+    [],
+  )
+  const published = await studio.publish('item')
+  assert.equal(slugOf(published), 'easter-series')
+  assert.deepEqual(history(published), ['series'])
+})
+
+test('"series" in old slugs is not an error, and a later rename still keeps it', async () => {
+  const studio = createHarness({
+    documents: [item({slug: slug('easter'), slugHistory: entries('series')})],
+  })
+  const markers = await studio.validate('item')
+  assert.deepEqual(errorsAt(markers, 'slug'), [])
+  assert.deepEqual(
+    markers.filter(({path}) => path.startsWith('slugHistory')),
+    [],
+  )
+  await studio.edit('item', {set: {slug: slug('easter-sunday')}})
+  const published = await studio.publish('item')
+  assert.deepEqual(history(published), ['series', 'easter'])
+})
+
 test('an imported draft whose old slugs are plain strings keeps every one when opened', async () => {
   // An importer may write the history the way the public API lists it, as strings.
   const imported = item({
