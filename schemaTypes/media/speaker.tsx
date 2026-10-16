@@ -67,7 +67,7 @@ export default defineType({
       title: 'Photo',
       type: 'image',
       description:
-        "A head-and-shoulders photo. Apps show the speaker's initials when there's none.",
+        "A head-and-shoulders photo. The website always shows the speaker's initials instead of the photo. No app shows the photo yet.",
       options: {hotspot: true},
       fields: [
         defineField({

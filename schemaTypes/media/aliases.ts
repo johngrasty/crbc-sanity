@@ -3,7 +3,7 @@ import {labelLimit} from './limits'
 import {itemLimit, noRepeats} from './lists'
 
 // Other names a speaker or topic goes by. Studio's search matches them, and the website's search
-// matches a speaker's aliases too (contract section 10.2).
+// matches a speaker's and a topic's aliases too (contract section 10.2).
 export const aliasesField = (description: string) =>
   defineField({
     name: 'aliases',

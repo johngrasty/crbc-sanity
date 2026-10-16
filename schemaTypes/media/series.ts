@@ -155,7 +155,7 @@ export default defineType({
       title: 'Manual order',
       type: 'array',
       description:
-        'Drag the media items into the order viewers see them in. Each item must also list this series in its own Series field. The website uses this order only when Order is Manual order.',
+        "Drag the media items into the order viewers see them in. Each item must also list this series in its own Series field. The website uses this order only when Order is Manual order. Published items that list this series but aren't in the list show after the listed ones, newest first.",
       of: [orderEntry],
       // With another order, the saved order shows only when an entry would stop the series from
       // publishing, so the editor can see the error and fix it.
