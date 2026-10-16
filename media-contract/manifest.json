@@ -2,7 +2,7 @@
   "note": "Written by npm run contract:sync. Do not edit this folder by hand.",
   "repo": "johngrasty/subsplash-replacement",
   "path": "contract",
-  "commit": "8893dbb3162aa383e6ad5e465333099a30710da9",
+  "commit": "3eec76dd90630630fadd371eb4fa439ebcf57e97",
   "files": {
     "fixtures/sanity/live-status-absent-source.json": "735a4ba48fb22101a1390293fa10758adbe5b1e52e4a75ad8305bda661290715",
     "fixtures/sanity/live-status-live.json": "fcd3f9674ada99c96a58729678f62b9ea1516ce09767b5f2c674062c1b2019aa",
@@ -11,6 +11,7 @@
     "fixtures/sanity/media-release-tombstone.json": "1bb976212c96cac9e09f3bf9043c94452116d770816da2a3f7859d38772e42eb",
     "schemas/media-v1.schema.json": "9ff457041daca2da58008c13d9a06783e811206e5900cf7aecadf918872d29cc",
     "src/ids.ts": "43d84fc6967a93d741130cd48eda6ee0d1b3dbb96a23bc66b4db2b36935c3678",
+    "src/initials.ts": "a2fad32b055e16e8db1851a3ddfded8fa08ba1b4c90d4f287e50c9625fa3c33c",
     "src/size.ts": "1c3c55cd2149438b941ded942c55234bb7b62d6081809f7e3b8d3a30121c2a8d",
     "standing-schedule.json": "cb2b0ce13347367a7c116834b0816dd4f24b47ddcaf33117396353e4ed3c3e20"
   }

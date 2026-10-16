@@ -13,12 +13,12 @@ const descriptions: Record<ArtworkType, {thumbnail: string; banner: string}> = {
     thumbnail:
       "A 16:9 picture, such as 1920 × 1080 pixels, shown with the recording in lists and on YouTube and Facebook. Without one, YouTube and Facebook show the first series' thumbnail.",
     banner:
-      'A wide picture. The website does not show it, and no app shows it yet, though the API still sends it. You can leave it empty.',
+      'A wide picture, 3:1 at 2400 × 800 pixels or larger. The website does not show it, and no app shows it yet, though the API still sends it. You can leave it empty.',
   },
   series: {
     thumbnail:
       'A 16:9 picture, such as 1920 × 1080 pixels, shown in lists of series. YouTube and Facebook also show it for a recording that has no thumbnail and lists this series first.',
-    banner: 'A wide picture for the top of the series page.',
+    banner: 'A wide picture for the top of the series page, 3:1 at 2400 × 800 pixels or larger.',
   },
 }
 
@@ -36,6 +36,23 @@ function thumbnailShape(image: unknown): true | string {
   if (isWidescreen(dimensions)) return true
   const {width, height} = dimensions
   return `This thumbnail is ${width} × ${height} pixels, not 16:9, so apps and YouTube will crop it. Use a picture shaped like 1920 × 1080.`
+}
+
+// True when width:height is within 2% of 3:1, the shape the series page and the API serve a
+// banner at (2400 × 800). It compares width with 3 × height in whole numbers, so a picture
+// exactly 2% off still counts.
+const isBannerShape = ({width, height}: {width: number; height: number}) =>
+  Math.abs(width - 3 * height) * 50 <= 3 * height
+
+// A warning when the banner's picture isn't 3:1, from the uploaded picture's own size, as the
+// thumbnail warning does. A crop or hotspot doesn't change them. An image still uploading reads
+// as 0 × 0 and is skipped.
+function bannerShape(image: unknown): true | string {
+  const dimensions = tryGetImageDimensions(image as Parameters<typeof tryGetImageDimensions>[0])
+  if (!dimensions || dimensions.width <= 0 || dimensions.height <= 0) return true
+  if (isBannerShape(dimensions)) return true
+  const {width, height} = dimensions
+  return `This banner is ${width} × ${height} pixels, not 3:1, so it will be cropped to fit. Use a picture shaped like 2400 × 800.`
 }
 
 const altField = defineField({
@@ -75,6 +92,9 @@ export function artworkField(type: ArtworkType) {
         description: banner,
         options: {hotspot: true},
         fields: [altField],
+        // As the thumbnail: Sanity's own image check stays an error on the field's rule, and
+        // the shape warning starts from a bare rule.
+        validation: (rule) => [rule, new ConcreteRuleClass().custom(bannerShape).warning()],
       }),
     ],
   })

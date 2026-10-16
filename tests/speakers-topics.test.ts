@@ -315,17 +315,50 @@ test("a speaker's preview shows the photo, or the speaker's initials when there'
     ['Pastor Sam Jones', 'PJ'],
     ['Dr. Ann Lee', 'DL'],
     ['Sam', 'S'],
-    ['émile zola', 'ÉZ'],
+    ['émile zola', 'EZ'],
+    ['Élise Østergaard', 'EO'],
+    ['Æsa Þórsdóttir', 'AT'],
+    ['李 Smith', 'S'],
   ]) {
     const preview = studio.preview({...speaker, name})
     assert.equal(preview.title, name)
     assert.equal(preview.mediaText, initials, name)
+  }
+  // A name with no letter that folds to A to Z gives no initials, as on the website.
+  for (const name of ['李 小龍', 'Νίκος Παπάς', '123 456']) {
+    const preview = studio.preview({...speaker, name})
+    assert.equal(preview.title, name)
+    assert.equal(preview.media, undefined, name)
+    assert.equal(preview.mediaText, undefined, name)
   }
   // With no name either, the list shows the speaker icon.
   const unnamed = studio.preview(speaker)
   assert.equal(unnamed.title, 'Unnamed speaker')
   assert.equal(unnamed.media, undefined)
   assert.equal(unnamed.mediaText, undefined)
+})
+
+test('a speaker whose name gives no initials warns that the website shows an empty circle', async () => {
+  const studio = createHarness()
+  const speaker = await studio.create('speaker')
+  for (const name of ['李 小龍', 'Νίκος Παπάς', '123 456']) {
+    const markers = await studio.validate({...speaker, name})
+    assert.equal(warningsAt(markers, 'name').length, 1, name)
+    assert.match(warningsAt(markers, 'name')[0].message, /empty circle/, name)
+    assert.deepEqual(errorsAt(markers, 'name'), [], name)
+  }
+  for (const name of ['Sam Jones', 'Élise Østergaard', '李 Smith']) {
+    const markers = await studio.validate({...speaker, name})
+    assert.deepEqual(
+      markers.filter(({path}) => path === 'name'),
+      [],
+      name,
+    )
+  }
+  // A missing name keeps its required error and gets no initials warning.
+  const markers = await studio.validate({...speaker, name: undefined})
+  assert.equal(errorsAt(markers, 'name').length, 1)
+  assert.deepEqual(warningsAt(markers, 'name'), [])
 })
 
 test('a speaker or topic preview lists its aliases under the name or label', async () => {

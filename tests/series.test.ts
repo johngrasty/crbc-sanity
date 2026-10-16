@@ -305,6 +305,78 @@ test("a thumbnail more than 2% from 16:9 is a warning, by the asset's own width 
   assert.match(warningsAt(markers, 'artwork.thumbnail')[0].message, /1600 × 1200/)
 })
 
+test("a banner more than 2% from 3:1 is a warning, by the asset's own width and height", async () => {
+  // 2448 × 800 and 2352 × 800 are exactly 2% wider and narrower than 3:1.
+  const bannerShaped: [number, number][] = [
+    [2400, 800],
+    [3000, 1000],
+    [2448, 800],
+    [2352, 800],
+  ]
+  const otherShapes: [number, number][] = [
+    [2449, 800],
+    [2351, 800],
+    [1920, 1080],
+    [1200, 1200],
+  ]
+  const studio = createHarness({documents: assets(...bannerShaped, ...otherShapes)})
+  for (const [width, height] of bannerShaped) {
+    const markers = await studio.validate(series({artwork: {banner: picture(width, height)}}))
+    assert.deepEqual(
+      markers.filter(({path}) => path.startsWith('artwork')),
+      [],
+      `${width}x${height}`,
+    )
+  }
+  for (const [width, height] of otherShapes) {
+    const markers = await studio.validate(series({artwork: {banner: picture(width, height)}}))
+    assert.deepEqual(
+      markers.filter(({path}) => path.startsWith('artwork')).map(({path, level}) => [path, level]),
+      [['artwork.banner', 'warning']],
+      `${width}x${height}`,
+    )
+  }
+  const markers = await studio.validate(series({artwork: {banner: picture(1920, 1080)}}))
+  assert.match(warningsAt(markers, 'artwork.banner')[0].message, /1920 × 1080/)
+  // Cropping this square to 1200 × 400 (3:1) still warns about the original asset's shape.
+  const cropped = picture(1200, 1200, {
+    crop: {_type: 'sanity.imageCrop', top: 1 / 3, bottom: 1 / 3, left: 0, right: 0},
+  })
+  const croppedMarkers = await studio.validate(series({artwork: {banner: cropped}}))
+  assert.equal(warningsAt(croppedMarkers, 'artwork.banner').length, 1)
+  assert.match(warningsAt(croppedMarkers, 'artwork.banner')[0].message, /1200 × 1200/)
+})
+
+test('a banner that is a picture of another shape still publishes, with the warning', async () => {
+  const studio = createHarness({
+    documents: [
+      ...assets([1920, 1080]),
+      series({_id: 'drafts.gospel', slug: slug('john'), artwork: {banner: picture(1920, 1080)}}),
+    ],
+  })
+  const published = await studio.publish('drafts.gospel')
+  assert.equal(published._id, 'gospel')
+  const markers = await studio.validate('gospel')
+  assert.deepEqual(
+    markers.filter(({path}) => path.startsWith('artwork')).map(({path, level}) => [path, level]),
+    [['artwork.banner', 'warning']],
+  )
+})
+
+test("a banner that isn't an image is an error", async () => {
+  const studio = createHarness({
+    documents: [series({_id: 'drafts.gospel', slug: slug('john'), artwork: {banner: 123}})],
+  })
+  const markers = (await studio.validate('drafts.gospel')).filter(({path}) =>
+    path.startsWith('artwork'),
+  )
+  assert.deepEqual(
+    markers.map(({path, level}) => [path, level]),
+    [['artwork.banner', 'error']],
+  )
+  await assert.rejects(studio.publish('drafts.gospel'), /artwork\.banner/)
+})
+
 // A whole-document paste or an API write can store one. The shape warning mustn't soften
 // Sanity's own check that a thumbnail is an image.
 test("a thumbnail that isn't an image is an error, on a series and on a media item", async () => {
@@ -347,15 +419,15 @@ test('a thumbnail that is a picture of another shape still publishes, with the w
   }
 })
 
-test('a banner can have any shape, and artwork can be left out', async () => {
-  const studio = createHarness({documents: assets([3000, 1000], [1080, 1920])})
+test('artwork can be left out, and an image still uploading gets no shape warning', async () => {
+  const studio = createHarness({documents: assets([3000, 1000])})
   for (const artwork of [
     undefined,
     {},
     {banner: picture(3000, 1000)},
-    {banner: picture(1080, 1920)},
     // An image the editor is still uploading has no asset yet.
     {thumbnail: {_type: 'image', _upload: {progress: 50}}},
+    {banner: {_type: 'image', _upload: {progress: 50}}},
   ]) {
     const markers = await studio.validate(series({artwork}))
     assert.deepEqual(
