@@ -1,21 +1,24 @@
-import {defineField, defineType} from 'sanity'
+import {defineField, defineType, type StringRule} from 'sanity'
 import {Mic} from 'lucide-react'
+import {speakerInitials} from '../../media-contract/src/initials'
 import {editorialIdField} from './editorialId'
 import {aliasesField} from './aliases'
 import {labelLimit} from './limits'
 import {sameNameWarning} from './sameName'
 import {sourceField} from './source'
 
-// The first letter of the name's first and last words, such as SJ for Sam Jones.
-function initials(name: string): string {
-  const letters = name
-    .split(/\s+/)
-    .map((word) => word.match(/\p{L}/u)?.[0])
-    .filter((letter) => letter !== undefined)
-  return (
-    letters.length > 1 ? letters[0] + letters[letters.length - 1] : letters.join('')
-  ).toUpperCase()
-}
+// A warning when the name gives no initials, so the editor knows the website shows an empty
+// circle. speakerInitials is the website's rule (contract section 10.2, erratum E45): each
+// letter folds to at most one letter from A to Z, and a name with none left has no initials. A
+// missing name gets the required error instead, not this warning.
+const noInitialsWarning = (rule: StringRule) =>
+  rule
+    .custom((value) =>
+      !value || speakerInitials(value)
+        ? true
+        : 'This name gives no initials from A to Z, so the website will show an empty circle for this speaker.',
+    )
+    .warning()
 
 // Stands in for the photo in lists and reference fields, as apps do (contract section 3).
 function Initials({text}: {text: string}) {
@@ -57,6 +60,7 @@ export default defineType({
           message: (name) =>
             `Another speaker is already named ${name}. Check that it isn't the same person.`,
         }),
+        noInitialsWarning(rule),
       ],
     }),
     aliasesField(
@@ -84,7 +88,7 @@ export default defineType({
   preview: {
     select: {name: 'name', aliases: 'aliases', photo: 'photo'},
     prepare({name, aliases, photo}) {
-      const letters = name ? initials(name) : ''
+      const letters = name ? speakerInitials(name) : undefined
       return {
         title: name || 'Unnamed speaker',
         subtitle: aliases?.length ? aliases.join(', ') : undefined,

@@ -311,6 +311,26 @@ test("a media item's thumbnail and banner have alt text, and a thumbnail that is
   }
 })
 
+test("a media item's banner that isn't 3:1 is a warning, by the asset's own width and height", async () => {
+  // 2448 × 800 is exactly 2% wider than 3:1, and 2449 × 800 is just past it.
+  const atEdge = imageAsset(2448, 800)
+  const pastEdge = imageAsset(2449, 800)
+  const square = imageAsset(1200, 1200)
+  const studio = createHarness({documents: [atEdge, pastEdge, square]})
+  const artworkMarkers = async (artwork: Record<string, unknown>) =>
+    (await studio.validate(item({artwork}))).filter(({path}) => path.startsWith('artwork'))
+  assert.deepEqual(await artworkMarkers({banner: picture(atEdge)}), [])
+  for (const asset of [pastEdge, square]) {
+    const markers = await artworkMarkers({banner: picture(asset)})
+    assert.deepEqual(
+      markers.map(({path, level}) => [path, level]),
+      [['artwork.banner', 'warning']],
+      asset._id,
+    )
+    assert.deepEqual(errors(markers), [], asset._id)
+  }
+})
+
 test("a media item's artwork, documents and podcast audio sit under Artwork and files, and its import source under Source", async () => {
   const studio = createHarness()
   const groups = studio.groups('mediaItem')

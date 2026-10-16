@@ -18,6 +18,7 @@ export function contractFiles(checkout: string): string[] {
   return [
     'schemas/media-v1.schema.json',
     'src/ids.ts',
+    'src/initials.ts',
     'src/size.ts',
     'standing-schedule.json',
     ...fixtures,
