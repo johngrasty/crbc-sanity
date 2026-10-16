@@ -1,6 +1,7 @@
 // The pictures apps show for a series or a media item (contract section 3): a 16:9 thumbnail for
-// lists, YouTube and Facebook, and a wide banner for the top of its page. Series and media items
-// share this field: artworkField('series') or {...artworkField('mediaItem'), group: 'artwork'}.
+// lists, YouTube and Facebook, and a wide banner. A series banner goes at the top of its page;
+// the website does not show a media item banner. Series and media items share this field:
+// artworkField('series') or {...artworkField('mediaItem'), group: 'artwork'}.
 import {tryGetImageDimensions} from '@sanity/asset-utils'
 import {ConcreteRuleClass, defineField} from 'sanity'
 import {labelLimit} from './limits'
@@ -11,7 +12,8 @@ const descriptions: Record<ArtworkType, {thumbnail: string; banner: string}> = {
   mediaItem: {
     thumbnail:
       "A 16:9 picture, such as 1920 × 1080 pixels, shown with the recording in lists and on YouTube and Facebook. Without one, YouTube and Facebook show the first series' thumbnail.",
-    banner: "A wide picture for the top of the recording's page.",
+    banner:
+      'A wide picture. The website does not show it, and no app shows it yet, though the API still sends it. You can leave it empty.',
   },
   series: {
     thumbnail:
@@ -40,7 +42,8 @@ const altField = defineField({
   name: 'alt',
   title: 'Alt text',
   type: 'string',
-  description: "Describe the picture for people who can't see it.",
+  description:
+    "Describe the picture for people who can't see it. The website does not read this text, and no app reads it yet.",
   validation: (rule) => labelLimit(rule),
 })
 

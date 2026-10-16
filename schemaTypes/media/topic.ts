@@ -29,7 +29,9 @@ export default defineType({
         }),
       ],
     }),
-    aliasesField('Other words editors might search for, such as Mercy for Grace. Up to 20.'),
+    aliasesField(
+      "Other words people might search for, such as Mercy for Grace. Search on the website finds this topic's messages under any of them. Up to 20.",
+    ),
     sourceField('topic'),
   ],
   preview: {

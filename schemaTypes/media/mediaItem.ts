@@ -114,7 +114,9 @@ export default defineType({
         labelLimit(rule),
         rule
           .custom((value) =>
-            value ? true : "Add a title. The recording won't publish until the item has one.",
+            value
+              ? true
+              : "Add a title. The recording won't publish until the item has one. Fill it in before the service is armed, 3 hours before it starts, so the live recording can publish on its own.",
           )
           .warning(),
       ],
@@ -147,7 +149,7 @@ export default defineType({
           .custom((value) =>
             value?.length
               ? true
-              : "Add a series. The recording won't publish until the item has one.",
+              : "Add a series. The recording won't publish until the item has one. Fill it in before the service is armed, 3 hours before it starts, so the live recording can publish on its own.",
           )
           .warning(),
       ],
@@ -164,7 +166,7 @@ export default defineType({
           .custom((value) =>
             value
               ? true
-              : "Add the service date. The recording won't publish until the item has one.",
+              : "Add the service date. The recording won't publish until the item has one. Fill it in before the service is armed, 3 hours before it starts, so the live recording can publish on its own.",
           )
           .warning(),
         // Sanity's date type doesn't check what the API stores.

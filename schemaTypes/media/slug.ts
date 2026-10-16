@@ -111,9 +111,11 @@ const withoutSlugCheck = (rule: SlugRule) =>
 // runs the rule on its current text and gives a second marker.
 function missingSlug(rule: SlugRule, type: SlugType) {
   const {required} = slugTypes[type]
-  const missing = rule.custom((value) =>
-    slugText(value) ? true : 'Add a slug. Generate makes one from the title.',
-  )
+  const message =
+    type === 'mediaItem'
+      ? "Add a slug. The recording won't publish until the item has one. Fill it in before the service is armed, 3 hours before it starts, so the live recording can publish on its own."
+      : 'Add a slug. Generate makes one from the title.'
+  const missing = rule.custom((value) => (slugText(value) ? true : message))
   return required ? missing : missing.warning()
 }
 
