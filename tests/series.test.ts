@@ -338,12 +338,13 @@ test("a banner more than 2% from 3:1 is a warning, by the asset's own width and 
   }
   const markers = await studio.validate(series({artwork: {banner: picture(1920, 1080)}}))
   assert.match(warningsAt(markers, 'artwork.banner')[0].message, /1920 × 1080/)
-  // A crop to 3:1 doesn't change the picture the asset holds.
-  const cropped = picture(1920, 1080, {
-    crop: {_type: 'sanity.imageCrop', top: 0, bottom: 0, left: 0.0625, right: 0.0625},
+  // Cropping this square to 1200 × 400 (3:1) still warns about the original asset's shape.
+  const cropped = picture(1200, 1200, {
+    crop: {_type: 'sanity.imageCrop', top: 1 / 3, bottom: 1 / 3, left: 0, right: 0},
   })
   const croppedMarkers = await studio.validate(series({artwork: {banner: cropped}}))
   assert.equal(warningsAt(croppedMarkers, 'artwork.banner').length, 1)
+  assert.match(warningsAt(croppedMarkers, 'artwork.banner')[0].message, /1200 × 1200/)
 })
 
 test('a banner that is a picture of another shape still publishes, with the warning', async () => {
