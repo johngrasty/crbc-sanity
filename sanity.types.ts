@@ -612,6 +612,7 @@ export type MediaItem = {
     url: string
     mimeType: 'audio/mpeg' | 'audio/mp4' | 'audio/aac'
     bytes: number
+    durationSeconds?: number
     guid: string
   }
   publicationPolicy: 'auto' | 'manual'

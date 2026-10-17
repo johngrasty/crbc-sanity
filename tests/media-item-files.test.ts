@@ -204,6 +204,26 @@ test('the podcast audio size is a positive whole number of bytes', async () => {
   }
 })
 
+test('the podcast audio length is optional, and a positive whole number of seconds when set', async () => {
+  const studio = createHarness()
+  for (const durationSeconds of [undefined, 1, 1900]) {
+    const markers = await studio.validate(
+      item({audioEnclosure: {...audioEnclosure, durationSeconds}}),
+    )
+    assert.deepEqual(errors(markers), [], String(durationSeconds))
+  }
+  for (const durationSeconds of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const markers = await studio.validate(
+      item({audioEnclosure: {...audioEnclosure, durationSeconds}}),
+    )
+    assert.equal(
+      errorsAt(markers, 'audioEnclosure.durationSeconds').length,
+      1,
+      String(durationSeconds),
+    )
+  }
+})
+
 test('a podcast GUID another media item uses is an error, in any of its versions', async () => {
   for (const other of ['other', 'drafts.other', 'versions.rSpring.other']) {
     const studio = createHarness({
