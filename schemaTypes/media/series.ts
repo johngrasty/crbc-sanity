@@ -202,11 +202,17 @@ export default defineType({
           "Only this media item's unpublished draft lists this series. Publish the item to add it to the series.",
         ).warning(),
         // The website puts published items left out of the order after the listed ones, newest
-        // first, so this warns without blocking publishing.
+        // first, so this warns without blocking publishing. Sanity turns a validator exception
+        // into an error, so a failed lookup becomes a warning here instead of throwing.
         rule
           .custom(async (order, context) => {
             if (!usesManualOrder(context)) return true
-            const names = await leftOutNames(order, context)
+            let names: string[]
+            try {
+              names = await leftOutNames(order, context)
+            } catch {
+              return "Studio couldn't check which published items list this series, so any left out of the manual order aren't named here. You can still publish."
+            }
             return names.length
               ? `Published items that list this series but aren't in the manual order show after the listed ones, newest first: ${names.join(', ')}. Add them to the order to choose where they go.`
               : true

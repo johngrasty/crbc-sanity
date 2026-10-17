@@ -812,6 +812,29 @@ test('a manual series with a published member left out of the order still publis
   assert.equal(published._id, 'gospel')
 })
 
+// Sanity turns a validator exception into an error, which would block publishing, so this
+// warning has to absorb a failed lookup itself.
+test('when the left-out lookup fails, the series gets a warning and still publishes', async () => {
+  const studio = createHarness({
+    documents: [
+      series({_id: 'drafts.gospel', slug: slug('john'), ordering: 'manual', manualOrder: []}),
+      mediaItem('member', ['gospel']),
+    ],
+    failFetch: (query) => query.includes('$series in series'),
+  })
+  const markers = await studio.validate('drafts.gospel')
+  assert.deepEqual(markersUnder(markers, 'manualOrder'), [['manualOrder', 'warning']])
+  const warning = markers.find(({path}) => path === 'manualOrder')
+  assert.match(warning?.message ?? '', /couldn't check/)
+  const published = await studio.publish('drafts.gospel')
+  assert.equal(published._id, 'gospel')
+  // With another order the lookup never runs, so its failure changes nothing.
+  const other = await studio.validate(
+    series({_id: 'drafts.gospel', ordering: 'newestFirst', manualOrder: []}),
+  )
+  assert.deepEqual(markersUnder(other, 'manualOrder'), [])
+})
+
 test('the form shows the manual order only when the series uses manual order', async () => {
   const studio = createHarness()
   const manualOrder = [reference('a', 'item')]
