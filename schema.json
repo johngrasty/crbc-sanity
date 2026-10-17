@@ -3738,6 +3738,13 @@
               },
               "optional": false
             },
+            "durationSeconds": {
+              "type": "objectAttribute",
+              "value": {
+                "type": "number"
+              },
+              "optional": true
+            },
             "guid": {
               "type": "objectAttribute",
               "value": {
