@@ -64,6 +64,29 @@ async function listings(order: unknown[] | undefined, context: ValidationContext
   return found
 }
 
+// The names of the published media items that list this series but aren't in the manual order.
+// The published perspective sees only published items, so a draft or release version that lists
+// the series, or drops it, changes nothing here until it publishes. An item with no title goes
+// by its document ID, which is how Studio lists it too.
+async function leftOutNames(order: unknown[] | undefined, context: ValidationContext) {
+  if (!context.document) return []
+  const members: {_id: string; title?: unknown}[] = await context
+    .getClient({apiVersion})
+    .withConfig({perspective: 'published'})
+    .fetch(`*[_type == "mediaItem" && $series in series[]._ref] | order(_id asc){_id, title}`, {
+      series: getPublishedId(context.document._id),
+    })
+  const inOrder = new Set(
+    (order ?? [])
+      .map(referencedId)
+      .filter((id): id is string => typeof id === 'string')
+      .map(getPublishedId),
+  )
+  return members
+    .filter(({_id}) => !inOrder.has(getPublishedId(_id)))
+    .map(({_id, title}) => (typeof title === 'string' && title.trim() ? title : _id))
+}
+
 // A rule that marks each item in the order with this listing.
 const listingRule = (rule: ArrayRule<unknown[]>, listing: Listing, message: string) =>
   rule.custom(async (order, context) => {
@@ -178,6 +201,17 @@ export default defineType({
           'draftOnly',
           "Only this media item's unpublished draft lists this series. Publish the item to add it to the series.",
         ).warning(),
+        // The website puts published items left out of the order after the listed ones, newest
+        // first, so this warns without blocking publishing.
+        rule
+          .custom(async (order, context) => {
+            if (!usesManualOrder(context)) return true
+            const names = await leftOutNames(order, context)
+            return names.length
+              ? `Published items that list this series but aren't in the manual order show after the listed ones, newest first: ${names.join(', ')}. Add them to the order to choose where they go.`
+              : true
+          })
+          .warning(),
       ],
     }),
     sourceField('series'),

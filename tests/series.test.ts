@@ -697,6 +697,121 @@ test('a manual order lists each media item once', async () => {
   ])
 })
 
+test('a manual series warns, naming each published item that lists it but is not in the order', async () => {
+  const titled = (_id: string, title: string, seriesIds?: string[]): TestDocument => ({
+    _id,
+    _type: 'mediaItem',
+    title,
+    ...(seriesIds && {series: seriesIds.map((_ref, index) => reference(`s${index}`, _ref))}),
+  })
+  const studio = createHarness({
+    documents: [
+      series({ordering: 'manual'}),
+      titled('included', 'In the order', ['gospel']),
+      titled('missing-a', 'Left out A', ['gospel']),
+      titled('missing-b', 'Left out B', ['luke', 'gospel']),
+      titled('elsewhere', 'Another series', ['luke']),
+      titled('bare', 'No series'),
+    ],
+  })
+  const manualOrder = [reference('a', 'included')]
+  for (const _id of ['gospel', 'drafts.gospel', 'versions.rSpring.gospel']) {
+    const markers = await studio.validate(series({_id, ordering: 'manual', manualOrder}))
+    const warnings = markers.filter(
+      ({path, level}) => path === 'manualOrder' && level === 'warning',
+    )
+    assert.equal(warnings.length, 1, _id)
+    assert.match(warnings[0].message, /Left out A/, _id)
+    assert.match(warnings[0].message, /Left out B/, _id)
+    assert.doesNotMatch(warnings[0].message, /In the order|Another series|No series/, _id)
+    assert.deepEqual(errorsAt(markers, 'manualOrder'), [], _id)
+  }
+})
+
+test('a manual series with every published member in the order gets no left-out warning', async () => {
+  const studio = createHarness({
+    documents: [mediaItem('first', ['gospel']), mediaItem('second', ['gospel'])],
+  })
+  const markers = await studio.validate(
+    series({
+      _id: 'drafts.gospel',
+      ordering: 'manual',
+      manualOrder: [reference('a', 'first'), reference('b', 'second')],
+    }),
+  )
+  assert.deepEqual(markersUnder(markers, 'manualOrder'), [])
+})
+
+test('a manual series with no order yet warns about its published members, naming an untitled one by ID', async () => {
+  const studio = createHarness({
+    documents: [
+      mediaItem('named', ['gospel']),
+      {_id: 'untitled', _type: 'mediaItem', series: [reference('s0', 'gospel')]},
+    ],
+  })
+  for (const manualOrder of [undefined, []]) {
+    const markers = await studio.validate(
+      series({_id: 'drafts.gospel', ordering: 'manual', manualOrder}),
+    )
+    const warnings = markers.filter(
+      ({path, level}) => path === 'manualOrder' && level === 'warning',
+    )
+    assert.equal(warnings.length, 1, String(manualOrder))
+    assert.match(warnings[0].message, /named/)
+    assert.match(warnings[0].message, /untitled/)
+  }
+})
+
+test('the left-out warning counts only published items, never drafts or release versions', async () => {
+  const studio = createHarness({
+    documents: [
+      // Only a draft lists the series, and there is no published item.
+      mediaItem('drafts.draftOnly', ['gospel']),
+      // Only a release version lists the series.
+      mediaItem('versions.rSpring.releaseOnly', ['gospel']),
+      // The published item lists another series; only its draft lists this one.
+      mediaItem('joinedInDraft', ['luke']),
+      mediaItem('drafts.joinedInDraft', ['gospel']),
+      // The published item lists this series; its draft drops it, which changes nothing yet.
+      mediaItem('leftOut', ['gospel']),
+      mediaItem('drafts.leftOut', ['luke']),
+    ],
+  })
+  const markers = await studio.validate(
+    series({_id: 'drafts.gospel', ordering: 'manual', manualOrder: []}),
+  )
+  const warnings = markers.filter(({path, level}) => path === 'manualOrder' && level === 'warning')
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0].message, /leftOut/)
+  assert.doesNotMatch(warnings[0].message, /draftOnly|releaseOnly|joinedInDraft/)
+})
+
+test('a series with another order gets no left-out warning', async () => {
+  const studio = createHarness({documents: [mediaItem('member', ['gospel'])]})
+  for (const ordering of ['newestFirst', 'oldestFirst']) {
+    const markers = await studio.validate(
+      series({_id: 'drafts.gospel', ordering, manualOrder: []}),
+    )
+    assert.deepEqual(markersUnder(markers, 'manualOrder'), [], ordering)
+  }
+})
+
+test('a manual series with a published member left out of the order still publishes', async () => {
+  const studio = createHarness({
+    documents: [
+      series({_id: 'drafts.gospel', slug: slug('john'), ordering: 'manual', manualOrder: []}),
+      mediaItem('member', ['gospel']),
+    ],
+  })
+  const markers = await studio.validate('drafts.gospel')
+  assert.equal(
+    markers.filter(({path, level}) => path === 'manualOrder' && level === 'warning').length,
+    1,
+  )
+  const published = await studio.publish('drafts.gospel')
+  assert.equal(published._id, 'gospel')
+})
+
 test('the form shows the manual order only when the series uses manual order', async () => {
   const studio = createHarness()
   const manualOrder = [reference('a', 'item')]
