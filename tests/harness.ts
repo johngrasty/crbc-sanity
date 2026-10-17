@@ -612,8 +612,13 @@ function perspectiveStack(perspective: unknown, releases: boolean): string[] | u
 // A Sanity client over the in-memory dataset that answers queries with groq-js. It sees what
 // Content Lake would show at its API version, so a rule that forgets to ask for raw, or asks an
 // API version older than releases, misses documents here too. Add methods as Studio code needs
-// them.
-function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): SanityClient {
+// them. failFetch rejects the queries it picks out, as a Content Lake or network failure would,
+// so a test can say what a rule does when its query fails.
+function testClient(
+  dataset: Map<string, TestDocument>,
+  config: ClientConfig,
+  failFetch?: (query: string) => boolean,
+): SanityClient {
   const releases = hasReleases(config.apiVersion)
   const perspective = config.perspective ?? (releases ? 'published' : 'raw')
   const stack = perspectiveStack(perspective, releases)
@@ -626,9 +631,10 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
   }
   const client = {
     config: () => ({projectId: 'test', dataset: 'test', ...config, perspective}),
-    withConfig: (next: ClientConfig) => testClient(dataset, {...config, ...next}),
-    clone: () => testClient(dataset, config),
+    withConfig: (next: ClientConfig) => testClient(dataset, {...config, ...next}, failFetch),
+    clone: () => testClient(dataset, config, failFetch),
     async fetch(query: string, params: Record<string, unknown> = {}) {
+      if (failFetch?.(query)) throw new Error('The test client was told to fail this query')
       const result = await evaluate(parse(query, {params}), {dataset: visible(), params})
       return structuredClone(await result.get())
     },
@@ -639,7 +645,7 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
         defer(() =>
           (options?.perspective === undefined
             ? client
-            : testClient(dataset, {...config, perspective: options.perspective})
+            : testClient(dataset, {...config, perspective: options.perspective}, failFetch)
           ).fetch(query, params),
         ),
     },
@@ -662,12 +668,19 @@ function testClient(dataset: Map<string, TestDocument>, config: ClientConfig): S
 // versions.<release>.item. now fixes the clock, as an ISO instant, for create and desk: templates
 // read it as the moment of creation, and desk lists read it as GROQ's now(). Without it, both use
 // the real clock. followUps adds form follow-up steps after the ones documentConfig.ts registers,
-// as a later ticket would register them there.
+// as a later ticket would register them there. failFetch makes the client reject the queries it
+// picks out, as a Content Lake or network failure would.
 export function createHarness({
   documents = [],
   now,
   followUps = {},
-}: {documents?: TestDocument[]; now?: string; followUps?: Record<string, FormFollowUp[]>} = {}) {
+  failFetch,
+}: {
+  documents?: TestDocument[]
+  now?: string
+  followUps?: Record<string, FormFollowUp[]>
+  failFetch?: (query: string) => boolean
+} = {}) {
   const dataset = new Map<string, TestDocument>()
   const fixedNow = now === undefined ? undefined : Date.parse(now)
   if (fixedNow !== undefined && Number.isNaN(fixedNow)) throw new Error(`now isn't an instant`)
@@ -687,7 +700,7 @@ export function createHarness({
     }
   }
 
-  const getClient = (config: ClientConfig) => testClient(dataset, config)
+  const getClient = (config: ClientConfig) => testClient(dataset, config, failFetch)
   const configContext = {
     projectId: 'test',
     dataset: 'test',
