@@ -8,10 +8,10 @@ import {urlRule} from './url'
 
 const apiVersion = '2025-02-19'
 
-// True when podcast audio has a value in any of its four fields.
+// True when podcast audio has a value in any of its fields.
 function hasAudio(audio: unknown): boolean {
   const fields = (audio ?? {}) as Record<string, unknown>
-  return ['url', 'mimeType', 'bytes', 'guid'].some(
+  return ['url', 'mimeType', 'bytes', 'durationSeconds', 'guid'].some(
     (field) => fields[field] !== undefined && fields[field] !== null && fields[field] !== '',
   )
 }
@@ -27,7 +27,7 @@ export const audioEnclosureField = defineField({
   title: 'Podcast audio',
   type: 'object',
   description:
-    'The audio file podcast apps play for this item. Fill in all four fields, or leave them all empty.',
+    'The audio file podcast apps play for this item. Fill in the address, format, size and GUID, or leave them all empty. The length is optional.',
   // A draft or release version that takes the published item's podcast audio off.
   validation: (rule) =>
     rule
@@ -72,6 +72,20 @@ export const audioEnclosureField = defineField({
             : "Use the file's size in bytes, as a whole number above 0.",
         ),
       ],
+    }),
+    defineField({
+      name: 'durationSeconds',
+      title: 'Length in seconds',
+      type: 'number',
+      description:
+        "How long the audio runs, in whole seconds. Leave it empty when the length isn't known.",
+      validation: (rule) =>
+        rule.custom((durationSeconds) =>
+          durationSeconds === undefined ||
+          (Number.isInteger(durationSeconds) && durationSeconds >= 1)
+            ? true
+            : "Use the audio's length in seconds, as a whole number above 0, or leave it empty.",
+        ),
     }),
     defineField({
       name: 'guid',
