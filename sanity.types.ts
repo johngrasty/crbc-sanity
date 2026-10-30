@@ -375,6 +375,7 @@ export type Topic = {
   aliases?: Array<string>
   source?: {
     sourceId?: string
+    aliases?: Array<string>
     sourceUrl?: string
     originalPublishedAt?: string
   }
@@ -404,6 +405,7 @@ export type Speaker = {
   }
   source?: {
     sourceId?: string
+    aliases?: Array<string>
     sourceUrl?: string
     originalPublishedAt?: string
   }
@@ -478,6 +480,7 @@ export type Series = {
   }>
   source?: {
     sourceId?: string
+    aliases?: Array<string>
     sourceUrl?: string
     originalPublishedAt?: string
   }
@@ -627,6 +630,7 @@ export type MediaItem = {
   }
   source?: {
     sourceId?: string
+    aliases?: Array<string>
     sourceUrl?: string
     originalPublishedAt?: string
   }

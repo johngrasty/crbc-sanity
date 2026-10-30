@@ -100,8 +100,8 @@ export const audioEnclosureField = defineField({
           if (!guid) return true
           const holder = await otherHolder(context, {
             type: 'mediaItem',
-            field: 'audioEnclosure.guid',
             value: guid,
+            kind: 'podcastGuid',
           })
           return holder
             ? `The media item ${holder} already uses this GUID, so podcast apps would mix up the two episodes. Use a different GUID.`
