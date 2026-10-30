@@ -194,9 +194,10 @@ test('an item with a topic and a carried hold: its only errors are its weak refe
     ],
     JSON.stringify(before),
   )
+  // The merge note from amendment A's template, as the writer carried it.
   assert.deepEqual(ITEM_WITH_TOPIC.editorHold, {
     active: false,
-    note: (ITEM_WITH_TOPIC.editorHold as {note: string}).note,
+    note: 'Merged with Vimeo video 438910614, whose category the archive catalog marked for review. The merge went ahead by default. Check the kind and series before publishing.',
   })
   await studio.publish(publishedIdOf(SERIES))
   await studio.publish(publishedIdOf(SPEAKER))
