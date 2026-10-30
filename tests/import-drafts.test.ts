@@ -21,6 +21,8 @@ const FIXTURES: Record<string, string> = {
   'passages-refused.json': 'df1b501273e0f7947a7deef593c88dc9a64872676bdf9f84e7c174f2311f9ed0',
   'series.json': '87832bf116108b3bd1f22f6fdea6013df1fec7e4655415090d0df14f52e6e2e6',
   'speaker.json': '8ec20758c2fb7dd53dd2e7e2c5687b9ef53e7f766fee06a60a03a8a1bd666b34',
+  'topic.json': 'b5648ba3af8eb7990b9ff3ef127adabf196e4e6ec87c7ad7a4892ddf0f23244f',
+  'item-with-topic.json': 'f69a39b5e12766b8309c898908549ee1acecc94c92f82be37a1137f188135791',
 }
 
 const bytesOf = (name: string) =>
@@ -31,6 +33,8 @@ const ITEM: TestDocument = fixture('item.json')
 const ITEM_WITH_ASSETS: TestDocument = fixture('item-with-assets.json')
 const SERIES: TestDocument = fixture('series.json')
 const SPEAKER: TestDocument = fixture('speaker.json')
+const TOPIC: TestDocument = fixture('topic.json')
+const ITEM_WITH_TOPIC: TestDocument = fixture('item-with-topic.json')
 const publishedIdOf = (doc: TestDocument) => doc._id.replace(/^drafts\./, '')
 
 const errors = (markers: Marker[]) => markers.filter(({level}) => level === 'error')
@@ -169,4 +173,46 @@ test('an item draft with its passages validates them with no error', async () =>
     path.startsWith('passages'),
   )
   assert.deepEqual(markers, [])
+})
+
+// Amendment A: a topic draft, and an item with a topic and a carried hold, an inactive editor
+// hold whose note the merge carried from its Vimeo side.
+test('the topic draft validates with no error', async () => {
+  const studio = createHarness({documents: [TOPIC]})
+  assert.deepEqual(errors(await studio.validate(TOPIC._id)), [])
+})
+
+test('an item with a topic and a carried hold: its only errors are its weak references until the topic, series and speaker publish', async () => {
+  const studio = createHarness({documents: [SERIES, SPEAKER, TOPIC, ITEM_WITH_TOPIC]})
+  const before = errors(await studio.validate(ITEM_WITH_TOPIC._id))
+  assert.deepEqual(
+    before.map(({path, message}) => [path.replace(/\[.*$/, ''), message]).sort(),
+    [
+      ['series', 'Referenced document must be published'],
+      ['speakers', 'Referenced document must be published'],
+      ['topics', 'Referenced document must be published'],
+    ],
+    JSON.stringify(before),
+  )
+  assert.deepEqual(ITEM_WITH_TOPIC.editorHold, {
+    active: false,
+    note: (ITEM_WITH_TOPIC.editorHold as {note: string}).note,
+  })
+  await studio.publish(publishedIdOf(SERIES))
+  await studio.publish(publishedIdOf(SPEAKER))
+  await assert.rejects(
+    studio.publish(publishedIdOf(ITEM_WITH_TOPIC)),
+    /Referenced document must be published/,
+    'not before its topic',
+  )
+  await studio.publish(publishedIdOf(TOPIC))
+  assert.deepEqual(errors(await studio.validate(ITEM_WITH_TOPIC._id)), [])
+  const published = await studio.publish(publishedIdOf(ITEM_WITH_TOPIC))
+  for (const field of ['series', 'speakers', 'topics']) {
+    for (const ref of published[field] as Record<string, unknown>[]) {
+      assert.ok(!('_weak' in ref), `${field}: _weak`)
+      assert.ok(!('_strengthenOnPublish' in ref), `${field}: _strengthenOnPublish`)
+    }
+  }
+  assert.equal((published.editorHold as {active: boolean}).active, false)
 })

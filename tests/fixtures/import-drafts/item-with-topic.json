@@ -1,0 +1,59 @@
+{
+  "_id": "drafts.mi_7KJ87Q485TJ6SD5ADD41G603TP",
+  "_type": "mediaItem",
+  "contentId": "mi_7KJ87Q485TJ6SD5ADD41G603TP",
+  "kind": "service",
+  "title": "A synthetic service",
+  "slug": {
+    "_type": "slug",
+    "current": "a-synthetic-service"
+  },
+  "slugHistory": [],
+  "series": [
+    {
+      "_type": "reference",
+      "_key": "se_7TTZCEYZV322BJFWJBC8BCMSPY",
+      "_ref": "se_7TTZCEYZV322BJFWJBC8BCMSPY",
+      "_weak": true,
+      "_strengthenOnPublish": {
+        "type": "series"
+      }
+    }
+  ],
+  "serviceDate": "2024-09-01",
+  "serviceTimezone": "America/New_York",
+  "speakers": [
+    {
+      "_type": "reference",
+      "_key": "sp_6WHH36RD1SNW58ACMTGPDPRCT6",
+      "_ref": "sp_6WHH36RD1SNW58ACMTGPDPRCT6",
+      "_weak": true,
+      "_strengthenOnPublish": {
+        "type": "speaker"
+      }
+    }
+  ],
+  "topics": [
+    {
+      "_type": "reference",
+      "_key": "tp_4ZXFJ7G48NZ7VD9K15EZGR2MAN",
+      "_ref": "tp_4ZXFJ7G48NZ7VD9K15EZGR2MAN",
+      "_weak": true,
+      "_strengthenOnPublish": {
+        "type": "topic"
+      }
+    }
+  ],
+  "publicationPolicy": "manual",
+  "editorHold": {
+    "active": false,
+    "note": "Merged with Vimeo video 438910614, whose category the archive catalog marked for review. The merge went ahead by default. Check the kind and series before publishing."
+  },
+  "source": {
+    "sourceId": "subsplash:mi:+b28zd2h",
+    "sourceUrl": "https://subsplash.com/+fsr3/lb/mi/+b28zd2h",
+    "aliases": [
+      "vimeo:438910614"
+    ]
+  }
+}
