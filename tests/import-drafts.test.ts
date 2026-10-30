@@ -94,6 +94,34 @@ for (const [name, item] of [
   })
 }
 
+test("E85's holder rule runs on the item's source aliases", async () => {
+  // Another media item that already holds the item's alias as its own source ID. Studio
+  // marks the alias, so a twin can't publish. With no such holder the alias passes, as above.
+  const [alias] = (ITEM.source as {aliases: string[]}).aliases
+  const holder: TestDocument = {
+    _id: 'other-item',
+    _type: 'mediaItem',
+    contentId: 'mi_01K6Z8Y4N3QJ5W2X7R9T0V1B2C',
+    kind: 'service',
+    serviceTimezone: 'America/New_York',
+    publicationPolicy: 'manual',
+    source: {sourceId: alias},
+  }
+  const studio = createHarness({documents: [SERIES, SPEAKER, ITEM, holder]})
+  const markers = errors(await studio.validate(ITEM._id)).filter(({path}) =>
+    path.startsWith('source'),
+  )
+  assert.deepEqual(
+    markers.map(({path, message}) => [path, message]),
+    [
+      [
+        'source.aliases[0]',
+        'The media item other-item already uses this source ID. Ask a developer to fix it.',
+      ],
+    ],
+  )
+})
+
 test("an item whose series is gone keeps a reference Studio won't publish", async () => {
   // The series draft was deleted after the item draft was written: the speaker publishes, the
   // series doesn't exist, and the item can't publish.
