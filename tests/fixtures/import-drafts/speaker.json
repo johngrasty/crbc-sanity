@@ -1,0 +1,12 @@
+{
+  "_id": "drafts.sp_6WHH36RD1SNW58ACMTGPDPRCT6",
+  "_type": "speaker",
+  "speakerId": "sp_6WHH36RD1SNW58ACMTGPDPRCT6",
+  "name": "Sam Jones",
+  "aliases": [
+    "Pastor Sam Jones"
+  ],
+  "source": {
+    "sourceId": "crbc-roster:sam-jones"
+  }
+}
