@@ -8,26 +8,30 @@ import {getPublishedId, type ValidationContext} from 'sanity'
 
 const apiVersion = '2025-02-19'
 
+// The GROQ filter for a document that holds $value. A document holds a source ID as its own
+// source.sourceId or as one of its source.aliases, and one value has one holder across both
+// fields (erratum E85).
+const holds = {
+  sourceId: '(source.sourceId == $value || $value in source.aliases)',
+  podcastGuid: 'audioEnclosure.guid == $value',
+}
+
 export async function otherHolder(
   context: ValidationContext,
-  {
-    type,
-    field,
-    value,
-  }: {type: string; field: 'source.sourceId' | 'audioEnclosure.guid'; value: string},
+  {type, value, kind}: {type: string; value: string; kind: keyof typeof holds},
 ): Promise<string | undefined> {
   if (!context.document) return undefined
   // The raw perspective sees every published, draft and release version. sanity::versionOf
   // leaves out this document's own versions.
   const client = context.getClient({apiVersion}).withConfig({perspective: 'raw'})
-  const others = `*[_type == $type && ${field} == $value && !sanity::versionOf($publishedId)]`
+  const others = `*[_type == $type && ${holds[kind]} && !sanity::versionOf($publishedId)]`
   const {published, takenByPublished, takenByAny} = await client.fetch(
     `{
-      "published": *[_id == $publishedId][0].${field},
+      "published": count(*[_id == $publishedId && ${holds[kind]}]) > 0,
       "takenByPublished": ${others}[!(_id in path("drafts.**")) && !(_id in path("versions.**"))] | order(_id asc)[0]._id,
       "takenByAny": ${others} | order(_id asc)[0]._id
     }`,
     {type, value, publishedId: getPublishedId(context.document._id)},
   )
-  return (published === value ? takenByPublished : takenByAny) ?? undefined
+  return (published ? takenByPublished : takenByAny) ?? undefined
 }
