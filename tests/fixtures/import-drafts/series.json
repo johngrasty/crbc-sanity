@@ -1,0 +1,16 @@
+{
+  "_id": "drafts.se_7TTZCEYZV322BJFWJBC8BCMSPY",
+  "_type": "series",
+  "seriesId": "se_7TTZCEYZV322BJFWJBC8BCMSPY",
+  "title": "A synthetic series",
+  "slug": {
+    "_type": "slug",
+    "current": "a-synthetic-series"
+  },
+  "slugHistory": [],
+  "ordering": "newestFirst",
+  "source": {
+    "sourceId": "subsplash:ms:+ser1",
+    "sourceUrl": "https://subsplash.com/+fsr3/lb/ms/+ser1"
+  }
+}

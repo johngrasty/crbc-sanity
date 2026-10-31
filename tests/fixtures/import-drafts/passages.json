@@ -1,0 +1,51 @@
+[
+  {
+    "_type": "passage",
+    "_key": "passage-1",
+    "book": "Jas",
+    "chapterStart": 5,
+    "verseStart": 10,
+    "chapterEnd": 5,
+    "verseEnd": 12,
+    "display": "James 5:10-12",
+    "generatedDisplay": "James 5:10-12"
+  },
+  {
+    "_type": "passage",
+    "_key": "passage-2",
+    "book": "Jas",
+    "chapterStart": 5,
+    "chapterEnd": 5,
+    "display": "James 5",
+    "generatedDisplay": "James 5"
+  },
+  {
+    "_type": "passage",
+    "_key": "passage-3",
+    "book": "John",
+    "chapterStart": 3,
+    "verseStart": 16,
+    "chapterEnd": 4,
+    "verseEnd": 2,
+    "display": "John 3:16-4:2",
+    "generatedDisplay": "John 3:16-4:2"
+  },
+  {
+    "_type": "passage",
+    "_key": "passage-4",
+    "book": "Ps",
+    "chapterStart": 23,
+    "chapterEnd": 23,
+    "display": "Psalm 23",
+    "generatedDisplay": "Psalm 23"
+  },
+  {
+    "_type": "passage",
+    "_key": "passage-5",
+    "book": "Ps",
+    "chapterStart": 1,
+    "chapterEnd": 2,
+    "display": "Psalms 1-2",
+    "generatedDisplay": "Psalms 1-2"
+  }
+]

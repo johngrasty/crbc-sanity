@@ -1,0 +1,18 @@
+[
+  {
+    "osis": "x",
+    "book": "John",
+    "chapterStart": 3,
+    "verseStart": 16,
+    "chapterEnd": 4,
+    "verseEnd": null
+  },
+  {
+    "osis": "x",
+    "book": "Xyz",
+    "chapterStart": 1,
+    "verseStart": 1,
+    "chapterEnd": 1,
+    "verseEnd": 2
+  }
+]

@@ -1,0 +1,82 @@
+{
+  "_id": "drafts.mi_7KJ87Q485TJ6SD5ADD41G603TP",
+  "_type": "mediaItem",
+  "contentId": "mi_7KJ87Q485TJ6SD5ADD41G603TP",
+  "kind": "service",
+  "title": "A synthetic service",
+  "slug": {
+    "_type": "slug",
+    "current": "a-synthetic-service"
+  },
+  "slugHistory": [],
+  "description": "A synthetic summary.",
+  "series": [
+    {
+      "_type": "reference",
+      "_key": "se_7TTZCEYZV322BJFWJBC8BCMSPY",
+      "_ref": "se_7TTZCEYZV322BJFWJBC8BCMSPY",
+      "_weak": true,
+      "_strengthenOnPublish": {
+        "type": "series"
+      }
+    }
+  ],
+  "serviceDate": "2024-09-01",
+  "serviceTimezone": "America/New_York",
+  "speakers": [
+    {
+      "_type": "reference",
+      "_key": "sp_6WHH36RD1SNW58ACMTGPDPRCT6",
+      "_ref": "sp_6WHH36RD1SNW58ACMTGPDPRCT6",
+      "_weak": true,
+      "_strengthenOnPublish": {
+        "type": "speaker"
+      }
+    }
+  ],
+  "passages": [
+    {
+      "_type": "passage",
+      "_key": "passage-1",
+      "book": "Jas",
+      "chapterStart": 5,
+      "verseStart": 10,
+      "chapterEnd": 5,
+      "verseEnd": 12,
+      "display": "James 5:10-12",
+      "generatedDisplay": "James 5:10-12"
+    }
+  ],
+  "publicationPolicy": "manual",
+  "source": {
+    "sourceId": "subsplash:mi:+b28zd2h",
+    "sourceUrl": "https://subsplash.com/+fsr3/lb/mi/+b28zd2h",
+    "originalPublishedAt": "2024-09-01T15:00:00Z",
+    "aliases": [
+      "vimeo:438910614"
+    ]
+  },
+  "artwork": {
+    "thumbnail": {
+      "_type": "image",
+      "asset": {
+        "_type": "reference",
+        "_ref": "image-fa194980eb1db1ab9a815e65ae1da3857dee6f0a-1920x1080-jpg"
+      }
+    }
+  },
+  "documents": [
+    {
+      "_type": "mediaDocument",
+      "_key": "notes-7b67b18a78c559c6",
+      "label": "Sermon notes",
+      "file": {
+        "_type": "file",
+        "asset": {
+          "_type": "reference",
+          "_ref": "file-24a3bf78f52b04d21dc40e91ecbcb16f235b34db-pdf"
+        }
+      }
+    }
+  ]
+}
