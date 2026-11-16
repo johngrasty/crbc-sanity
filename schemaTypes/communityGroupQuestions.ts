@@ -57,7 +57,7 @@ export default defineType({
       title: 'Week of',
       type: 'date',
       description:
-        'The first day of the week the groups meet. The newest week is the one the Community Groups page links to.',
+        'The date after "Week of" in the notes, usually the Monday after the sermon. The newest week is the one the Community Groups page links to.',
       options: {dateFormat: 'MMMM D, YYYY'},
       validation: (Rule) => Rule.required(),
     }),
@@ -73,7 +73,8 @@ export default defineType({
       name: 'series',
       title: 'Sermon series',
       type: 'string',
-      description: 'Optional, such as "Thankful Hearts".',
+      description:
+        'Optional, such as "Thankful Hearts". Leave out the word "series"; the website adds it.',
     }),
     defineField({
       name: 'sections',
@@ -91,20 +92,22 @@ export default defineType({
               name: 'heading',
               title: 'Heading',
               type: 'string',
-              description: 'Such as "Paul\'s Joy".',
+              description:
+                'Such as "Paul\'s Joy". Leave out the number; the website numbers the sections.',
               validation: (Rule) => Rule.required(),
             }),
             defineField({
               name: 'verses',
               title: 'Verses',
               type: 'string',
-              description: 'Optional, such as "v. 10" or "vv. 11–12".',
+              description:
+                'Optional, such as "v. 10" or "vv. 11–12". Leave out the parentheses; the website adds them.',
             }),
             defineField({
               name: 'background',
               title: 'Background',
               type: 'array',
-              description: 'A short summary of this part of the sermon.',
+              description: 'Optional. A short summary of this part of the sermon.',
               of: [plainParagraphs],
             }),
             defineField({
@@ -118,6 +121,7 @@ export default defineType({
               name: 'followUp',
               title: 'Follow-up question',
               type: 'text',
+              description: 'Optional.',
               rows: 3,
             }),
           ],
@@ -138,6 +142,7 @@ export default defineType({
       name: 'challenge',
       title: "This week's challenge",
       type: 'text',
+      description: 'Optional.',
       rows: 4,
     }),
   ],
