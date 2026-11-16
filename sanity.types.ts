@@ -636,6 +636,43 @@ export type MediaItem = {
   }
 }
 
+export type CommunityGroupQuestions = {
+  _id: string
+  _type: 'communityGroupQuestions'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  title: string
+  passage: string
+  weekOf: string
+  slug: Slug
+  series?: string
+  sections: Array<{
+    heading: string
+    verses?: string
+    background?: Array<{
+      children?: Array<{
+        marks?: Array<string>
+        text?: string
+        _type: 'span'
+        _key: string
+      }>
+      style?: 'normal'
+      listItem?: never
+      markDefs?: null
+      level?: number
+      _type: 'block'
+      _key: string
+    }>
+    question: string
+    followUp?: string
+    _type: 'questionSection'
+    _key: string
+  }>
+  closingQuote?: string
+  challenge?: string
+}
+
 export type JobOpening = {
   _id: string
   _type: 'jobOpening'
@@ -2117,6 +2154,7 @@ export type AllSanitySchemaTypes =
   | Slug
   | ServiceEvent
   | MediaItem
+  | CommunityGroupQuestions
   | JobOpening
   | CustomSignUp
   | Ministry

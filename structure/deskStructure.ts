@@ -33,6 +33,7 @@ import {
   CalendarCheck,
   CalendarX,
   History,
+  MessagesSquare,
 } from 'lucide-react'
 import {AnnouncementHelp} from '../schemaTypes/components/AnnouncementHelp'
 import {SignUpHelp} from '../schemaTypes/components/SignUpHelp'
@@ -242,6 +243,17 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
 
       // Ministries Section
       S.listItem().title('Ministries').icon(Heart).child(S.documentTypeList('ministry')),
+
+      // Weekly discussion guides, listed newest week first
+      S.listItem()
+        .title('Community Group Questions')
+        .id('communityGroupQuestions')
+        .icon(MessagesSquare)
+        .child(
+          S.documentTypeList('communityGroupQuestions')
+            .title('Community Group Questions')
+            .defaultOrdering([{field: 'weekOf', direction: 'desc'}]),
+        ),
 
       S.divider(),
 
