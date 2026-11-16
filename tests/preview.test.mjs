@@ -36,7 +36,7 @@ function previewClient({fail = false} = {}) {
 
 test('preview links carry a fresh Sanity secret and preserve the complete slug', async () => {
   globalThis.window = {location: {origin: 'https://studio.example.test'}}
-  for (const type of ['announcement', 'ministry', 'article', 'page']) {
+  for (const type of ['announcement', 'ministry', 'article', 'page', 'communityGroupQuestions']) {
     const {client, writes} = previewClient()
     const slug = 'nested/a & b?redirect=elsewhere'
     const url = new URL(

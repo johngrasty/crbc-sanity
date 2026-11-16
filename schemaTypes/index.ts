@@ -28,6 +28,7 @@ import footerSettings from './singletons/footer'
 import ministry from './ministry'
 import customSignUp from './customSignUp'
 import jobOpening from './jobOpening'
+import communityGroupQuestions from './communityGroupQuestions'
 import mediaItem from './media/mediaItem'
 import serviceEvent from './media/serviceEvent'
 import series from './media/series'
@@ -64,6 +65,7 @@ export const schemaTypes = [
   ministry,
   customSignUp,
   jobOpening,
+  communityGroupQuestions,
   mediaItem,
   serviceEvent,
   series,

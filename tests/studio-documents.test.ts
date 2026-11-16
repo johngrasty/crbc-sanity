@@ -103,10 +103,10 @@ test('singletons keep only publish, discard and restore, in every version type',
   }
 })
 
-test('pages, articles, ministries and announcements add Preview to the defaults', () => {
+test('pages, articles, ministries, announcements and group questions add Preview to the defaults', () => {
   const studio = createHarness()
   for (const versionType of versionTypes) {
-    for (const type of ['page', 'article', 'ministry', 'announcement']) {
+    for (const type of ['page', 'article', 'ministry', 'announcement', 'communityGroupQuestions']) {
       const expected = [...sanityDefaults[versionType], 'PreviewAction']
       assert.deepEqual(studio.actions(type, versionType), expected, `${type} ${versionType}`)
     }

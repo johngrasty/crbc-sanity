@@ -1,7 +1,13 @@
 import {createPreviewSecret} from '@sanity/preview-url-secret/create-secret'
 import type {SanityClient, SanityDocumentLike} from 'sanity'
 
-export const previewableTypes = new Set(['announcement', 'ministry', 'article', 'page'])
+export const previewableTypes = new Set([
+  'announcement',
+  'ministry',
+  'article',
+  'page',
+  'communityGroupQuestions',
+])
 export const previewOrigin = process.env.SANITY_STUDIO_PREVIEW_URL || 'http://localhost:5173'
 
 export const singletonPaths: Record<string, string> = {
