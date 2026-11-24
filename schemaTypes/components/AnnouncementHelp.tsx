@@ -4,13 +4,13 @@ import { Card, Stack, Text, Box, Heading } from '@sanity/ui';
 export function AnnouncementHelp() {
   return (
     <Card padding={4} radius={2} shadow={1} tone="primary">
-      <Stack space={4}>
+      <Stack gap={4}>
         <Heading size={1}>📢 Quick Guide: Managing Announcements</Heading>
         
-        <Stack space={3}>
+        <Stack gap={3}>
           <Box>
             <Text size={1} weight="semibold">Priority Levels:</Text>
-            <Stack space={2} marginTop={2}>
+            <Stack gap={2} marginTop={2}>
               <Text size={1}>• 9-10: Emergency/Urgent</Text>
               <Text size={1}>• 7-8: Major Events</Text>
               <Text size={1}>• 5-6: Regular Updates</Text>
@@ -21,7 +21,7 @@ export function AnnouncementHelp() {
           
           <Box>
             <Text size={1} weight="semibold">Status Indicators:</Text>
-            <Stack space={2} marginTop={2}>
+            <Stack gap={2} marginTop={2}>
               <Text size={1}>✅ Active - Currently showing</Text>
               <Text size={1}>⏰ Scheduled - Future display</Text>
               <Text size={1}>⏹️ Expired - Past end date</Text>
@@ -31,7 +31,7 @@ export function AnnouncementHelp() {
           
           <Box>
             <Text size={1} weight="semibold">Best Practices:</Text>
-            <Stack space={2} marginTop={2}>
+            <Stack gap={2} marginTop={2}>
               <Text size={1}>• Keep titles under 100 characters</Text>
               <Text size={1}>• Descriptions: 100-150 characters</Text>
               <Text size={1}>• Images: 1200x600px recommended</Text>
@@ -42,7 +42,7 @@ export function AnnouncementHelp() {
           
           <Box>
             <Text size={1} weight="semibold">Using Preview:</Text>
-            <Stack space={2} marginTop={2}>
+            <Stack gap={2} marginTop={2}>
               <Text size={1}>1. Add a slug to your announcement</Text>
               <Text size={1}>2. Click the Preview button (👁️) in toolbar</Text>
               <Text size={1}>3. Check how it looks on the website</Text>

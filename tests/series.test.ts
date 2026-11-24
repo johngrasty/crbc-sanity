@@ -46,7 +46,7 @@ test('a series title is required and holds up to 200 characters, counted as code
   const studio = createHarness()
   const created = await studio.create('series')
   for (const title of [undefined, '']) {
-    assert.equal(errorsAt(await studio.validate({...created, title}), 'title').length, 1, title)
+    assert.equal(errorsAt(await studio.validate({...created, title}), 'title').length, 1, String(title))
   }
   for (const character of characters) {
     const atLimit = await studio.validate({...created, title: character.repeat(200)})
@@ -910,7 +910,7 @@ test('a media item with no series has a warning, not an error, so a placeholder 
 test("a media item's series sit in the Details group", () => {
   const studio = createHarness()
   const details = studio.groups('mediaItem').find(({name}) => name === 'details')
-  assert.ok(details?.fields.includes('series'), details?.fields.join(', '))
+  assert.ok(details?.fields.includes('series'), details?.fields.join(', ') ?? 'Details group is missing')
 })
 
 test('the Media section lists series A to Z, after media items and before speakers', async () => {

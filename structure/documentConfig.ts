@@ -34,6 +34,9 @@ import {singletonActions, singletonsWithTemplates, singletonTypes} from './singl
 // path is back for it. With both off, Sanity loads neither plugin nor the releases tool, so
 // nothing in Studio creates a release or a version, and version chips have no right-click menu.
 // Turning either on needs a fresh review of the mirror types and of slug history.
+// Preserve the Studio v4 search behavior across the v6 default change.
+export const searchOptions = {strategy: 'groqLegacy'} as const
+
 export const versioningOptions = {
   releases: {enabled: false},
   scheduledDrafts: {enabled: false},

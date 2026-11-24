@@ -20,14 +20,12 @@ export default readOnlyType(
         title: 'Environments',
         type: 'array',
         description: 'The media-ops environments that may write release and live status here.',
-        // The list on the member gives the generated type its three values. Sanity checks a
-        // value against a list only when the field has a validation function, so the member
-        // has one that adds nothing else. A typo such as prod is then an error.
+        // The list on the member gives the generated type its three values. Sanity 6 checks a
+        // value against a list without a validation function, so a typo such as prod is an error.
         of: [
           defineArrayMember({
             type: 'string',
             options: {list: environments},
-            validation: (rule) => rule,
           }),
         ],
         // The list on the array shows the three as checkboxes.

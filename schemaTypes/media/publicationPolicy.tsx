@@ -21,7 +21,7 @@ const policies = [
 // through, for example when an editor selects the field's Required marker.
 function PublicationPolicyInput({value, onChange, readOnly, elementProps}: StringInputProps) {
   return (
-    <Stack space={3} role="radiogroup">
+    <Stack gap={3} role="radiogroup">
       {policies.map((policy, index) => (
         <Flex key={policy.value} as="label" gap={3} align="flex-start">
           <Radio
@@ -35,7 +35,7 @@ function PublicationPolicyInput({value, onChange, readOnly, elementProps}: Strin
             onBlur={elementProps.onBlur}
             aria-describedby={elementProps['aria-describedby']}
           />
-          <Stack space={2}>
+          <Stack gap={2}>
             <Text size={1} weight="medium">
               {policy.title}
             </Text>

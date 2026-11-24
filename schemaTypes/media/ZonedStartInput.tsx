@@ -79,7 +79,7 @@ export function ZonedStartInput(props: ObjectInputProps) {
   ].filter(Boolean)
 
   return (
-    <Stack space={3}>
+    <Stack gap={3}>
       <Flex gap={2} wrap="wrap">
         <Box flex={1} style={{minWidth: 200}}>
           <TextInput
@@ -110,7 +110,7 @@ export function ZonedStartInput(props: ObjectInputProps) {
       </Flex>
       {twice && (
         <Card padding={3} radius={2} border tone="caution">
-          <Stack space={3}>
+          <Stack gap={3}>
             <Text size={1}>{startMessages.twice(timeZone)}</Text>
             {readings.map((reading, index) => (
               <Flex key={reading.offset} as="label" align="center" gap={2}>

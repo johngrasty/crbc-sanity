@@ -87,17 +87,6 @@ Singleton protection follows the [Sanity singleton guide](https://www.sanity.io/
 It prevents duplicate creation in this Studio; it does not repair existing duplicate
 content or enforce uniqueness for other API clients.
 
-## Dependency overrides
-
-Two scoped overrides avoid a Sanity major-version migration for transitive advisories.
-`@sanity/runtime-cli` uses `adm-zip` 0.6.0 for local archive creation; its changed extraction
-behavior is not used by that caller. The dependency compatibility test runs Sanity's
-actual file and folder packaging functions. See the
-[adm-zip release notes](https://github.com/cthackers/adm-zip/releases/tag/v0.6.0).
-The nested `@sanity/uuid` uses patch 3.0.3, which updates its UUID dependency. Preview
-secret tests exercise that ID generation. Remove these overrides when Sanity's declared
-dependency versions include the fixes.
-
 ## Image descriptions
 
 Describe the image in the context of the page. For a staff portrait, use the person's

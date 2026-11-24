@@ -1,27 +1,29 @@
 import assert from 'node:assert/strict'
 import {mkdtemp, mkdir, writeFile, rm} from 'node:fs/promises'
+import {URL} from 'node:url'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {test} from 'node:test'
-import {assets} from '@sanity/runtime-cli/actions/blueprints'
+// The runtime CLI exposes its command entry point, but not its archive helper.
+const {pathToZip} = await import(
+  new URL('./utils/functions/prepare-asset.js', import.meta.resolve('@sanity/runtime-cli'))
+)
 
-// Exercises the Sanity consumer affected by the adm-zip security override.
+// Exercises the runtime CLI archive packaging after dependency upgrades.
 test('Sanity still packages individual functions and nested asset folders', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'crbc-studio-zip-'))
   try {
     const source = 'export default function handler() { return "fixture" }\n'
     const file = path.join(directory, 'handler.js')
     await writeFile(file, source)
-    const single = await assets.pathToB64ZipHash(file)
-    assert.equal(single.zip.readAsText('index.js'), source)
-    assert.ok(single.buffer.length > 0)
-    assert.equal(single.b64, single.buffer.toString('base64'))
+    const single = await pathToZip(file)
+    assert.equal(single.readAsText('index.js'), source)
+    assert.ok((await single.toBufferPromise()).length > 0)
     await mkdir(path.join(directory, 'nested'))
     await writeFile(path.join(directory, 'nested', 'config.txt'), 'fixture')
-    const folder = await assets.pathToB64ZipHash(directory)
-    assert.equal(folder.zip.readAsText('nested/config.txt'), 'fixture')
-    assert.equal(folder.zip.readAsText('handler.js'), source)
-    assert.equal(folder.hash.length, 64)
+    const folder = await pathToZip(directory)
+    assert.equal(folder.readAsText('nested/config.txt'), 'fixture')
+    assert.equal(folder.readAsText('handler.js'), source)
   } finally {
     await rm(directory, {recursive: true, force: true})
   }

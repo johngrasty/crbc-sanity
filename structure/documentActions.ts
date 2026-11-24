@@ -1,6 +1,5 @@
-import {EyeOpenIcon} from '@sanity/icons'
-import {useToast} from '@sanity/ui'
-import {Copy} from 'lucide-react'
+import {useToast} from '@sanity/ui/toast'
+import {Copy, Eye} from 'lucide-react'
 import {useState} from 'react'
 import {getPublishedId, useClient, type DocumentActionComponent} from 'sanity'
 import {useRouter} from 'sanity/router'
@@ -55,7 +54,7 @@ export const PreviewAction: DocumentActionComponent = (props) => {
   const document = props.draft || props.published
   return {
     label: 'Preview',
-    icon: EyeOpenIcon,
+    icon: Eye,
     disabled: !documentSlug(document),
     onHandle: async () => {
       if (!document) return

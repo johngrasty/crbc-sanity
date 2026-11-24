@@ -192,7 +192,7 @@ export default defineType({
       const end = endDate ? new Date(endDate) : null
 
       // Determine status
-      let status = ''
+      let status: string
       if (!active) {
         status = '⏸️ Inactive'
       } else if (start && start > now) {
