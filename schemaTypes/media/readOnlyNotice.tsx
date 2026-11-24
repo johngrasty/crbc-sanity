@@ -7,7 +7,7 @@ import type {ObjectInputProps} from 'sanity'
 export function readOnlyNotice(notice: string, Input?: ComponentType<ObjectInputProps>) {
   function ReadOnlyNotice(props: ObjectInputProps) {
     return (
-      <Stack space={4}>
+      <Stack gap={4}>
         <Card padding={3} radius={2} border tone="caution">
           <Text size={1}>{notice}</Text>
         </Card>

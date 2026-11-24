@@ -201,12 +201,15 @@ test('the binding lists the environments that may write mirrors there', async ()
   ]) {
     assert.deepEqual(await studio.validate({...binding, environments}), [], `${environments}`)
   }
+  // Sanity 6 checks both lists, the array's and the member's, so a typo has two errors at
+  // the same item. Both block publishing, and one names the value.
   const unknown = await studio.validate({...binding, environments: ['dev', 'prod']})
+  assert.ok(unknown.length > 0)
   assert.deepEqual(
-    unknown.map(({path, level}) => [path, level]),
-    [['environments[1]', 'error']],
+    [...new Set(unknown.map(({path, level}) => `${path} ${level}`))],
+    ['environments[1] error'],
   )
-  assert.match(unknown[0].message, /"prod"/)
+  assert.ok(unknown.some(({message}) => /"prod"/.test(message)))
 })
 
 test('the read-only types have no document actions, in any version type', () => {

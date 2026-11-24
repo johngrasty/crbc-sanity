@@ -2,7 +2,7 @@
 // module, over an in-memory dataset. Tests talk to this module, never to validators, inputs or
 // actions directly.
 import {randomUUID} from 'node:crypto'
-import {readFileSync} from 'node:fs'
+import {readdirSync, readFileSync} from 'node:fs'
 import {mock} from 'node:test'
 import {evaluate, parse} from 'groq-js'
 import speakingurl from 'speakingurl'
@@ -71,6 +71,7 @@ import {
   formComponents,
   formFollowUps,
   newDocumentOptions,
+  searchOptions,
   templates,
   versioningOptions,
   type DocumentPatch,
@@ -239,6 +240,7 @@ const prepared = prepareConfig({
       templates(prev, context).filter(({schemaType}) => !probeTypes.has(schemaType)),
   },
   form: {components: formComponents},
+  search: searchOptions,
   ...versioningOptions,
   document: {actions: documentActions, newDocumentOptions},
 })
@@ -457,21 +459,16 @@ export type ActionDetail = {
   keptWhenLinkedToCanvas: boolean
 }
 
-// On a document linked to Canvas, Sanity's ActionsGuardWrapper disables every action whose state
-// has no action name, or a name off its list (sanity/lib/_chunks-es/pane.js:1914-1934). The
-// guard isn't exported, so the harness reads its list from the installed file and stops if the
-// guard's test no longer reads as it does here.
-const paneChunk = readFileSync(
-  new URL('./_chunks-es/pane.js', import.meta.resolve('sanity')),
-  'utf8',
-)
-const canvasList = /const SUPPORTED_LINKED_TO_CANVAS_ACTIONS = (\[[^\]]*\]);/.exec(paneChunk)
+// The Canvas guard is bundled in a hashed chunk and has no public export. Read its allowlist
+// from the installed Studio and require the guard to use it before relying on it in tests.
+const sanityLib = new URL('.', import.meta.resolve('sanity'))
+const canvasChunk = readdirSync(sanityLib).find((name) => /^BackLink-.*\.js$/.test(name))
+const paneChunk = canvasChunk ? readFileSync(new URL(canvasChunk, sanityLib), 'utf8') : ''
+const canvasList = /const SUPPORTED_CANVAS_LOCKED_ACTIONS = (\[[^\]]*\]);/.exec(paneChunk)
 const canvasTest =
-  'states.map((s) => !s.action || !SUPPORTED_LINKED_TO_CANVAS_ACTIONS.includes(s.action) ? {'
+  'states.map((s) => !s.action || !SUPPORTED_CANVAS_LOCKED_ACTIONS.includes(s.action) ? {'
 if (!canvasList || !paneChunk.includes(canvasTest)) {
-  throw new Error(
-    "Sanity's Canvas guard changed. Read ActionsGuardWrapper in sanity/lib/_chunks-es/pane.js and update the harness.",
-  )
+  throw new Error("Sanity's Canvas guard changed. Read ActionsGuardWrapper and update the harness.")
 }
 const canvasActions: string[] = JSON.parse(canvasList[1])
 
@@ -875,6 +872,7 @@ export function createHarness({
             document: value as SanityDocument,
             parent: value,
             value: value[name],
+            path: [name],
             currentUser: null,
           }),
         )

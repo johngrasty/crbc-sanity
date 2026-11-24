@@ -9,6 +9,7 @@ import {
   documentActions,
   formComponents,
   newDocumentOptions,
+  searchOptions,
   templates,
   versioningOptions,
 } from './structure/documentConfig'
@@ -26,7 +27,16 @@ export default defineConfig({
   dataset,
   plugins: [structureTool({structure: deskStructure}), visionTool(), media(), assist()],
   schema: {types: schemaTypes, templates},
-  form: {components: formComponents},
+  form: {
+    components: {
+      ...formComponents,
+      portableText: {
+        plugins: (props) =>
+          props.renderDefault({...props, plugins: {...props.plugins, typography: {enabled: false}}}),
+      },
+    },
+  },
+  search: searchOptions,
   ...versioningOptions,
   document: {
     actions: documentActions,

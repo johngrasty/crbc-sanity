@@ -1,6 +1,7 @@
 // The five editorial ID fields (contract section 2). Each is the contract prefix plus a ULID,
 // set once when the document is created and never changed in Studio.
-import {Button, Card, Code, Stack, Text} from '@sanity/ui'
+import {Button, Card, Stack, Text} from '@sanity/ui'
+import {Code} from '@sanity/ui/code'
 import {
   defineField,
   getDraftId,
@@ -98,7 +99,7 @@ function idInput(type: EditorialType, {field, kind, label, noun}: EditorialId) {
         set(idToAssign(documentId, kind, {published: published?.[field], draft: draft?.[field]})),
       )
     return (
-      <Stack space={3}>
+      <Stack gap={3}>
         <Text size={1} muted>
           This {noun} has no {label} yet.
         </Text>
