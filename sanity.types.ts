@@ -17,7 +17,6 @@ export declare const internalGroqTypeReferenceTo: unique symbol
 // Source: schema.json
 export type Overlay = {
   opacity: number
-  blendMode?: 'multiply' | 'overlay' | 'darken' | 'color'
 }
 
 export type PrimaryCTA = {
@@ -906,34 +905,6 @@ export type FooterSettings = {
   }
 }
 
-export type DesignTokens = {
-  _id: string
-  _type: 'designTokens'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  colors?: {
-    primary?: string
-    secondary?: string
-  }
-  gradients?: {
-    primary?: {
-      from?: string
-      via?: string
-      to?: string
-    }
-    footer?: {
-      from?: string
-      via?: string
-      to?: string
-    }
-  }
-  typography?: {
-    headingFont?: string
-    bodyFont?: string
-  }
-}
-
 export type Settings = {
   _id: string
   _type: 'settings'
@@ -1314,7 +1285,6 @@ export type ConnectPage = {
       text?: string
       href?: string
     }
-    backgroundColor?: 'bg-blue-50' | 'bg-green-50' | 'bg-purple-50' | 'bg-gray-50' | 'bg-brand-50'
   }
   smsCta?: {
     heading?: string
@@ -2058,7 +2028,6 @@ export type AllSanitySchemaTypes =
   | FooterMenu
   | MainMenu
   | FooterSettings
-  | DesignTokens
   | Settings
   | SiteAlert
   | Announcement

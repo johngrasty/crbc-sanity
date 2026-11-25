@@ -65,3 +65,31 @@ export function summarizeUnusedDesignFields(docs: AuditedDesignDocument[]) {
     hasCustomNewsletterBackgroundColor: connectBackgroundColorDocs.some((doc) => doc.isCustomValue),
   }
 }
+
+export type UnusedDesignFieldsCleanupPlan = {
+  patches: Array<{_id: string; _rev: string; unset: string[]}>
+  deletes: Array<{_id: string}>
+}
+
+export function planUnusedDesignFieldsCleanup(
+  docs: AuditedDesignDocument[],
+): UnusedDesignFieldsCleanupPlan {
+  const summary = summarizeUnusedDesignFields(docs)
+  if (summary.hasCustomNewsletterBackgroundColor) {
+    throw new Error('Refusing to unset custom connectPage.newsletterCta.backgroundColor value')
+  }
+
+  const patches: UnusedDesignFieldsCleanupPlan['patches'] = []
+  for (const doc of summary.heroBlendModeDocs) {
+    if (!doc._rev) throw new Error(`Missing _rev on ${doc._id}`)
+    patches.push({_id: doc._id, _rev: doc._rev, unset: ['hero.overlay.blendMode']})
+  }
+  for (const doc of summary.connectBackgroundColorDocs) {
+    if (!doc._rev) throw new Error(`Missing _rev on ${doc._id}`)
+    patches.push({_id: doc._id, _rev: doc._rev, unset: ['newsletterCta.backgroundColor']})
+  }
+  patches.sort((a, b) => a._id.localeCompare(b._id))
+
+  const deletes = summary.designTokensDocs.map(({_id}) => ({_id}))
+  return {patches, deletes}
+}

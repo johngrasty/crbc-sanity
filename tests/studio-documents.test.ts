@@ -76,7 +76,6 @@ const singletons = [
   'communityGroupsPage',
   'settings',
   'siteAlert',
-  'designTokens',
   'mainMenu',
   'footerMenu',
   'footerSettings',

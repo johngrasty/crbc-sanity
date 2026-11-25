@@ -43,23 +43,6 @@ export default defineType({
           initialValue: 0.5,
           description: 'Value between 0 (fully transparent) and 1 (fully opaque)',
         },
-        {
-          name: 'blendMode',
-          title: 'Blend Mode',
-          type: 'string',
-          deprecated: {
-            reason: 'Unused by the website. Scheduled for removal after cleanup.',
-          },
-          readOnly: true,
-          options: {
-            list: [
-              {title: 'Multiply', value: 'multiply'},
-              {title: 'Overlay', value: 'overlay'},
-              {title: 'Darken', value: 'darken'},
-              {title: 'Color', value: 'color'},
-            ],
-          },
-        },
       ],
     }),
     defineField({

@@ -22,7 +22,6 @@ import watchPage from './pages/watch'
 import calendarPage from './pages/calendar'
 import lifeGroupsPage from './pages/lifeGroups'
 import communityGroupsPage from './pages/communityGroups'
-import designTokens from './designTokens'
 import logoCloud from './sections/logo-cloud'
 import footerSettings from './singletons/footer'
 import ministry from './ministry'
@@ -56,7 +55,6 @@ export const schemaTypes = [
   announcement,
   siteAlert,
   settings,
-  designTokens,
   footerSettings,
   mainMenu,
   footerMenu,
