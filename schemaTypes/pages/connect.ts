@@ -335,6 +335,10 @@ export default defineType({
           name: 'backgroundColor',
           title: 'Background Color',
           type: 'string',
+          deprecated: {
+            reason: 'Unused by the website. Scheduled for removal after cleanup.',
+          },
+          readOnly: true,
           options: {
             list: [
               {title: 'Light Blue', value: 'bg-blue-50'},
@@ -344,7 +348,6 @@ export default defineType({
               {title: 'Brand Light', value: 'bg-brand-50'},
             ],
           },
-          initialValue: 'bg-blue-50',
         }),
       ],
       group: 'cta',
