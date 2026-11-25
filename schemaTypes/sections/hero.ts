@@ -47,6 +47,10 @@ export default defineType({
           name: 'blendMode',
           title: 'Blend Mode',
           type: 'string',
+          deprecated: {
+            reason: 'Unused by the website. Scheduled for removal after cleanup.',
+          },
+          readOnly: true,
           options: {
             list: [
               {title: 'Multiply', value: 'multiply'},
@@ -55,8 +59,6 @@ export default defineType({
               {title: 'Color', value: 'color'},
             ],
           },
-          initialValue: 'multiply',
-          validation: (Rule) => Rule.required(),
         },
       ],
     }),

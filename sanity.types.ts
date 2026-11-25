@@ -17,7 +17,7 @@ export declare const internalGroqTypeReferenceTo: unique symbol
 // Source: schema.json
 export type Overlay = {
   opacity: number
-  blendMode: 'multiply' | 'overlay' | 'darken' | 'color'
+  blendMode?: 'multiply' | 'overlay' | 'darken' | 'color'
 }
 
 export type PrimaryCTA = {

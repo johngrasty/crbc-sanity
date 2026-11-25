@@ -4,6 +4,10 @@ export default defineType({
 	name: 'designTokens',
 	title: 'Design Tokens',
 	type: 'document',
+	deprecated: {
+		reason: 'Unused by the website. Scheduled for removal after cleanup.'
+	},
+	readOnly: true,
 	groups: [
 		{
 			name: 'colors',
