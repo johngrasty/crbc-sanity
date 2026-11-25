@@ -14,7 +14,6 @@ import {
   Church,
   AlertCircle,
   Home,
-  Palette,
   Info,
   Phone,
   DollarSign,
@@ -24,7 +23,6 @@ import {
   HelpCircle,
   CalendarDays,
   Briefcase,
-  Wrench,
   Clapperboard,
   Video,
   CirclePause,
@@ -471,24 +469,6 @@ export const deskStructure = (S: StructureBuilder, context: StructureResolverCon
                 .title('Footer Settings')
                 .icon(MenuSquare)
                 .child(S.document().schemaType('footerSettings').documentId('footerSettings')),
-            ]),
-        ),
-
-      S.divider(),
-
-      // Developer settings: values a volunteer editor should not need to touch.
-      S.listItem()
-        .title('Developer settings')
-        .icon(Wrench)
-        .child(
-          S.list()
-            .title('Developer settings')
-            .items([
-              S.listItem()
-                .title('Design Tokens')
-                .id('designTokens')
-                .icon(Palette)
-                .child(S.document().schemaType('designTokens').documentId('designTokens')),
             ]),
         ),
     ])

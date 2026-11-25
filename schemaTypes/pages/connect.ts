@@ -331,24 +331,6 @@ export default defineType({
             }),
           ],
         }),
-        defineField({
-          name: 'backgroundColor',
-          title: 'Background Color',
-          type: 'string',
-          deprecated: {
-            reason: 'Unused by the website. Scheduled for removal after cleanup.',
-          },
-          readOnly: true,
-          options: {
-            list: [
-              {title: 'Light Blue', value: 'bg-blue-50'},
-              {title: 'Light Green', value: 'bg-green-50'},
-              {title: 'Light Purple', value: 'bg-purple-50'},
-              {title: 'Light Gray', value: 'bg-gray-50'},
-              {title: 'Brand Light', value: 'bg-brand-50'},
-            ],
-          },
-        }),
       ],
       group: 'cta',
     }),

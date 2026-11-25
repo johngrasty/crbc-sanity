@@ -13,7 +13,6 @@ export const singletonTypes = new Set([
   'communityGroupsPage',
   'settings',
   'siteAlert',
-  'designTokens',
   'mainMenu',
   'footerMenu',
   'footerSettings',
